@@ -40,6 +40,7 @@ class Tes extends Model
             'acak_jawaban' => 'boolean',
             'tampilkan_nilai' => 'boolean',
             'tampilkan_pembahasan' => 'boolean',
+            'durasi_menit' => 'integer',
             'nilai_lulus' => 'decimal:2',
             'mulai' => 'datetime',
             'selesai' => 'datetime',

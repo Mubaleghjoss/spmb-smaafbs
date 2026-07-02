@@ -155,7 +155,12 @@ class SesiTes extends Model
             return 0;
         }
 
-        $waktuBerakhir = $this->waktu_mulai->addMinutes($this->tes->durasi_menit);
+        $durasiMenit = (int) ($this->tes?->durasi_menit ?? 0);
+        if (!$this->waktu_mulai || $durasiMenit <= 0) {
+            return 0;
+        }
+
+        $waktuBerakhir = $this->waktu_mulai->copy()->addMinutes($durasiMenit);
         $tersisa = now()->diffInSeconds($waktuBerakhir, false);
         
         return max(0, $tersisa);
