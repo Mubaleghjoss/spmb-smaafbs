@@ -15,8 +15,8 @@ class AlurPesertaController extends Controller
      */
     private const TAHAP_LABELS = [
         1 => 'Pendaftaran',
-        2 => 'Pembayaran Formulir',
-        3 => 'Pengisian Formulir',
+        2 => 'Pengisian Formulir',
+        3 => 'Pembayaran Formulir',
         4 => 'Tes Masuk',
         5 => 'Wawancara',
         6 => 'Pelunasan',
@@ -25,8 +25,8 @@ class AlurPesertaController extends Controller
 
     private const TAHAP_ICONS = [
         1 => 'bi-person-plus-fill',
-        2 => 'bi-credit-card-fill',
-        3 => 'bi-file-earmark-text-fill',
+        2 => 'bi-file-earmark-text-fill',
+        3 => 'bi-credit-card-fill',
         4 => 'bi-pencil-square',
         5 => 'bi-chat-dots-fill',
         6 => 'bi-cash-coin',
@@ -35,8 +35,8 @@ class AlurPesertaController extends Controller
 
     private const TAHAP_COLORS = [
         1 => '#6366f1',
-        2 => '#f59e0b',
-        3 => '#3b82f6',
+        2 => '#3b82f6',
+        3 => '#f59e0b',
         4 => '#8b5cf6',
         5 => '#ec4899',
         6 => '#f97316',

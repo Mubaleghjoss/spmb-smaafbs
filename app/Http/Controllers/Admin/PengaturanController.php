@@ -200,11 +200,10 @@ class PengaturanController extends Controller
             $end = \Carbon\Carbon::parse($tanggalTutup);
             $totalDays = $start->diffInDays($end);
             
-            // Bagi waktu untuk setiap tahap (6 tahap: 2-7)
+            // Tahap 2 mengikuti jadwal pendaftaran utama, tahap 3-7 tetap memakai slot otomatis berikutnya.
             $daysPerTahap = max(7, intval($totalDays / 6)); // Minimal 7 hari per tahap
             
             $tahapLabels = [
-                2 => 'Isi Formulir SPMB',
                 3 => 'Upload Bukti Pembayaran Formulir',
                 4 => 'Tes Online',
                 5 => 'Wawancara & Verifikasi Berkas',
@@ -212,9 +211,9 @@ class PengaturanController extends Controller
                 7 => 'Resmi Menjadi Peserta Didik',
             ];
             
-            $currentDate = $start->copy();
+            $currentDate = $start->copy()->addDays($daysPerTahap);
             
-            for ($i = 2; $i <= 7; $i++) {
+            for ($i = 3; $i <= 7; $i++) {
                 $key = "tahap_{$i}";
                 $existing = $currentTahapan[$key] ?? [];
                 
@@ -236,7 +235,7 @@ class PengaturanController extends Controller
 
         // Simpan pengaturan tahapan manual (jika ada input dari form)
         $tahapanManual = [];
-        for ($i = 2; $i <= 7; $i++) {
+        for ($i = 3; $i <= 7; $i++) {
             if ($request->has("tahap_{$i}")) {
                 $inputTahap = $request->input("tahap_{$i}");
                 if (is_array($inputTahap)) {

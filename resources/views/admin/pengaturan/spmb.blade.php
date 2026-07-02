@@ -430,7 +430,9 @@
                                     @endphp
                                     <tr class="{{ $isAktif ? 'table-success' : '' }}">
                                         <td class="ps-3">
-                                            @if($num == 7)
+                                            @if($num == 2)
+                                                <input type="checkbox" class="form-check-input" disabled title="Mengikuti jadwal pendaftaran">
+                                            @elseif($num == 7)
                                                 <input type="checkbox" class="form-check-input" disabled title="Atur di tab Kelulusan">
                                             @else
                                             <input type="checkbox" class="form-check-input tahap-check" data-tahap="{{ $num }}">
@@ -445,7 +447,9 @@
                                             </div>
                                         </td>
                                         <td>
-                                            @if($num == 7)
+                                            @if($num == 2)
+                                                <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Mengikuti jadwal pendaftaran' }}</span>
+                                            @elseif($num == 7)
                                                 <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Atur di tab Kelulusan' }}</span>
                                             @else
                                             <input type="date" name="tahap_{{ $num }}[tanggal_buka]" id="tahap{{ $num }}_buka"
@@ -453,7 +457,9 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($num == 7)
+                                            @if($num == 2)
+                                                <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : 'Mengikuti jadwal pendaftaran' }}</span>
+                                            @elseif($num == 7)
                                                 <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : '-' }}</span>
                                             @else
                                             <input type="date" name="tahap_{{ $num }}[tanggal_tutup]" id="tahap{{ $num }}_tutup"
@@ -463,6 +469,8 @@
                                         <td>
                                             @if(!$dibukaTahap && in_array($num, [2, 3]))
                                                 <span class="badge bg-danger"><i class="bi bi-lock me-1"></i>Ditutup</span>
+                                            @elseif($num == 2 && $dibukaTahap && !$mulaiTahap && !$selesaiTahap)
+                                                <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Aktif</span>
                                             @elseif($isAktif)
                                                 <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Aktif</span>
                                             @elseif($isBelum)
@@ -486,6 +494,15 @@
                                     <tr class="collapse" id="extraTahap{{ $num }}">
                                         <td></td>
                                         <td colspan="5">
+                                            @if($num == 2)
+                                            <div class="p-3 bg-light rounded">
+                                                <p class="text-muted small mb-0">
+                                                    <i class="bi bi-info-circle me-1"></i>
+                                                    Tahap 2 otomatis mengikuti toggle dan tanggal pendaftaran di tab Pendaftaran.
+                                                    Field formulir peserta tidak perlu konfigurasi khusus.
+                                                </p>
+                                            </div>
+                                            @else
                                             <div class="p-3 bg-light rounded">
                                                 <div class="row g-3 align-items-end">
                                                     <div class="col-md-3">
@@ -517,6 +534,7 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            @endif
                                         </td>
                                     </tr>
                                     @elseif($num == 5)

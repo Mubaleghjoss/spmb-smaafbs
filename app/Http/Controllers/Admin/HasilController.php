@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Tes;
 use App\Models\SesiTes;
 use App\Models\JawabanPeserta;
+use App\Models\Peserta;
 use App\Services\PenilaianService;
 use Illuminate\Http\Request;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -36,12 +37,21 @@ class HasilController extends Controller
 
         // Ambil semua sesi tes yang selesai
         $sesiQuery = SesiTes::whereIn('status', ['selesai', 'timeout'])
-            ->with(['peserta:id,nama,nomor_pendaftaran', 'tes:id,nama,nilai_lulus']);
+            ->with([
+                'peserta' => fn ($q) => $q
+                    ->select('id', 'nama', 'nomor_pendaftaran', 'asal_sekolah')
+                    ->with('formulirSpmb:id,peserta_id,asal_sekolah'),
+                'tes:id,nama,nilai_lulus',
+            ]);
 
         if ($request->filled('cari')) {
             $sesiQuery->whereHas('peserta', function ($q) use ($request) {
                 $q->where('nama', 'like', '%' . $request->cari . '%')
-                  ->orWhere('nomor_pendaftaran', 'like', '%' . $request->cari . '%');
+                  ->orWhere('nomor_pendaftaran', 'like', '%' . $request->cari . '%')
+                  ->orWhere('asal_sekolah', 'like', '%' . $request->cari . '%')
+                  ->orWhereHas('formulirSpmb', function ($sub) use ($request) {
+                      $sub->where('asal_sekolah', 'like', '%' . $request->cari . '%');
+                  });
             });
         }
 
@@ -59,6 +69,7 @@ class HasilController extends Controller
             if (!isset($rekapPeserta[$pesertaId])) {
                 $rekapPeserta[$pesertaId] = [
                     'peserta' => $sesi->peserta,
+                    'asal_sekolah_smp' => $this->asalSekolahSmp($sesi->peserta),
                     'hasil' => [],
                 ];
             }
@@ -487,16 +498,27 @@ class HasilController extends Controller
 
         // Ambil semua sesi tes yang selesai
         $sesiList = SesiTes::whereIn('status', ['selesai', 'timeout'])
-            ->with(['peserta:id,nama,nomor_pendaftaran,email,telepon', 'tes:id,nama,nilai_lulus', 'jawabanPeserta'])
+            ->with([
+                'peserta' => fn ($q) => $q
+                    ->select('id', 'nama', 'nomor_pendaftaran', 'email', 'telepon', 'asal_sekolah')
+                    ->with('formulirSpmb:id,peserta_id,asal_sekolah'),
+                'tes:id,nama,nilai_lulus',
+                'jawabanPeserta',
+            ])
             ->get();
 
         // Group by peserta
         $rekapPeserta = [];
         foreach ($sesiList as $sesi) {
+            if (!$sesi->peserta) {
+                continue;
+            }
+
             $pesertaId = $sesi->peserta_id;
             if (!isset($rekapPeserta[$pesertaId])) {
                 $rekapPeserta[$pesertaId] = [
                     'peserta' => $sesi->peserta,
+                    'asal_sekolah_smp' => $this->asalSekolahSmp($sesi->peserta),
                     'sesi_list' => collect(),
                     'hasil' => [],
                 ];
@@ -596,7 +618,7 @@ class HasilController extends Controller
         $row = 4;
         $sheet->setCellValue('A' . $row, 'No');
         $sheet->setCellValue('B' . $row, 'Nama Peserta');
-        $sheet->setCellValue('C' . $row, 'No. Pendaftaran');
+        $sheet->setCellValue('C' . $row, 'Asal Sekolah SMP');
 
         $col = 'D';
         foreach ($tesList as $tes) {
@@ -616,7 +638,7 @@ class HasilController extends Controller
         foreach ($rekapPeserta as $data) {
             $sheet->setCellValue('A' . $row, $no);
             $sheet->setCellValue('B' . $row, $data['peserta']->nama ?? '-');
-            $sheet->setCellValue('C' . $row, $data['peserta']->nomor_pendaftaran ?? '-');
+            $sheet->setCellValue('C' . $row, $data['asal_sekolah_smp'] ?? '-');
 
             $col = 'D';
             foreach ($tesList as $tes) {
@@ -672,8 +694,8 @@ class HasilController extends Controller
 
             $sheetPeserta->setCellValue('A3', 'Nama Lengkap');
             $sheetPeserta->setCellValue('B3', $peserta->nama ?? '-');
-            $sheetPeserta->setCellValue('A4', 'No. Pendaftaran');
-            $sheetPeserta->setCellValue('B4', $peserta->nomor_pendaftaran ?? '-');
+            $sheetPeserta->setCellValue('A4', 'Asal Sekolah SMP');
+            $sheetPeserta->setCellValue('B4', $data['asal_sekolah_smp'] ?? '-');
             $sheetPeserta->setCellValue('A5', 'Email');
             $sheetPeserta->setCellValue('B5', $peserta->email ?? '-');
             $sheetPeserta->setCellValue('A6', 'No. HP');
@@ -819,5 +841,12 @@ class HasilController extends Controller
             $columnNumber = (int)(($columnNumber - $temp - 1) / 26);
         }
         return $letter;
+    }
+
+    private function asalSekolahSmp(?Peserta $peserta): string
+    {
+        $asalSekolah = $peserta?->formulirSpmb?->asal_sekolah ?: $peserta?->asal_sekolah;
+
+        return filled($asalSekolah) ? $asalSekolah : '-';
     }
 }

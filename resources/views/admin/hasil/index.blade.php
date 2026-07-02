@@ -28,7 +28,7 @@
                 <div class="col-md-4">
                     <div class="input-group">
                         <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input type="text" name="cari" class="form-control" placeholder="Cari nama/no pendaftaran..." value="{{ request('cari') }}">
+                        <input type="text" name="cari" class="form-control" placeholder="Cari nama/no pendaftaran/asal sekolah..." value="{{ request('cari') }}">
                     </div>
                 </div>
                 <div class="col-auto">
@@ -87,7 +87,7 @@
                             <tr>
                                 <th class="text-center" style="width: 50px;">#</th>
                                 <th style="min-width: 200px;">Nama Peserta</th>
-                                <th style="min-width: 120px;">No. Pendaftaran</th>
+                                <th style="min-width: 180px;">Asal Sekolah SMP</th>
                                 @foreach($tesList as $tes)
                                 <th class="text-center" style="min-width: 120px;">
                                     {{ Str::limit($tes->nama, 15) }}
@@ -107,7 +107,7 @@
                                     </a>
                                 </td>
                                 <td>
-                                    <code>{{ $data['peserta']->nomor_pendaftaran ?? '-' }}</code>
+                                    {{ $data['asal_sekolah_smp'] ?? '-' }}
                                 </td>
                                 @foreach($tesList as $tes)
                                 <td class="text-center">

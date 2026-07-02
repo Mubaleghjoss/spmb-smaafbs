@@ -427,14 +427,17 @@ class PengaturanService
      */
     public function ambilPengaturanTahapan(): array
     {
+        $spmb = $this->ambilSpmb();
+
         return [
             'tahap_2' => [
-                'dibuka' => $this->ambil('tahap_2_dibuka', true),
-                'tanggal_buka' => $this->ambil('tahap_2_tanggal_buka', ''),
+                'dibuka' => $spmb['pendaftaran_buka'] ?? true,
+                'tanggal_buka' => $spmb['tanggal_buka'] ?? '',
                 'waktu_mulai' => $this->ambil('tahap_2_waktu_mulai', ''),
-                'tanggal_tutup' => $this->ambil('tahap_2_tanggal_tutup', ''),
+                'tanggal_tutup' => $spmb['tanggal_tutup'] ?? '',
                 'waktu_selesai' => $this->ambil('tahap_2_waktu_selesai', ''),
-                'keterangan' => $this->ambil('tahap_2_keterangan', ''),
+                'keterangan' => $this->ambil('tahap_2_keterangan', 'Isi Formulir SPMB mengikuti jadwal pendaftaran.'),
+                'otomatis' => true,
             ],
             'tahap_3' => [
                 'dibuka' => $this->ambil('tahap_3_dibuka', true),
