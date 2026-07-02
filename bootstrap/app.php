@@ -20,7 +20,11 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        $exceptions->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+        $exceptions->respond(function ($response, \Throwable $e, $request) {
+            if ($response->getStatusCode() !== 419) {
+                return $response;
+            }
+
             if ($request->expectsJson()) {
                 return response()->json([
                     'message' => 'Sesi kedaluwarsa. Silakan muat ulang halaman dan coba lagi.',
