@@ -128,6 +128,12 @@ if [ -f artisan ]; then
         echo "PHP exec() is disabled; skipping storage:link."
     fi
 
+    rm -f bootstrap/cache/config.php \
+        bootstrap/cache/events.php \
+        bootstrap/cache/packages.php \
+        bootstrap/cache/routes-v*.php \
+        bootstrap/cache/services.php
+
     php artisan optimize:clear --ansi
     php artisan migrate --force --ansi
     php artisan optimize --ansi
