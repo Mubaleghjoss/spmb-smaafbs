@@ -64,6 +64,11 @@ VITE_APP_NAME="\${APP_NAME}"
 ENV
 fi
 
+if [ -f .env.production ]; then
+    cp .env .env.production
+    echo ".env.production exists; synced it from .env."
+fi
+
 if command -v composer >/dev/null 2>&1; then
     composer install --no-dev --optimize-autoloader --no-interaction
 elif [ -f vendor/autoload.php ]; then
