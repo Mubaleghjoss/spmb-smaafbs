@@ -7,6 +7,7 @@ use App\Models\Peserta;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
 class LoginPesertaController extends Controller
@@ -39,6 +40,17 @@ class LoginPesertaController extends Controller
                 ->withInput(['telepon' => $request->telepon])
                 ->withErrors(['telepon' => 'No HP atau password salah']);
         }
+
+        Auth::guard('pengguna')->logout();
+        session()->forget([
+            'peserta_id',
+            'peserta_nama',
+            'peserta_nomor',
+            'token_id',
+            'tes_id',
+            'token_global_id',
+            'ujian_mode',
+        ]);
 
         // Simpan session peserta
         session([

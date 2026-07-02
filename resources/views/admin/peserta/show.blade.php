@@ -340,8 +340,8 @@
                     @php
                         $tahapan = [
                             1 => ['label' => 'Pendaftaran', 'icon' => 'bi-person-plus-fill', 'color' => '#6366f1'],
-                            2 => ['label' => 'Bayar Formulir', 'icon' => 'bi-credit-card-fill', 'color' => '#f59e0b'],
-                            3 => ['label' => 'Isi Formulir', 'icon' => 'bi-file-earmark-text-fill', 'color' => '#3b82f6'],
+                            2 => ['label' => 'Isi Formulir', 'icon' => 'bi-file-earmark-text-fill', 'color' => '#3b82f6'],
+                            3 => ['label' => 'Bayar Formulir', 'icon' => 'bi-credit-card-fill', 'color' => '#f59e0b'],
                             4 => ['label' => 'Tes Online', 'icon' => 'bi-pencil-square', 'color' => '#8b5cf6'],
                             5 => ['label' => 'Wawancara', 'icon' => 'bi-chat-dots-fill', 'color' => '#ec4899'],
                             6 => ['label' => 'Pelunasan', 'icon' => 'bi-cash-coin', 'color' => '#f97316'],
@@ -433,11 +433,11 @@
                     @php
                         $tahapSaatIni = $peserta->tahap_saat_ini;
                         $tahapLabels = [
-                            1 => 'Pendaftaran', 2 => 'Bayar Formulir', 3 => 'Isi Formulir',
+                            1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',
                             4 => 'Tes Online', 5 => 'Wawancara', 6 => 'Pelunasan', 7 => 'Kelulusan'
                         ];
                         $tahapColors = [
-                            1 => '#6366f1', 2 => '#f59e0b', 3 => '#3b82f6',
+                            1 => '#6366f1', 2 => '#3b82f6', 3 => '#f59e0b',
                             4 => '#8b5cf6', 5 => '#ec4899', 6 => '#f97316', 7 => '#10b981'
                         ];
                     @endphp
@@ -530,8 +530,8 @@
                     @php
                         $tahapRoutes = [
                             1 => ['route' => 'admin.peserta.index', 'label' => 'Daftar Peserta', 'icon' => 'bi-people-fill'],
-                            2 => ['route' => 'admin.verifikasi.pembayaran-formulir', 'label' => 'Verifikasi Pembayaran', 'icon' => 'bi-credit-card-2-front'],
-                            3 => ['route' => 'admin.verifikasi.formulir', 'label' => 'Verifikasi Formulir', 'icon' => 'bi-file-earmark-check'],
+                            2 => ['route' => 'admin.verifikasi.formulir', 'label' => 'Verifikasi Formulir', 'icon' => 'bi-file-earmark-check'],
+                            3 => ['route' => 'admin.verifikasi.pembayaran-formulir', 'label' => 'Verifikasi Pembayaran', 'icon' => 'bi-credit-card-2-front'],
                             4 => ['route' => 'admin.verifikasi.hasil-tes', 'label' => 'Verifikasi Hasil Tes', 'icon' => 'bi-pencil-square'],
                             5 => ['route' => 'admin.verifikasi.wawancara', 'label' => 'Verifikasi Wawancara', 'icon' => 'bi-chat-dots'],
                             6 => ['route' => 'admin.verifikasi.pelunasan', 'label' => 'Verifikasi Pelunasan', 'icon' => 'bi-cash-coin'],

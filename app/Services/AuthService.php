@@ -16,6 +16,19 @@ class AuthService
     private const MAX_LOGIN_ATTEMPTS = 3;
     private const LOCKOUT_MINUTES = 30;
 
+    private function lupakanDataSesiPeserta(): void
+    {
+        session()->forget([
+            'peserta_id',
+            'peserta_nama',
+            'peserta_nomor',
+            'token_id',
+            'tes_id',
+            'token_global_id',
+            'ujian_mode',
+        ]);
+    }
+
     /**
      * Autentikasi pengguna dengan email dan password
      */
@@ -77,6 +90,7 @@ class AuthService
      */
     public function buatSesi(Pengguna $pengguna): void
     {
+        $this->lupakanDataSesiPeserta();
         Auth::guard('pengguna')->login($pengguna);
         session()->regenerate();
     }
@@ -86,6 +100,9 @@ class AuthService
      */
     public function buatSesiPeserta(Peserta $peserta, ?Token $token = null): void
     {
+        Auth::guard('pengguna')->logout();
+        $this->lupakanDataSesiPeserta();
+
         $sessionData = [
             'peserta_id' => $peserta->id,
             'peserta_nama' => $peserta->nama,
@@ -105,6 +122,9 @@ class AuthService
      */
     public function buatSesiPesertaUjian(Peserta $peserta, Token $token, $tes): void
     {
+        Auth::guard('pengguna')->logout();
+        $this->lupakanDataSesiPeserta();
+
         session([
             'peserta_id' => $peserta->id,
             'peserta_nama' => $peserta->nama,
@@ -120,6 +140,9 @@ class AuthService
      */
     public function buatSesiPesertaTokenGlobal(Peserta $peserta, TokenGlobal $tokenGlobal): void
     {
+        Auth::guard('pengguna')->logout();
+        $this->lupakanDataSesiPeserta();
+
         session([
             'peserta_id' => $peserta->id,
             'peserta_nama' => $peserta->nama,
@@ -144,7 +167,7 @@ class AuthService
      */
     public function hapusSesiPeserta(): void
     {
-        session()->forget(['peserta_id', 'peserta_nama', 'token_id', 'tes_id']);
+        $this->lupakanDataSesiPeserta();
         session()->invalidate();
         session()->regenerateToken();
     }

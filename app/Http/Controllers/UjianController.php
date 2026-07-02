@@ -44,6 +44,46 @@ class UjianController extends Controller
     }
 
     /**
+     * Cek kepemilikan sesi. Jika browser masih menyimpan session peserta lain,
+     * arahkan login ulang agar tidak berakhir di halaman 403 mentah.
+     */
+    private function sesiMilikPeserta(SesiTes $sesi, ?Peserta $peserta): bool
+    {
+        return $peserta && (int) $sesi->peserta_id === (int) $peserta->id;
+    }
+
+    private function lupakanSessionPeserta(): void
+    {
+        session()->forget([
+            'peserta_id',
+            'peserta_nama',
+            'peserta_nomor',
+            'token_id',
+            'tes_id',
+            'token_global_id',
+            'ujian_mode',
+        ]);
+    }
+
+    private function redirectSessionPesertaTidakSesuai(): RedirectResponse
+    {
+        $this->lupakanSessionPeserta();
+
+        return redirect()->route('peserta.login')
+            ->with('error', 'Sesi ujian tidak sesuai dengan akun peserta yang sedang login. Silakan login ulang sebagai peserta yang benar.');
+    }
+
+    private function responseSessionPesertaTidakSesuai(): JsonResponse
+    {
+        $this->lupakanSessionPeserta();
+
+        return response()->json([
+            'error' => 'Sesi ujian tidak sesuai dengan akun peserta yang sedang login. Silakan login ulang.',
+            'redirect' => route('peserta.login'),
+        ], 403);
+    }
+
+    /**
      * Halaman daftar tes yang tersedia
      * Kebutuhan: 3.1, 3.3 - Filter tes berdasarkan grup peserta
      */
@@ -223,8 +263,8 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
 
         // Validasi kepemilikan sesi
-        if ($sesi->peserta_id !== $peserta->id) {
-            abort(403, 'Akses ditolak.');
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->redirectSessionPesertaTidakSesuai();
         }
 
         // Cek apakah sesi sudah selesai
@@ -273,8 +313,8 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
 
         // Validasi kepemilikan sesi
-        if ($sesi->peserta_id !== $peserta->id) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->responseSessionPesertaTidakSesuai();
         }
 
         // Validasi sesi masih berlangsung
@@ -312,8 +352,8 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
 
         // Validasi kepemilikan sesi
-        if ($sesi->peserta_id !== $peserta->id) {
-            abort(403, 'Akses ditolak.');
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->redirectSessionPesertaTidakSesuai();
         }
 
         // Konfirmasi dari user
@@ -338,8 +378,8 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
 
         // Validasi kepemilikan sesi
-        if ($sesi->peserta_id !== $peserta->id) {
-            abort(403, 'Akses ditolak.');
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->redirectSessionPesertaTidakSesuai();
         }
 
         // Cek apakah sesi sudah selesai
@@ -362,8 +402,8 @@ class UjianController extends Controller
     {
         $peserta = $this->getPeserta();
 
-        if ($sesi->peserta_id !== $peserta->id) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->responseSessionPesertaTidakSesuai();
         }
 
         $waktuTersisa = $sesi->waktuTersisa();
@@ -410,8 +450,8 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
 
         // Validasi kepemilikan sesi
-        if ($sesi->peserta_id !== $peserta->id) {
-            return response()->json(['error' => 'Akses ditolak.'], 403);
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->responseSessionPesertaTidakSesuai();
         }
 
         // Validasi sesi masih berlangsung

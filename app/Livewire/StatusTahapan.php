@@ -38,13 +38,13 @@ class StatusTahapan extends Component
             ],
             2 => [
                 'selesai' => $tahapan?->tahap_2_selesai ?? false,
-                'label' => TahapanSpmbEnum::BAYAR_FORMULIR->label(),
-                'icon' => 'credit-card',
+                'label' => TahapanSpmbEnum::ISI_FORMULIR->label(),
+                'icon' => 'file-earmark-text',
             ],
             3 => [
                 'selesai' => $tahapan?->tahap_3_selesai ?? false,
-                'label' => TahapanSpmbEnum::ISI_FORMULIR->label(),
-                'icon' => 'file-earmark-text',
+                'label' => TahapanSpmbEnum::BAYAR_FORMULIR->label(),
+                'icon' => 'credit-card',
             ],
         ];
     }

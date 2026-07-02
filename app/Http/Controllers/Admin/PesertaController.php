@@ -307,7 +307,7 @@ class PesertaController extends Controller
         $tahapan->save();
 
         $tahapLabels = [
-            1 => 'Pendaftaran', 2 => 'Bayar Formulir', 3 => 'Isi Formulir',
+            1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',
             4 => 'Tes Online', 5 => 'Wawancara', 6 => 'Pelunasan', 7 => 'Kelulusan'
         ];
 

@@ -17,6 +17,13 @@
 </div>
 @endif
 
+@if(session('error'))
+<div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{ session('error') }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+@endif
+
 <form method="POST" action="{{ route('peserta.login.proses') }}" x-data="{ loading: false, showPassword: false }" @submit="loading = true">
     @csrf
     
