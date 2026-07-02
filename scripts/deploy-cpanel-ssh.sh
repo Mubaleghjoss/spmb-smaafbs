@@ -4,8 +4,8 @@ set -euo pipefail
 APP_ROOT="${APP_ROOT:-/home/sman5479/spmb-app}"
 PUBLIC_ROOT="${PUBLIC_ROOT:-/home/sman5479/public_html/web/www.seleksi}"
 APP_URL="${APP_URL:-https://seleksi.smaafbs.sch.id}"
-DB_DATABASE="${DB_DATABASE:-sman5479_spmb}"
-DB_USERNAME="${DB_USERNAME:-sman5479_spmb}"
+DB_DATABASE="${DB_DATABASE:-sman5479_ujian}"
+DB_USERNAME="${DB_USERNAME:-sman5479_ujian}"
 DB_PASSWORD="${DB_PASSWORD:-}"
 
 if [ ! -d "$APP_ROOT" ]; then
@@ -53,7 +53,8 @@ SESSION_DRIVER=file
 SESSION_LIFETIME=120
 SESSION_ENCRYPT=false
 SESSION_PATH=/
-SESSION_DOMAIN=.smaafbs.sch.id
+SESSION_DOMAIN=null
+SESSION_COOKIE=seleksi_spmb_session
 SESSION_SECURE_COOKIE=true
 
 MAIL_MAILER=log
