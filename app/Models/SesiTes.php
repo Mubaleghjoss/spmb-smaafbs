@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Model Sesi Tes
@@ -123,6 +124,26 @@ class SesiTes extends Model
     public function jawabanPeserta(): HasMany
     {
         return $this->hasMany(JawabanPeserta::class);
+    }
+
+    public function hasilGayaBelajar(): HasOne
+    {
+        return $this->hasOne(HasilGayaBelajar::class);
+    }
+
+    public function hasilPsikotesKepribadian(): HasOne
+    {
+        return $this->hasOne(HasilPsikotesKepribadian::class);
+    }
+
+    public function hasilMbti(): HasOne
+    {
+        return $this->hasOne(HasilMbti::class);
+    }
+
+    public function hasilProfiling(): HasOne
+    {
+        return $this->hasOne(HasilProfiling::class);
     }
 
     /**

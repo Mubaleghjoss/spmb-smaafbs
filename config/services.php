@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'akses_sync' => [
+        'token' => env('AKSES_SYNC_TOKEN'),
+        'require_https' => env('AKSES_SYNC_REQUIRE_HTTPS', true),
+    ],
+
 ];
