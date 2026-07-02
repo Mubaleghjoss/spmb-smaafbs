@@ -33,7 +33,9 @@
         <div class="card shadow-lg border-0">
             <div class="card-body p-4 p-md-5">
                 <div class="text-center mb-4">
-                    <img src="{{ asset('images/logo.png') }}" alt="Logo" class="auth-logo mb-3" onerror="this.style.display='none'">
+                    @if(!empty($branding['logo']))
+                        <img src="{{ asset('storage/' . $branding['logo']) }}" alt="Logo" class="auth-logo mb-3">
+                    @endif
                     <h4 class="fw-bold text-success">{{ $branding['nama_institusi'] ?? 'SPMB' }}</h4>
                     <p class="text-muted small">@yield('subtitle', 'Sistem Penerimaan Murid Baru')</p>
                 </div>
