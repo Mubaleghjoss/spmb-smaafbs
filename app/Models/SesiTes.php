@@ -161,7 +161,7 @@ class SesiTes extends Model
         }
 
         $waktuBerakhir = $this->waktu_mulai->copy()->addMinutes($durasiMenit);
-        $tersisa = now()->diffInSeconds($waktuBerakhir, false);
+        $tersisa = (int) floor(now()->diffInSeconds($waktuBerakhir, false));
         
         return max(0, $tersisa);
     }
