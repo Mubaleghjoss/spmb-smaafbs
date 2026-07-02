@@ -39,8 +39,9 @@ class PesertaController extends Controller
         $peserta = $this->pesertaService->ambilDenganFilter($filter, 15);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();
+        $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
 
-        return view('admin.peserta.index', compact('peserta', 'grup', 'statistik', 'filter'));
+        return view('admin.peserta.index', compact('peserta', 'grup', 'statistik', 'filter', 'skGelombang'));
     }
 
     /**
@@ -179,6 +180,70 @@ class PesertaController extends Controller
     }
 
     /**
+     * Bulk pindahkan peserta ke tahap tertentu.
+     */
+    public function bulkUpdateTahap(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'peserta_ids' => 'required|array|min:1',
+            'peserta_ids.*' => 'exists:peserta,id',
+            'tahap_baru' => 'required|integer|min:1|max:7',
+            'luluskan_final' => 'nullable|boolean',
+            'sk_gelombang_kelulusan' => 'nullable|string',
+        ]);
+
+        $tahapBaru = (int) $validated['tahap_baru'];
+        $luluskanFinal = $tahapBaru === 7 && $request->boolean('luluskan_final');
+        $skGelombangId = null;
+
+        if ($luluskanFinal) {
+            $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
+            $selectedSk = $request->input('sk_gelombang_kelulusan');
+
+            if (empty($skGelombang)) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'Tambahkan dan upload SK gelombang terlebih dahulu di Pengaturan SPMB > Kelulusan.');
+            }
+
+            if (blank($selectedSk)) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'Pilih SK gelombang untuk menandai peserta lulus final.');
+            }
+
+            if (!collect($skGelombang)->contains('id', $selectedSk)) {
+                return redirect()
+                    ->back()
+                    ->with('error', 'SK gelombang yang dipilih tidak ditemukan.');
+            }
+
+            $skGelombangId = $selectedSk;
+        }
+
+        $count = $this->pesertaService->bulkPindahkanTahap(
+            $validated['peserta_ids'],
+            $tahapBaru,
+            auth('pengguna')->id(),
+            $luluskanFinal,
+            $skGelombangId
+        );
+
+        $tahapLabels = [
+            1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',
+            4 => 'Tes Online', 5 => 'Wawancara', 6 => 'Pelunasan', 7 => 'Kelulusan'
+        ];
+        $pesan = "{$count} peserta berhasil dipindahkan ke Tahap {$tahapBaru}: {$tahapLabels[$tahapBaru]}.";
+        if ($luluskanFinal) {
+            $pesan .= ' Peserta juga ditandai LULUS final.';
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', $pesan);
+    }
+
+    /**
      * Tampilkan halaman impor peserta
      */
     public function impor(): View
@@ -287,24 +352,7 @@ class PesertaController extends Controller
 
         $tahapBaru = (int) $validated['tahap_baru'];
 
-        // Get or create tahapan record
-        $tahapan = $peserta->tahapanSpmb;
-        if (!$tahapan) {
-            $tahapan = $peserta->tahapanSpmb()->create([
-                'tahap_saat_ini' => 1,
-            ]);
-        }
-
-        // Update tahap_saat_ini
-        $tahapan->tahap_saat_ini = $tahapBaru;
-
-        // Mark all stages below the new stage as completed
-        for ($i = 1; $i <= 7; $i++) {
-            $kolom = "tahap_{$i}_selesai";
-            $tahapan->$kolom = ($i < $tahapBaru);
-        }
-
-        $tahapan->save();
+        $this->pesertaService->pindahkanTahap($peserta, $tahapBaru, auth('pengguna')->id());
 
         $tahapLabels = [
             1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',

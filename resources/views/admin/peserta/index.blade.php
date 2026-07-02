@@ -4,6 +4,18 @@
 
 @section('content')
 <div class="container-fluid">
+    @php
+        $tahapLabels = [
+            1 => 'Pendaftaran',
+            2 => 'Isi Formulir',
+            3 => 'Bayar Formulir',
+            4 => 'Tes Online',
+            5 => 'Wawancara',
+            6 => 'Pelunasan',
+            7 => 'Kelulusan',
+        ];
+    @endphp
+
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <h1 class="h3 mb-0">Manajemen Peserta</h1>
         <div class="d-flex flex-wrap gap-2">
@@ -28,6 +40,18 @@
     @if(session('sukses'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('sukses') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
@@ -87,9 +111,9 @@
                     <label class="form-label">Tahapan</label>
                     <select name="tahap" class="form-select">
                         <option value="">Semua Tahap</option>
-                        @for($i = 1; $i <= 7; $i++)
-                            <option value="{{ $i }}" {{ $filter['tahap'] == $i ? 'selected' : '' }}>Tahap {{ $i }}</option>
-                        @endfor
+                        @foreach($tahapLabels as $i => $label)
+                            <option value="{{ $i }}" {{ $filter['tahap'] == $i ? 'selected' : '' }}>Tahap {{ $i }} - {{ $label }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-md-3">
@@ -119,6 +143,15 @@
         <div id="selectedPesertaIds"></div>
     </form>
 
+    <!-- Form Bulk Update Tahap (hidden) -->
+    <form id="bulkTahapForm" action="{{ route('admin.peserta.bulk-update-tahap') }}" method="POST" style="display: none;">
+        @csrf
+        <input type="hidden" name="tahap_baru" id="bulkTahapBaru">
+        <input type="hidden" name="luluskan_final" id="bulkLuluskanFinalValue" value="0">
+        <input type="hidden" name="sk_gelombang_kelulusan" id="bulkSkGelombangValue">
+        <div id="selectedPesertaIdsTahap"></div>
+    </form>
+
     <!-- Daftar Peserta -->
     <div class="card">
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
@@ -133,6 +166,30 @@
                 </select>
                 <button type="button" id="bulkAssignBtn" class="btn btn-sm btn-success" disabled onclick="submitBulkAssign()">
                     <i class="bi bi-people-fill me-1"></i>Assign
+                </button>
+                <span class="vr d-none d-md-inline-block"></span>
+                <select id="bulkTahapSelect" class="form-select form-select-sm" style="width: auto; min-width: 190px;" disabled onchange="toggleBulkLulusOption()">
+                    <option value="">-- Pindah ke Tahap --</option>
+                    @foreach($tahapLabels as $i => $label)
+                        <option value="{{ $i }}">Tahap {{ $i }} - {{ $label }}</option>
+                    @endforeach
+                </select>
+                <div class="form-check form-check-inline mb-0" id="bulkLulusWrapper" style="display:none;">
+                    <input class="form-check-input" type="checkbox" value="1" id="bulkLuluskanFinal" onchange="toggleBulkLulusOption()" {{ empty($skGelombang) ? 'disabled' : '' }}>
+                    <label class="form-check-label small" for="bulkLuluskanFinal">
+                        Tandai LULUS{{ empty($skGelombang) ? ' (SK belum ada)' : '' }}
+                    </label>
+                </div>
+                <select id="bulkSkGelombangSelect" class="form-select form-select-sm" style="display:none; width: auto; min-width: 190px;" {{ empty($skGelombang) ? 'disabled' : '' }}>
+                    <option value="">-- Pilih SK --</option>
+                    @forelse($skGelombang as $sk)
+                        <option value="{{ $sk['id'] }}">{{ $sk['nama'] }}</option>
+                    @empty
+                        <option value="" disabled>SK belum tersedia</option>
+                    @endforelse
+                </select>
+                <button type="button" id="bulkTahapBtn" class="btn btn-sm btn-primary" disabled onclick="submitBulkTahap()">
+                    <i class="bi bi-signpost-split me-1"></i>Update Tahap
                 </button>
             </div>
         </div>
@@ -248,6 +305,22 @@
 
 @push('scripts')
 <script>
+function selectedPesertaCheckboxes() {
+    return document.querySelectorAll('.peserta-checkbox:checked');
+}
+
+function appendSelectedPesertaIds(containerId) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    selectedPesertaCheckboxes().forEach(cb => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'peserta_ids[]';
+        input.value = cb.value;
+        container.appendChild(input);
+    });
+}
+
 function toggleSelectAll() {
     const selectAll = document.getElementById('selectAll');
     const checkboxes = document.querySelectorAll('.peserta-checkbox');
@@ -256,20 +329,30 @@ function toggleSelectAll() {
 }
 
 function updateSelectedCount() {
-    const checkboxes = document.querySelectorAll('.peserta-checkbox:checked');
+    const checkboxes = selectedPesertaCheckboxes();
     const count = checkboxes.length;
     document.getElementById('selectedCount').textContent = count + ' dipilih';
     
     const grupSelect = document.getElementById('bulkGrupSelect');
     const assignBtn = document.getElementById('bulkAssignBtn');
+    const tahapSelect = document.getElementById('bulkTahapSelect');
+    const tahapBtn = document.getElementById('bulkTahapBtn');
     
     if (count > 0) {
         grupSelect.disabled = false;
         assignBtn.disabled = false;
+        tahapSelect.disabled = false;
+        tahapBtn.disabled = false;
     } else {
         grupSelect.disabled = true;
         assignBtn.disabled = true;
+        tahapSelect.disabled = true;
+        tahapBtn.disabled = true;
+        tahapSelect.value = '';
+        document.getElementById('bulkLuluskanFinal').checked = false;
     }
+
+    toggleBulkLulusOption();
     
     // Update select all checkbox state
     const allCheckboxes = document.querySelectorAll('.peserta-checkbox');
@@ -280,6 +363,24 @@ function updateSelectedCount() {
     }
 }
 
+function toggleBulkLulusOption() {
+    const tahapSelect = document.getElementById('bulkTahapSelect');
+    const wrapper = document.getElementById('bulkLulusWrapper');
+    const checkbox = document.getElementById('bulkLuluskanFinal');
+    const skSelect = document.getElementById('bulkSkGelombangSelect');
+
+    if (tahapSelect.value === '7' && !tahapSelect.disabled) {
+        wrapper.style.display = 'inline-flex';
+        skSelect.style.display = checkbox.checked ? 'inline-block' : 'none';
+        return;
+    }
+
+    wrapper.style.display = 'none';
+    checkbox.checked = false;
+    skSelect.style.display = 'none';
+    skSelect.value = '';
+}
+
 function submitBulkAssign() {
     const grupId = document.getElementById('bulkGrupSelect').value;
     if (!grupId) {
@@ -287,7 +388,7 @@ function submitBulkAssign() {
         return;
     }
     
-    const checkboxes = document.querySelectorAll('.peserta-checkbox:checked');
+    const checkboxes = selectedPesertaCheckboxes();
     if (checkboxes.length === 0) {
         alert('Pilih minimal satu peserta!');
         return;
@@ -300,19 +401,47 @@ function submitBulkAssign() {
     // Set grup_id
     document.getElementById('bulkGrupId').value = grupId;
     
-    // Clear and add selected peserta ids
-    const container = document.getElementById('selectedPesertaIds');
-    container.innerHTML = '';
-    checkboxes.forEach(cb => {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'peserta_ids[]';
-        input.value = cb.value;
-        container.appendChild(input);
-    });
+    appendSelectedPesertaIds('selectedPesertaIds');
     
     // Submit form
     document.getElementById('bulkAssignForm').submit();
+}
+
+function submitBulkTahap() {
+    const tahapSelect = document.getElementById('bulkTahapSelect');
+    const tahapBaru = tahapSelect.value;
+    if (!tahapBaru) {
+        alert('Pilih tahap tujuan terlebih dahulu!');
+        return;
+    }
+
+    const checkboxes = selectedPesertaCheckboxes();
+    if (checkboxes.length === 0) {
+        alert('Pilih minimal satu peserta!');
+        return;
+    }
+
+    const selectedText = tahapSelect.options[tahapSelect.selectedIndex].text;
+    const luluskanFinal = tahapBaru === '7' && document.getElementById('bulkLuluskanFinal').checked;
+    const skSelect = document.getElementById('bulkSkGelombangSelect');
+    if (luluskanFinal && !skSelect.value) {
+        alert('Pilih SK gelombang terlebih dahulu untuk menandai peserta lulus final.');
+        return;
+    }
+
+    const pesanTambahan = luluskanFinal
+        ? '\n\nPeserta juga akan ditandai LULUS final.'
+        : '';
+
+    if (!confirm('Yakin ingin memindahkan ' + checkboxes.length + ' peserta ke ' + selectedText + '?' + pesanTambahan)) {
+        return;
+    }
+
+    document.getElementById('bulkTahapBaru').value = tahapBaru;
+    document.getElementById('bulkLuluskanFinalValue').value = luluskanFinal ? '1' : '0';
+    document.getElementById('bulkSkGelombangValue').value = luluskanFinal ? skSelect.value : '';
+    appendSelectedPesertaIds('selectedPesertaIdsTahap');
+    document.getElementById('bulkTahapForm').submit();
 }
 </script>
 @endpush

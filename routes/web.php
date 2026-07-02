@@ -255,6 +255,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::post('/peserta', [\App\Http\Controllers\Admin\PesertaController::class, 'store'])->name('peserta.store');
     Route::post('/peserta/impor', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImpor'])->name('peserta.impor.proses');
     Route::post('/peserta/bulk-assign-grup', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkAssignGrup'])->name('peserta.bulk-assign-grup');
+    Route::post('/peserta/bulk-update-tahap', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateTahap'])->name('peserta.bulk-update-tahap');
     Route::post('/peserta/{id}/restore', [\App\Http\Controllers\Admin\PesertaController::class, 'restore'])->name('peserta.restore');
     Route::get('/peserta/{peserta}', [\App\Http\Controllers\Admin\PesertaController::class, 'show'])->name('peserta.show');
     Route::get('/peserta/{peserta}/edit', [\App\Http\Controllers\Admin\PesertaController::class, 'edit'])->name('peserta.edit');

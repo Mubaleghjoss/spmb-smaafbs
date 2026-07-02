@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Peserta;
 use App\Models\Grup;
 use App\Models\TahapanSpmb;
+use App\Models\LogTahapanSpmb;
 use App\Helpers\NomorPendaftaranHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -216,6 +217,89 @@ class PesertaService
                 $count++;
             }
         }
+        return $count;
+    }
+
+    /**
+     * Pindahkan peserta ke tahap tertentu.
+     */
+    public function pindahkanTahap(
+        Peserta $peserta,
+        int $tahapBaru,
+        ?int $adminId = null,
+        bool $luluskanFinal = false,
+        string $aksi = 'manual_update',
+        ?string $skGelombangId = null
+    ): void {
+        DB::transaction(function () use ($peserta, $tahapBaru, $adminId, $luluskanFinal, $aksi, $skGelombangId): void {
+            $tahapan = $peserta->tahapanSpmb;
+            if (!$tahapan) {
+                $tahapan = $peserta->tahapanSpmb()->create([
+                    'tahap_saat_ini' => 1,
+                    'tahap_1_selesai' => true,
+                ]);
+            }
+
+            $tahapLama = (int) $tahapan->tahap_saat_ini;
+            $statusLama = $tahapan->{"tahap_{$tahapBaru}_selesai"} ?? false;
+
+            $tahapan->tahap_saat_ini = $tahapBaru;
+            for ($i = 1; $i <= 7; $i++) {
+                $kolom = "tahap_{$i}_selesai";
+                $tahapan->$kolom = $i < $tahapBaru;
+            }
+
+            if ($tahapBaru === 7 && $luluskanFinal) {
+                $tahapan->tahap_7_selesai = true;
+                $tahapan->status_kelulusan = 'lulus';
+                $tahapan->sk_gelombang_kelulusan = $skGelombangId;
+            } elseif ($tahapBaru === 7) {
+                $tahapan->status_kelulusan = 'menunggu';
+                $tahapan->sk_gelombang_kelulusan = null;
+            } else {
+                $tahapan->status_kelulusan = 'menunggu';
+                $tahapan->sk_gelombang_kelulusan = null;
+            }
+
+            $tahapan->save();
+
+            LogTahapanSpmb::create([
+                'peserta_id' => $peserta->id,
+                'tahap' => $tahapBaru,
+                'aksi' => $aksi,
+                'status_lama' => (bool) $statusLama,
+                'status_baru' => (bool) ($tahapan->{"tahap_{$tahapBaru}_selesai"} ?? false),
+                'pesan' => "Tahap diubah dari {$tahapLama} ke {$tahapBaru}" . ($luluskanFinal ? ' dan ditandai lulus.' : '.'),
+                'admin_id' => $adminId,
+            ]);
+        });
+    }
+
+    /**
+     * Pindahkan beberapa peserta ke tahap tertentu.
+     */
+    public function bulkPindahkanTahap(
+        array $pesertaIds,
+        int $tahapBaru,
+        ?int $adminId = null,
+        bool $luluskanFinal = false,
+        ?string $skGelombangId = null
+    ): int
+    {
+        $count = 0;
+
+        DB::transaction(function () use ($pesertaIds, $tahapBaru, $adminId, $luluskanFinal, $skGelombangId, &$count): void {
+            foreach ($pesertaIds as $pesertaId) {
+                $peserta = Peserta::find($pesertaId);
+                if (!$peserta) {
+                    continue;
+                }
+
+                $this->pindahkanTahap($peserta, $tahapBaru, $adminId, $luluskanFinal, 'bulk_update', $skGelombangId);
+                $count++;
+            }
+        });
+
         return $count;
     }
 
