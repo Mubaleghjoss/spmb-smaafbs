@@ -87,7 +87,8 @@ fi
 
 mkdir -p "$PUBLIC_ROOT"
 mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
-chmod -R 775 storage bootstrap/cache || true
+find storage bootstrap/cache -type d -exec chmod 775 {} \; || true
+find storage bootstrap/cache -type f -exec chmod 664 {} \; || true
 
 shopt -s dotglob nullglob
 for item in "$APP_ROOT"/public/*; do
