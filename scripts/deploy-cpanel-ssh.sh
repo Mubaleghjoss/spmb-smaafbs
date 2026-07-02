@@ -66,6 +66,8 @@ fi
 
 if command -v composer >/dev/null 2>&1; then
     composer install --no-dev --optimize-autoloader --no-interaction
+elif [ -f vendor/autoload.php ]; then
+    echo "composer command not found; using existing vendor directory."
 else
     echo "composer command not found. Install dependencies from cPanel Composer or upload vendor manually."
     exit 1
