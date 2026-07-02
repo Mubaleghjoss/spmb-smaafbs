@@ -114,7 +114,12 @@ require '${APP_ROOT}/vendor/autoload.php';
 PHP
 
 if [ -f artisan ]; then
-    php artisan key:generate --force --ansi
+    if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
+        php artisan key:generate --force --ansi
+    else
+        echo "APP_KEY already exists; keeping current key."
+    fi
+
     php artisan storage:link || true
     php artisan migrate --force --ansi
     php artisan optimize:clear --ansi
