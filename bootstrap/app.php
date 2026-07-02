@@ -20,6 +20,30 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
+        $exceptions->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Sesi kedaluwarsa. Silakan muat ulang halaman dan coba lagi.',
+                ], 419);
+            }
+
+            $message = 'Sesi kedaluwarsa. Silakan coba login kembali.';
+
+            if ($request->is('peserta/*')) {
+                return redirect()->route('peserta.login')->with('error', $message);
+            }
+
+            if ($request->is('login/token') || $request->is('ujian/*')) {
+                return redirect()->route('login.token')->with('error', $message);
+            }
+
+            if ($request->is('login') || $request->is('admin/*')) {
+                return redirect()->route('login')->with('error', $message);
+            }
+
+            return redirect()->back()->with('error', $message);
+        });
+
         $exceptions->renderable(function (\Illuminate\Http\Exceptions\PostTooLargeException $e, $request) {
             return back()
                 ->withInput()
