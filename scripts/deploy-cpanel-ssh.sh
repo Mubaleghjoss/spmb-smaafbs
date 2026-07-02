@@ -128,8 +128,8 @@ if [ -f artisan ]; then
         echo "PHP exec() is disabled; skipping storage:link."
     fi
 
-    php artisan migrate --force --ansi
     php artisan optimize:clear --ansi
+    php artisan migrate --force --ansi
     php artisan optimize --ansi
 fi
 
