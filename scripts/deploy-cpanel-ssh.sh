@@ -116,10 +116,10 @@ require '${APP_ROOT}/vendor/autoload.php';
 PHP
 
 if [ -f artisan ]; then
-    if ! grep -q '^APP_KEY=base64:' .env 2>/dev/null; then
-        php artisan key:generate --force --ansi
-    else
+    if php -r '$env = parse_ini_file(".env", false, INI_SCANNER_RAW); $key = $env["APP_KEY"] ?? ""; if (str_starts_with($key, "base64:")) { $decoded = base64_decode(substr($key, 7), true); exit($decoded !== false && in_array(strlen($decoded), [16, 32], true) ? 0 : 1); } exit(in_array(strlen($key), [16, 32], true) ? 0 : 1);'; then
         echo "APP_KEY already exists; keeping current key."
+    else
+        php artisan key:generate --force --ansi
     fi
 
     if php -r 'exit(function_exists("exec") ? 0 : 1);'; then
