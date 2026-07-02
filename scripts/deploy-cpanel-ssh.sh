@@ -122,7 +122,12 @@ if [ -f artisan ]; then
         echo "APP_KEY already exists; keeping current key."
     fi
 
-    php artisan storage:link || true
+    if php -r 'exit(function_exists("exec") ? 0 : 1);'; then
+        php artisan storage:link || true
+    else
+        echo "PHP exec() is disabled; skipping storage:link."
+    fi
+
     php artisan migrate --force --ansi
     php artisan optimize:clear --ansi
     php artisan optimize --ansi
