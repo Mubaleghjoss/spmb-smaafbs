@@ -1,0 +1,380 @@
+// ============================================================
+// SPMB Al Furqon — Modern Admin Theme
+// ============================================================
+
+// Google Fonts — Inter (loaded via <link> in layout, declared here for SCSS)
+$font-family-sans-serif: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+// Refined color palette — Emerald-based
+$primary:   #10b981;   // Emerald 500
+$secondary: #64748b;   // Slate 500
+$success:   #22c55e;   // Green 500
+$info:      #06b6d4;   // Cyan 500
+$warning:   #f59e0b;   // Amber 500
+$danger:    #ef4444;   // Red 500
+$light:     #f8fafc;   // Slate 50
+$dark:      #0f172a;   // Slate 900
+
+// Bootstrap import
+@import "bootstrap/scss/bootstrap";
+
+// ============================================================
+// Typography
+// ============================================================
+body {
+    font-family: $font-family-sans-serif;
+    background-color: #f1f5f9;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+// ============================================================
+// Sidebar — Glassmorphism
+// ============================================================
+.sidebar {
+    min-height: 100vh;
+    background: linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.92) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+
+    .nav-link {
+        border-radius: 0.5rem;
+        padding: 0.6rem 1rem;
+        margin-bottom: 2px;
+        transition: all 0.2s ease;
+        font-size: 0.9rem;
+        font-weight: 450;
+
+        &:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateX(4px);
+        }
+
+        &.active {
+            background: linear-gradient(135deg, $primary, darken($primary, 8%)) !important;
+            box-shadow: 0 4px 15px rgba($primary, 0.3);
+            font-weight: 500;
+        }
+
+        i {
+            width: 20px;
+            text-align: center;
+        }
+    }
+}
+
+// ============================================================
+// Cards — Modern Elevated Design
+// ============================================================
+.card {
+    border: none;
+    border-radius: 0.75rem;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+
+    &:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+    }
+
+    .card-header {
+        border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        background: transparent;
+        font-weight: 600;
+        padding: 1rem 1.25rem;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+}
+
+// ============================================================
+// Stat Cards — Dashboard KPIs
+// ============================================================
+.stat-card, .card-stat {
+    border-radius: 0.75rem;
+    overflow: hidden;
+    position: relative;
+
+    &::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, $primary, $info);
+    }
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+    }
+
+    .display-6, h2, h3 {
+        font-weight: 700;
+        background: linear-gradient(135deg, $dark, $secondary);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+}
+
+// ============================================================
+// Buttons — Gradient + Micro-animations
+// ============================================================
+.btn {
+    border-radius: 0.5rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.5rem 1.125rem;
+    transition: all 0.2s ease;
+    letter-spacing: 0.01em;
+
+    &:active {
+        transform: scale(0.97);
+    }
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, $primary 0%, darken($primary, 10%) 100%);
+    border: none;
+    box-shadow: 0 2px 8px rgba($primary, 0.25);
+
+    &:hover {
+        background: linear-gradient(135deg, darken($primary, 5%) 0%, darken($primary, 15%) 100%);
+        box-shadow: 0 4px 16px rgba($primary, 0.35);
+        transform: translateY(-1px);
+    }
+}
+
+.btn-success {
+    box-shadow: 0 2px 8px rgba($success, 0.2);
+    &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba($success, 0.3); }
+}
+
+.btn-danger {
+    box-shadow: 0 2px 8px rgba($danger, 0.2);
+    &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba($danger, 0.3); }
+}
+
+.btn-warning {
+    box-shadow: 0 2px 8px rgba($warning, 0.2);
+    &:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba($warning, 0.3); }
+}
+
+// ============================================================
+// Tables — Clean, Modern
+// ============================================================
+.table {
+    font-size: 0.875rem;
+
+    thead th {
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: $secondary;
+        border-bottom-width: 2px;
+        padding: 0.875rem 0.75rem;
+    }
+
+    tbody td {
+        padding: 0.75rem;
+        vertical-align: middle;
+    }
+
+    &.table-hover tbody tr {
+        transition: background-color 0.15s ease;
+
+        &:hover {
+            background-color: rgba($primary, 0.04);
+        }
+    }
+}
+
+// ============================================================
+// Forms — Refined Inputs
+// ============================================================
+.form-control, .form-select {
+    border-radius: 0.5rem;
+    border: 1.5px solid #e2e8f0;
+    padding: 0.625rem 0.875rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+
+    &:focus {
+        border-color: $primary;
+        box-shadow: 0 0 0 3px rgba($primary, 0.12);
+    }
+}
+
+.form-label {
+    font-weight: 500;
+    font-size: 0.875rem;
+    color: #475569;
+    margin-bottom: 0.375rem;
+}
+
+// ============================================================
+// Alerts — Modern with Gradient Border
+// ============================================================
+.alert {
+    border: none;
+    border-radius: 0.75rem;
+    border-left: 4px solid;
+    font-size: 0.9rem;
+
+    &.alert-success { border-left-color: $success; background: rgba($success, 0.08); color: darken($success, 30%); }
+    &.alert-danger  { border-left-color: $danger;  background: rgba($danger, 0.08);  color: darken($danger, 15%); }
+    &.alert-warning { border-left-color: $warning; background: rgba($warning, 0.08); color: darken($warning, 25%); }
+    &.alert-info    { border-left-color: $info;    background: rgba($info, 0.08);    color: darken($info, 25%); }
+}
+
+// ============================================================
+// Badges — Subtle with Hover
+// ============================================================
+.badge {
+    font-weight: 500;
+    font-size: 0.75rem;
+    padding: 0.375em 0.65em;
+    border-radius: 0.375rem;
+    letter-spacing: 0.02em;
+}
+
+// ============================================================
+// SPMB Progress Steps
+// ============================================================
+.spmb-step {
+    position: relative;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    background: white;
+    margin-bottom: 0.75rem;
+    border-left: 4px solid $secondary;
+    transition: all 0.2s ease;
+
+    &:hover {
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+    }
+
+    &.completed { border-left-color: $success; background: rgba($success, 0.04); }
+    &.active    { border-left-color: $primary; background: rgba($primary, 0.04); }
+    &.pending   { border-left-color: $warning; }
+}
+
+// ============================================================
+// Pagination — Compact
+// ============================================================
+.pagination {
+    margin-bottom: 0;
+    font-size: 0.875rem;
+
+    .page-link {
+        padding: 0.375rem 0.75rem;
+        font-size: 0.875rem;
+        border-radius: 0.375rem;
+        margin: 0 2px;
+    }
+}
+
+nav[role="navigation"] {
+    font-size: 0.875rem;
+}
+
+// ============================================================
+// Misc UI Elements
+// ============================================================
+.btn-hapus-jawaban {
+    padding: 0.375rem 0.75rem;
+}
+
+// Breadcrumb styling
+.breadcrumb {
+    font-size: 0.85rem;
+
+    .breadcrumb-item + .breadcrumb-item::before {
+        content: "›";
+    }
+}
+
+// ============================================================
+// Scrollbar — Slim Custom (webkit)
+// ============================================================
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 3px;
+
+    &:hover {
+        background: rgba(0, 0, 0, 0.25);
+    }
+}
+
+// ============================================================
+// Dark Mode — Premium Dark Theme
+// ============================================================
+[data-bs-theme="dark"] {
+    body {
+        background-color: #0f172a;
+    }
+
+    .card {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    .sidebar {
+        background: linear-gradient(135deg, rgba(2, 6, 23, 0.98) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border-right-color: rgba(255, 255, 255, 0.05);
+    }
+
+    .form-control, .form-select {
+        background-color: #1e293b;
+        border-color: #334155;
+        color: #e2e8f0;
+    }
+
+    .table {
+        color: #cbd5e1;
+
+        thead th {
+            color: #94a3b8;
+        }
+    }
+
+    .stat-card .display-6,
+    .stat-card h2,
+    .stat-card h3,
+    .card-stat .display-6,
+    .card-stat h2,
+    .card-stat h3 {
+        background: linear-gradient(135deg, #e2e8f0, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .spmb-step {
+        background: #1e293b;
+
+        &.completed { background: rgba($success, 0.08); }
+        &.active    { background: rgba($primary, 0.08); }
+    }
+}
