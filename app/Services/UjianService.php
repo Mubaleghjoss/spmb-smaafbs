@@ -331,7 +331,8 @@ class UjianService
                     return false;
                 }
                 $jawabanBenar = $soal->jawaban()->where('benar', true)->first();
-                return $jawabanBenar && $jawaban->jawaban_id === $jawabanBenar->id;
+                return $jawabanBenar
+                    && (int) $jawaban->jawaban_id === (int) $jawabanBenar->id;
 
             case 'jawaban_ganda':
                 if (empty($jawaban->jawaban_ganda)) {
@@ -340,6 +341,7 @@ class UjianService
                 $jawabanBenarIds = $soal->jawaban()
                     ->where('benar', true)
                     ->pluck('id')
+                    ->map(fn($id) => (int) $id)
                     ->sort()
                     ->values()
                     ->toArray();

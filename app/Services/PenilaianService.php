@@ -19,7 +19,7 @@ class PenilaianService
      * Hitung nilai sesi ujian (deterministik)
      * Kebutuhan: 6.1
      */
-    public function hitungNilai(SesiTes $sesi): float
+    public function hitungNilai(SesiTes $sesi, bool $simpanStatusJawaban = true): float
     {
         $totalBobot = 0;
         $nilaiDiperoleh = 0;
@@ -37,7 +37,9 @@ class PenilaianService
             $totalBobot += $bobotSoal;
 
             $benar = $this->cekJawabanBenar($jawaban, $soal);
-            $jawaban->update(['benar' => $benar]);
+            if ($simpanStatusJawaban) {
+                $jawaban->update(['benar' => $benar]);
+            }
 
             if ($benar) {
                 $nilaiDiperoleh += $bobotSoal;
@@ -63,7 +65,8 @@ class PenilaianService
                     return false;
                 }
                 $jawabanBenar = $soal->jawaban()->where('benar', true)->first();
-                return $jawabanBenar && $jawaban->jawaban_id === $jawabanBenar->id;
+                return $jawabanBenar
+                    && (int) $jawaban->jawaban_id === (int) $jawabanBenar->id;
 
             case 'jawaban_ganda':
                 if (empty($jawaban->jawaban_ganda)) {
@@ -72,6 +75,7 @@ class PenilaianService
                 $jawabanBenarIds = $soal->jawaban()
                     ->where('benar', true)
                     ->pluck('id')
+                    ->map(fn($id) => (int) $id)
                     ->sort()
                     ->values()
                     ->toArray();

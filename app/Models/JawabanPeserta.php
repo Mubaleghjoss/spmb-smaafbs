@@ -29,6 +29,9 @@ class JawabanPeserta extends Model
     protected function casts(): array
     {
         return [
+            'sesi_tes_id' => 'integer',
+            'soal_id' => 'integer',
+            'jawaban_id' => 'integer',
             'jawaban_ganda' => 'array',
             'benar' => 'boolean',
             'ragu' => 'boolean',
