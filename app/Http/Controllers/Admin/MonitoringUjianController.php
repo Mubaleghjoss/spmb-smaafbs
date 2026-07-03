@@ -69,7 +69,13 @@ class MonitoringUjianController extends Controller
 
         // Get sesi tes for displayed peserta
         $pesertaIds = $pesertaList->pluck('id');
-        $sesiTesAll = SesiTes::with('tes')
+        $sesiTesAll = SesiTes::with([
+                'tes',
+                'hasilGayaBelajar',
+                'hasilPsikotesKepribadian',
+                'hasilMbti',
+                'hasilProfiling',
+            ])
             ->whereIn('peserta_id', $pesertaIds)
             ->orderByDesc('created_at')
             ->get()
@@ -77,6 +83,14 @@ class MonitoringUjianController extends Controller
 
         // Get all available tes
         $semuaTes = \App\Models\Tes::orderBy('nama')->get();
+        $tesIds = $semuaTes->pluck('id');
+        $jenisTes = [
+            'psikotes' => \App\Models\PsikotesKepribadianConfig::whereIn('tes_id', $tesIds)->distinct()->pluck('tes_id')->flip(),
+            'gaya_belajar' => \App\Models\GayaBelajarConfig::whereIn('tes_id', $tesIds)->where('aktif', true)->pluck('tes_id')->flip(),
+            'mbti' => \App\Models\MbtiConfig::whereIn('tes_id', $tesIds)->distinct()->pluck('tes_id')->flip(),
+            'profiling' => \App\Models\ProfilingConfig::whereIn('tes_id', $tesIds)->where('aktif', true)->pluck('tes_id')->flip(),
+        ];
+        $pilarList = \App\Models\ProfilingConfig::pilarList();
 
         // Stats
         $totalPeserta = \App\Models\Peserta::count();
@@ -86,7 +100,7 @@ class MonitoringUjianController extends Controller
 
         $stats = compact('totalPeserta', 'sudahTes', 'sedangTes', 'selesaiTes');
 
-        return view('admin.monitoring-ujian.semua-peserta', compact('pesertaList', 'sesiTesAll', 'semuaTes', 'stats'));
+        return view('admin.monitoring-ujian.semua-peserta', compact('pesertaList', 'sesiTesAll', 'semuaTes', 'jenisTes', 'pilarList', 'stats'));
     }
 
     /**

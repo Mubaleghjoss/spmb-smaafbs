@@ -26,6 +26,25 @@
     </div>
     @endif
 
+    @php
+        $colorsPsikotes = [
+            'koleris' => 'danger',
+            'sanguin' => 'warning',
+            'plegmatis' => 'success',
+            'melankolis' => 'primary',
+        ];
+        $colorsGayaBelajar = [
+            'visual' => 'primary',
+            'auditori' => 'success',
+            'kinestetik' => 'warning',
+        ];
+        $iconsGayaBelajar = [
+            'visual' => 'eye',
+            'auditori' => 'ear',
+            'kinestetik' => 'hand-index',
+        ];
+    @endphp
+
     {{-- Stat Cards --}}
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-3">
@@ -163,17 +182,31 @@
                                             <th>Nama Tes</th>
                                             <th class="text-center" style="width:80px;">Status</th>
                                             <th class="text-center" style="width:60px;">Nilai</th>
+                                            <th class="text-center" style="min-width:150px;">Hasil</th>
                                             <th style="width:130px;">Waktu</th>
                                             <th class="text-center" style="width:200px;">Aksi Admin</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($sesiList as $sesi)
+                                        @php
+                                            $tesId = (int) $sesi->tes_id;
+                                            $isPsikotes = isset($jenisTes['psikotes'][$tesId]);
+                                            $isGayaBelajar = isset($jenisTes['gaya_belajar'][$tesId]);
+                                            $isMbti = isset($jenisTes['mbti'][$tesId]);
+                                            $isProfiling = isset($jenisTes['profiling'][$tesId]);
+                                            $isPsikometri = $isPsikotes || $isGayaBelajar || $isMbti || $isProfiling;
+                                            $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
+                                            $hasilPsikotes = ($isPsikotes && $bolehTampilkanHasilPsikometri) ? $sesi->hasilPsikotesKepribadian : null;
+                                            $hasilGayaBelajar = ($isGayaBelajar && $bolehTampilkanHasilPsikometri) ? $sesi->hasilGayaBelajar : null;
+                                            $hasilMbti = ($isMbti && $bolehTampilkanHasilPsikometri) ? $sesi->hasilMbti : null;
+                                            $hasilProfiling = ($isProfiling && $bolehTampilkanHasilPsikometri) ? $sesi->hasilProfiling : null;
+                                        @endphp
                                         <tr>
                                             <td>
                                                 <span class="fw-medium">{{ $sesi->tes->nama ?? 'Tes Dihapus' }}</span>
                                                 @if($sesi->tes)
-                                                <br><small class="text-muted">{{ $sesi->tes->durasi_menit }}m • KKM: {{ $sesi->tes->nilai_lulus }}</small>
+                                                <br><small class="text-muted">{{ $sesi->tes->durasi_menit }}m | {{ $isPsikometri ? 'Psikometri' : 'KKM: ' . $sesi->tes->nilai_lulus }}</small>
                                                 @endif
                                             </td>
                                             <td class="text-center align-middle">
@@ -194,8 +227,64 @@
                                                         <span class="badge bg-secondary">{{ $sesi->status }}</span>
                                                 @endswitch
                                             </td>
-                                            <td class="text-center align-middle fw-bold {{ $sesi->nilai !== null ? ($sesi->tes && $sesi->nilai >= $sesi->tes->nilai_lulus ? 'text-success' : 'text-danger') : '' }}">
-                                                {{ $sesi->nilai !== null ? number_format($sesi->nilai, 1) : '-' }}
+                                            <td class="text-center align-middle fw-bold {{ !$isPsikometri && $sesi->nilai !== null ? ($sesi->tes && $sesi->nilai >= $sesi->tes->nilai_lulus ? 'text-success' : 'text-danger') : '' }}">
+                                                {{ (!$isPsikometri && $sesi->nilai !== null) ? number_format($sesi->nilai, 1) : '-' }}
+                                            </td>
+                                            <td class="text-center align-middle">
+                                                @if($sesi->status === 'timeout')
+                                                    <span class="badge bg-warning text-dark">
+                                                        <i class="bi bi-hourglass-bottom me-1"></i>Waktu Habis
+                                                    </span>
+                                                @elseif($isMbti && $hasilMbti)
+                                                    <span class="badge bg-success fs-6">
+                                                        <i class="bi bi-diagram-3 me-1"></i>{{ $hasilMbti->tipe_mbti }}
+                                                    </span>
+                                                @elseif($isProfiling && $hasilProfiling)
+                                                    @php
+                                                        $skorProfiling = $hasilProfiling->getSkorArray();
+                                                    @endphp
+                                                    <span class="badge bg-{{ $pilarList[$hasilProfiling->pilar_dominan]['warna'] ?? 'secondary' }}">
+                                                        <i class="bi bi-{{ $pilarList[$hasilProfiling->pilar_dominan]['icon'] ?? 'person' }}"></i>
+                                                        {{ $pilarList[$hasilProfiling->pilar_dominan]['kode_qx'] ?? ucfirst($hasilProfiling->pilar_dominan) }}: {{ $skorProfiling[$hasilProfiling->pilar_dominan] ?? '-' }}
+                                                    </span>
+                                                    @if($hasilProfiling->pilar_dominan_2)
+                                                        <span class="badge bg-{{ $pilarList[$hasilProfiling->pilar_dominan_2]['warna'] ?? 'secondary' }}">
+                                                            <i class="bi bi-{{ $pilarList[$hasilProfiling->pilar_dominan_2]['icon'] ?? 'person' }}"></i>
+                                                            {{ $pilarList[$hasilProfiling->pilar_dominan_2]['kode_qx'] ?? ucfirst($hasilProfiling->pilar_dominan_2) }}: {{ $skorProfiling[$hasilProfiling->pilar_dominan_2] ?? '-' }}
+                                                        </span>
+                                                    @endif
+                                                @elseif($isGayaBelajar && $hasilGayaBelajar)
+                                                    @php
+                                                        $hasilTipe = explode(' & ', $hasilGayaBelajar->hasil_gaya_belajar);
+                                                        $detailNilaiGB = $hasilGayaBelajar->detail_nilai ?? [];
+                                                    @endphp
+                                                    @foreach($hasilTipe as $tipe)
+                                                        <span class="badge bg-{{ $colorsGayaBelajar[$tipe] ?? 'secondary' }}">
+                                                            <i class="bi bi-{{ $iconsGayaBelajar[$tipe] ?? 'person' }}"></i>
+                                                            {{ ucfirst($tipe) }}: {{ $detailNilaiGB[$tipe] ?? '-' }}
+                                                        </span>
+                                                    @endforeach
+                                                @elseif($isPsikotes && $hasilPsikotes)
+                                                    @php
+                                                        $hasilTipePsikotes = explode(' & ', $hasilPsikotes->hasil_kepribadian);
+                                                        $detailNilaiPsikotes = $hasilPsikotes->detail_nilai ?? [];
+                                                    @endphp
+                                                    @foreach($hasilTipePsikotes as $tipePsikotes)
+                                                        <span class="badge bg-{{ $colorsPsikotes[$tipePsikotes] ?? 'secondary' }}">
+                                                            {{ ucfirst($tipePsikotes) }}: {{ $detailNilaiPsikotes[$tipePsikotes] ?? '-' }}
+                                                        </span>
+                                                    @endforeach
+                                                @elseif($sesi->status === 'berlangsung')
+                                                    <span class="badge bg-warning text-dark">Sedang Tes</span>
+                                                @elseif(!$isPsikometri && $sesi->nilai !== null && $sesi->tes)
+                                                    @if($sesi->nilai >= $sesi->tes->nilai_lulus || $sesi->status_verifikasi_tes === 'diloloskan')
+                                                        <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Lulus</span>
+                                                    @else
+                                                        <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Tidak Lulus</span>
+                                                    @endif
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
                                             </td>
                                             <td class="align-middle">
                                                 @if($sesi->waktu_mulai)
