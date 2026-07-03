@@ -125,6 +125,7 @@ Route::prefix('ujian')->name('ujian.')->middleware('cek.peserta')->group(functio
     Route::post('/sesi/{sesi}/jawaban', [\App\Http\Controllers\UjianController::class, 'simpanJawaban'])->name('simpan-jawaban');
     Route::post('/sesi/{sesi}/selesai', [\App\Http\Controllers\UjianController::class, 'selesai'])->name('selesai');
     Route::get('/sesi/{sesi}/hasil', [\App\Http\Controllers\UjianController::class, 'hasil'])->name('hasil');
+    Route::post('/sesi/{sesi}/permohonan-ulang', [\App\Http\Controllers\UjianController::class, 'ajukanPermohonanUlang'])->name('permohonan-ulang');
     Route::get('/sesi/{sesi}/waktu', [\App\Http\Controllers\UjianController::class, 'waktuTersisa'])->name('waktu-tersisa');
     Route::post('/sesi/{sesi}/peringatan', [\App\Http\Controllers\UjianController::class, 'catatPeringatan'])->name('catat-peringatan');
 });
@@ -171,6 +172,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/verifikasi/hasil-tes', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'hasilTes'])->name('verifikasi.hasil-tes');
     Route::post('/verifikasi/hasil-tes/{sesi}/loloskan', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'loloskanHasilTes'])->name('verifikasi.hasil-tes.loloskan');
     Route::post('/verifikasi/hasil-tes/{sesi}/tolak', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'tolakHasilTes'])->name('verifikasi.hasil-tes.tolak');
+    Route::post('/verifikasi/hasil-tes/{sesi}/setujui-perpanjangan', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'setujuiPerpanjanganTimeout'])->name('verifikasi.hasil-tes.setujui-perpanjangan');
+    Route::post('/verifikasi/hasil-tes/{sesi}/setujui-ulang-timeout', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'setujuiUlangTimeout'])->name('verifikasi.hasil-tes.setujui-ulang-timeout');
+    Route::post('/verifikasi/hasil-tes/{sesi}/tolak-permohonan-timeout', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'tolakPermohonanTimeout'])->name('verifikasi.hasil-tes.tolak-permohonan-timeout');
     Route::post('/verifikasi/hasil-tes/loloskan-batch', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'loloskanBatch'])->name('verifikasi.hasil-tes.loloskan-batch');
     Route::post('/verifikasi/hasil-tes/loloskan-semua', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'loloskanSemua'])->name('verifikasi.hasil-tes.loloskan-semua');
     Route::post('/verifikasi/hasil-tes/ulangi-batch', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'ulangiBatch'])->name('verifikasi.hasil-tes.ulangi-batch');
@@ -290,6 +294,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/hasil/{tes}/penilaian-esai', [\App\Http\Controllers\Admin\HasilController::class, 'penilaianEsai'])->name('hasil.penilaian-esai');
     Route::post('/hasil/{tes}/penilaian-esai/{jawaban}', [\App\Http\Controllers\Admin\HasilController::class, 'simpanPenilaianEsai'])->name('hasil.simpan-penilaian-esai');
     Route::post('/hasil/{tes}/hitung-ulang', [\App\Http\Controllers\Admin\HasilController::class, 'hitungUlang'])->name('hasil.hitung-ulang');
+    Route::post('/hasil/{tes}/peserta/{sesi}/hitung-ulang', [\App\Http\Controllers\Admin\HasilController::class, 'hitungUlangSesi'])->name('hasil.hitung-ulang-sesi');
     Route::post('/hasil/{tes}/hitung-ulang-mbti', [\App\Http\Controllers\Admin\HasilController::class, 'hitungUlangMbti'])->name('hasil.hitung-ulang-mbti');
     Route::post('/hasil/{tes}/hitung-ulang-profiling', [\App\Http\Controllers\Admin\HasilController::class, 'hitungUlangProfiling'])->name('hasil.hitung-ulang-profiling');
     Route::post('/hasil/{tes}/hitung-ulang-psikotes', [\App\Http\Controllers\Admin\HasilController::class, 'hitungUlangPsikotes'])->name('hasil.hitung-ulang-psikotes');

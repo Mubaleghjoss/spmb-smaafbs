@@ -16,6 +16,12 @@ class SesiTes extends Model
 {
     use HasFactory;
 
+    public const PERMOHONAN_ULANG_PENDING = 'pending';
+    public const PERMOHONAN_ULANG_DISETUJUI = 'disetujui';
+    public const PERMOHONAN_ULANG_DITOLAK = 'ditolak';
+    public const PERMOHONAN_TIPE_PERPANJANGAN = 'perpanjangan';
+    public const PERMOHONAN_TIPE_ULANG_DARI_AWAL = 'ulang_dari_awal';
+
     protected $table = 'sesi_tes';
 
     protected $fillable = [
@@ -28,6 +34,14 @@ class SesiTes extends Model
         'status',
         'status_verifikasi_tes',
         'catatan_verifikasi',
+        'permohonan_ulang_status',
+        'permohonan_ulang_tipe',
+        'permohonan_ulang_alasan',
+        'permohonan_ulang_pada',
+        'permohonan_ulang_menit',
+        'permohonan_ulang_catatan_admin',
+        'permohonan_ulang_diproses_oleh',
+        'permohonan_ulang_diproses_pada',
         'diverifikasi_oleh',
         'diverifikasi_pada',
         'urutan_soal',
@@ -43,6 +57,8 @@ class SesiTes extends Model
             'waktu_mulai' => 'datetime',
             'waktu_selesai' => 'datetime',
             'diverifikasi_pada' => 'datetime',
+            'permohonan_ulang_pada' => 'datetime',
+            'permohonan_ulang_diproses_pada' => 'datetime',
             'urutan_soal' => 'array',
             'nilai' => 'decimal:2',
         ];
@@ -54,6 +70,11 @@ class SesiTes extends Model
     public function verifikator(): BelongsTo
     {
         return $this->belongsTo(\App\Models\Pengguna::class, 'diverifikasi_oleh');
+    }
+
+    public function pemrosesPermohonanUlang(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Pengguna::class, 'permohonan_ulang_diproses_oleh');
     }
     
     /**
@@ -212,10 +233,32 @@ class SesiTes extends Model
     public function getJumlahDijawabAttribute(): int
     {
         return $this->jawabanPeserta()
-            ->whereNotNull('jawaban_id')
-            ->orWhereNotNull('jawaban_esai')
-            ->orWhereNotNull('jawaban_ganda')
+            ->where(function ($query) {
+                $query->whereNotNull('jawaban_id')
+                    ->orWhereNotNull('jawaban_esai')
+                    ->orWhereNotNull('jawaban_ganda');
+            })
             ->count();
+    }
+
+    public function bisaAjukanPermohonanUlang(): bool
+    {
+        return $this->status === 'timeout'
+            && $this->permohonan_ulang_status !== self::PERMOHONAN_ULANG_PENDING;
+    }
+
+    public function permohonanUlangPending(): bool
+    {
+        return $this->permohonan_ulang_status === self::PERMOHONAN_ULANG_PENDING;
+    }
+
+    public function labelPermohonanUlangTipe(): string
+    {
+        return match ($this->permohonan_ulang_tipe) {
+            self::PERMOHONAN_TIPE_PERPANJANGAN => 'Perpanjangan Waktu',
+            self::PERMOHONAN_TIPE_ULANG_DARI_AWAL => 'Ulang dari 0',
+            default => '-',
+        };
     }
 
     /**

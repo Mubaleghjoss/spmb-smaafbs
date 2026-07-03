@@ -144,6 +144,7 @@ class UjianService
             // Hitung nilai
             $nilai = $this->hitungNilai($sesi);
             $tes = $sesi->tes;
+            $isTimeout = $status === 'timeout';
             
             // Cek apakah ini psikotes kepribadian
             $psikotesService = app(\App\Services\PsikotesKepribadianService::class);
@@ -180,28 +181,30 @@ class UjianService
             $sesi->update($updateData);
             $sesi->refresh();
             
-            // Jika psikotes, hitung dan simpan hasil kepribadian
-            if ($isPsikotes) {
-                $psikotesService->hitungHasil($sesi);
+            if (!$isTimeout) {
+                // Jika psikotes, hitung dan simpan hasil kepribadian
+                if ($isPsikotes) {
+                    $psikotesService->hitungHasil($sesi);
+                }
+
+                // Jika gaya belajar, hitung dan simpan hasil
+                if ($isGayaBelajar) {
+                    $gayaBelajarService->hitungHasil($sesi);
+                }
+
+                // Jika MBTI, hitung dan simpan hasil
+                if ($isMbti) {
+                    $mbtiService->hitungHasil($sesi);
+                }
+
+                // Jika Profiling, hitung dan simpan hasil
+                if ($isProfiling) {
+                    $profilingService->hitungHasil($sesi);
+                }
             }
             
-            // Jika gaya belajar, hitung dan simpan hasil
-            if ($isGayaBelajar) {
-                $gayaBelajarService->hitungHasil($sesi);
-            }
-            
-            // Jika MBTI, hitung dan simpan hasil
-            if ($isMbti) {
-                $mbtiService->hitungHasil($sesi);
-            }
-            
-            // Jika Profiling, hitung dan simpan hasil
-            if ($isProfiling) {
-                $profilingService->hitungHasil($sesi);
-            }
-            
-            // Jika lulus atau psikotes atau gaya belajar atau MBTI atau Profiling, cek apakah semua tes sudah selesai
-            if ($lulus || $isPsikotes || $isGayaBelajar || $isMbti || $isProfiling) {
+            // Timeout tidak otomatis menyelesaikan tahap karena peserta perlu keputusan admin.
+            if (!$isTimeout && ($lulus || $isPsikotes || $isGayaBelajar || $isMbti || $isProfiling)) {
                 $this->cekDanSelesaikanTahap4($sesi->peserta);
             }
 
@@ -232,6 +235,10 @@ class UjianService
             
             if (!$sesiTes) {
                 // Tes belum dikerjakan
+                return false;
+            }
+
+            if ($sesiTes->status === 'timeout' && $sesiTes->status_verifikasi_tes !== 'diloloskan') {
                 return false;
             }
             
@@ -337,6 +344,7 @@ class UjianService
                     ->values()
                     ->toArray();
                 $jawabanPesertaIds = collect($jawaban->jawaban_ganda)
+                    ->map(fn($id) => (int) $id)
                     ->sort()
                     ->values()
                     ->toArray();
@@ -504,6 +512,13 @@ class UjianService
             ->first();
 
         if ($sesiSelesai) {
+            if ($sesiSelesai->status === 'timeout' && $sesiSelesai->status_verifikasi_tes !== 'diloloskan') {
+                return [
+                    'bisa' => false,
+                    'pesan' => 'Sesi berakhir karena waktu habis. Ajukan perpanjangan waktu atau ulang dari 0.',
+                ];
+            }
+
             // Cek apakah ini psikotes
             $psikotesService = app(\App\Services\PsikotesKepribadianService::class);
             $isPsikotes = $psikotesService->isPsikotesKepribadian($tes);
@@ -586,6 +601,7 @@ class UjianService
     {
         $tes = $sesi->tes;
         $lulus = $sesi->nilai >= $tes->nilai_lulus;
+        $isTimeout = $sesi->status === 'timeout';
 
         $hasil = [
             'sesi' => $sesi,
@@ -596,14 +612,13 @@ class UjianService
             'waktu_mulai' => $sesi->waktu_mulai,
             'waktu_selesai' => $sesi->waktu_selesai,
             'durasi_menit' => $sesi->durasi_menit_bulat,
+            'is_timeout' => $isTimeout,
         ];
 
         // Cek apakah ini psikotes kepribadian
         $psikotesService = app(\App\Services\PsikotesKepribadianService::class);
         if ($psikotesService->isPsikotesKepribadian($tes)) {
-            // Hitung dan simpan hasil psikotes
-            $hasilPsikotes = $psikotesService->hitungHasil($sesi);
-            $hasil['psikotes_kepribadian'] = $hasilPsikotes;
+            $hasil['psikotes_kepribadian'] = $isTimeout ? null : $psikotesService->hitungHasil($sesi);
             $hasil['is_psikotes'] = true;
         } else {
             $hasil['is_psikotes'] = false;
@@ -612,9 +627,7 @@ class UjianService
         // Cek apakah ini tes gaya belajar
         $gayaBelajarService = app(\App\Services\GayaBelajarService::class);
         if ($gayaBelajarService->isGayaBelajar($tes)) {
-            // Hitung dan simpan hasil gaya belajar
-            $hasilGayaBelajar = $gayaBelajarService->hitungHasil($sesi);
-            $hasil['gaya_belajar'] = $hasilGayaBelajar;
+            $hasil['gaya_belajar'] = $isTimeout ? null : $gayaBelajarService->hitungHasil($sesi);
             $hasil['is_gaya_belajar'] = true;
         } else {
             $hasil['is_gaya_belajar'] = false;
@@ -623,8 +636,7 @@ class UjianService
         // Cek apakah ini tes MBTI
         $mbtiService = app(\App\Services\MbtiService::class);
         if ($mbtiService->isMbti($tes)) {
-            // Hitung dan simpan hasil MBTI
-            $hasilMbti = $mbtiService->hitungHasil($sesi);
+            $hasilMbti = $isTimeout ? null : $mbtiService->hitungHasil($sesi);
             $hasil['mbti'] = $hasilMbti;
             $hasil['is_mbti'] = true;
             
@@ -640,8 +652,7 @@ class UjianService
         // Cek apakah ini tes Profiling
         $profilingService = app(\App\Services\ProfilingService::class);
         if ($profilingService->isProfiling($tes)) {
-            // Hitung dan simpan hasil Profiling
-            $hasilProfiling = $profilingService->hitungHasil($sesi);
+            $hasilProfiling = $isTimeout ? null : $profilingService->hitungHasil($sesi);
             $hasil['profiling'] = $hasilProfiling;
             $hasil['is_profiling'] = true;
             
@@ -667,6 +678,7 @@ class UjianService
      */
     private function ambilDetailJawaban(SesiTes $sesi): array
     {
+        $penilaianService = app(\App\Services\PenilaianService::class);
         $jawabanList = $sesi->jawabanPeserta()
             ->with(['soal.jawaban', 'jawaban'])
             ->get();
@@ -680,7 +692,7 @@ class UjianService
                 'soal' => $soal,
                 'jawaban_peserta' => $jawaban,
                 'jawaban_benar' => $jawabanBenar,
-                'benar' => $jawaban->benar,
+                'benar' => $penilaianService->cekJawabanBenar($jawaban, $soal),
             ];
         }
 

@@ -130,7 +130,9 @@ class UjianController extends Controller
             
             $status = null;
             if ($sesiSelesai) {
-                if ($isMbti) {
+                if ($sesiSelesai->status === 'timeout' && $sesiSelesai->status_verifikasi_tes !== 'diloloskan') {
+                    $status = 'timeout';
+                } elseif ($isMbti) {
                     // MBTI selalu dianggap selesai (tidak ada lulus/tidak lulus)
                     $status = 'selesai_mbti';
                 } elseif ($isProfiling) {
@@ -393,6 +395,43 @@ class UjianController extends Controller
             'hasil' => $hasil,
             'tes' => $sesi->tes,
         ]);
+    }
+
+    public function ajukanPermohonanUlang(Request $request, SesiTes $sesi): RedirectResponse
+    {
+        $peserta = $this->getPeserta();
+
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->redirectSessionPesertaTidakSesuai();
+        }
+
+        $request->validate([
+            'tipe' => 'required|in:' . SesiTes::PERMOHONAN_TIPE_PERPANJANGAN . ',' . SesiTes::PERMOHONAN_TIPE_ULANG_DARI_AWAL,
+            'alasan' => 'required|string|max:500',
+        ], [
+            'tipe.required' => 'Pilih jenis permohonan.',
+            'tipe.in' => 'Jenis permohonan tidak valid.',
+            'alasan.required' => 'Alasan wajib diisi.',
+            'alasan.max' => 'Alasan maksimal 500 karakter.',
+        ]);
+
+        if (!$sesi->bisaAjukanPermohonanUlang()) {
+            return back()->with('error', 'Permohonan tidak dapat diajukan untuk sesi ini.');
+        }
+
+        $sesi->update([
+            'permohonan_ulang_status' => SesiTes::PERMOHONAN_ULANG_PENDING,
+            'permohonan_ulang_tipe' => $request->tipe,
+            'permohonan_ulang_alasan' => $request->alasan,
+            'permohonan_ulang_pada' => now(),
+            'permohonan_ulang_menit' => null,
+            'permohonan_ulang_catatan_admin' => null,
+            'permohonan_ulang_diproses_oleh' => null,
+            'permohonan_ulang_diproses_pada' => null,
+        ]);
+
+        return redirect()->route('ujian.index')
+            ->with('success', 'Permohonan berhasil dikirim. Silakan menunggu keputusan admin.');
     }
 
     /**

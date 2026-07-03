@@ -4,10 +4,41 @@
 
 @section('content')
 <div class="container py-4">
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                @if($hasil['is_mbti'] ?? false)
+                @if($hasil['is_timeout'] ?? false)
+                <div class="card-header bg-warning text-dark text-center py-4">
+                    <h2 class="mb-0">
+                        <i class="bi bi-hourglass-bottom me-2"></i> WAKTU HABIS
+                    </h2>
+                </div>
+                @elseif($hasil['is_mbti'] ?? false)
                 {{-- Header untuk MBTI --}}
                 <div class="card-header bg-success text-white text-center py-4">
                     <h2 class="mb-0">
@@ -53,7 +84,47 @@
                         <p class="text-muted">{{ session('peserta_nama') }}</p>
                     </div>
 
-                    @if($hasil['is_psikotes'] ?? false)
+                    @if($hasil['is_timeout'] ?? false)
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <h5 class="alert-heading"><i class="bi bi-hourglass-bottom me-2"></i>Sesi berakhir karena waktu habis</h5>
+                        <p class="mb-2">Hasil tes ini belum dianggap final. Jika Anda membutuhkan kesempatan melanjutkan atau mengulang, ajukan permohonan kepada admin.</p>
+
+                        @if($hasil['sesi']->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING)
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-clock-history me-1"></i>Menunggu keputusan admin
+                            </span>
+                            <div class="mt-2">Permohonan: <strong>{{ $hasil['sesi']->labelPermohonanUlangTipe() }}</strong></div>
+                            @if($hasil['sesi']->permohonan_ulang_alasan)
+                                <div class="small text-muted mt-1">Alasan: {{ $hasil['sesi']->permohonan_ulang_alasan }}</div>
+                            @endif
+                        @else
+                            @if($hasil['sesi']->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_DITOLAK)
+                                <div class="alert alert-danger py-2">
+                                    <strong>Permohonan sebelumnya ditolak.</strong>
+                                    @if($hasil['sesi']->permohonan_ulang_catatan_admin)
+                                        <div>{{ $hasil['sesi']->permohonan_ulang_catatan_admin }}</div>
+                                    @endif
+                                </div>
+                            @endif
+
+                            <form method="POST" action="{{ route('ujian.permohonan-ulang', $hasil['sesi']) }}">
+                                @csrf
+                                <div class="mb-3">
+                                    <label class="form-label">Alasan permohonan</label>
+                                    <textarea name="alasan" class="form-control" rows="3" required maxlength="500" placeholder="Jelaskan kendala saat tes...">{{ old('alasan') }}</textarea>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button type="submit" name="tipe" value="{{ \App\Models\SesiTes::PERMOHONAN_TIPE_PERPANJANGAN }}" class="btn btn-warning text-dark">
+                                        <i class="bi bi-plus-circle me-1"></i>Ajukan Perpanjangan Waktu
+                                    </button>
+                                    <button type="submit" name="tipe" value="{{ \App\Models\SesiTes::PERMOHONAN_TIPE_ULANG_DARI_AWAL }}" class="btn btn-outline-warning">
+                                        <i class="bi bi-arrow-repeat me-1"></i>Ajukan Ulang dari 0
+                                    </button>
+                                </div>
+                            </form>
+                        @endif
+                    </div>
+                    @elseif($hasil['is_psikotes'] ?? false)
                     {{-- Hasil Psikotes Kepribadian --}}
                     @php
                         $psikotes = $hasil['psikotes_kepribadian'];

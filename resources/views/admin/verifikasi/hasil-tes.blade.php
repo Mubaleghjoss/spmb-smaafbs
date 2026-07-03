@@ -18,6 +18,13 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     <div class="alert alert-info mb-4">
         <i class="bi bi-info-circle me-2"></i>
         Daftar peserta yang <strong>nilai tesnya masih di bawah nilai lulus</strong>. Peserta yang nilainya sudah memenuhi nilai lulus akan otomatis lolos dan tidak masuk daftar ini.
@@ -33,6 +40,174 @@
             {{ $jumlahLulusOtomatis }} hasil tes sudah memenuhi nilai lulus dan otomatis ditandai lolos.
         </div>
     @endif
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <h6 class="mb-0"><i class="bi bi-hourglass-bottom me-2"></i>Permohonan Timeout</h6>
+            <span class="badge bg-dark">{{ $permohonanTimeout->total() ?? 0 }}</span>
+        </div>
+        <div class="card-body">
+            @if(($permohonanTimeout ?? collect())->isEmpty())
+                <div class="text-center py-4">
+                    <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
+                    <p class="text-muted mb-0 mt-2">Tidak ada permohonan timeout yang menunggu keputusan.</p>
+                </div>
+            @else
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Peserta</th>
+                                <th>Tes</th>
+                                <th>Permohonan</th>
+                                <th>Alasan</th>
+                                <th>Waktu Habis</th>
+                                <th class="text-center">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($permohonanTimeout as $sesi)
+                                @php
+                                    $maxMenit = max((int) ($sesi->tes?->durasi_menit ?? 60), 1);
+                                    $defaultMenit = min(15, $maxMenit);
+                                @endphp
+                                <tr>
+                                    <td>
+                                        <strong>{{ $sesi->peserta->nama }}</strong>
+                                        <br><code>{{ $sesi->peserta->nomor_pendaftaran }}</code>
+                                    </td>
+                                    <td>
+                                        <strong>{{ $sesi->tes->nama }}</strong>
+                                        <br><small class="text-muted">Durasi {{ $sesi->tes->durasi_menit }} menit</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-warning text-dark">{{ $sesi->labelPermohonanUlangTipe() }}</span>
+                                        <br><small class="text-muted">{{ $sesi->permohonan_ulang_pada?->format('d/m/Y H:i') }}</small>
+                                    </td>
+                                    <td style="max-width: 320px;">
+                                        <small>{{ $sesi->permohonan_ulang_alasan }}</small>
+                                    </td>
+                                    <td>
+                                        <small>{{ $sesi->waktu_selesai?->format('d/m/Y H:i') ?? '-' }}</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                            <a href="{{ route('admin.hasil.detail-peserta', [$sesi->tes_id, $sesi]) }}"
+                                               class="btn btn-sm btn-info text-white">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-sm btn-warning text-dark" data-bs-toggle="modal" data-bs-target="#modalTimeoutPerpanjang{{ $sesi->id }}">
+                                                <i class="bi bi-plus-circle me-1"></i>Perpanjang
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalTimeoutUlang{{ $sesi->id }}">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Ulang
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalTimeoutTolak{{ $sesi->id }}">
+                                                <i class="bi bi-x-lg"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <div class="modal fade" id="modalTimeoutPerpanjang{{ $sesi->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="{{ route('admin.verifikasi.hasil-tes.setujui-perpanjangan', $sesi) }}" method="POST">
+                                                @csrf
+                                                <div class="modal-header bg-warning text-dark">
+                                                    <h5 class="modal-title"><i class="bi bi-plus-circle me-2"></i>Setujui Perpanjangan</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Peserta: <strong>{{ $sesi->peserta->nama }}</strong></p>
+                                                    <p>Tes: <strong>{{ $sesi->tes->nama }}</strong></p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Menit tambahan <span class="text-danger">*</span></label>
+                                                        <input type="number" name="menit" class="form-control" min="1" max="{{ $maxMenit }}" value="{{ $defaultMenit }}" required>
+                                                        <small class="text-muted">Maksimal {{ $maxMenit }} menit sesuai durasi tes.</small>
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Catatan admin</label>
+                                                        <textarea class="form-control" name="catatan" rows="2" maxlength="500" placeholder="Opsional"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" class="btn btn-warning text-dark">
+                                                        <i class="bi bi-check-lg me-1"></i>Setujui
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal fade" id="modalTimeoutUlang{{ $sesi->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="{{ route('admin.verifikasi.hasil-tes.setujui-ulang-timeout', $sesi) }}" method="POST">
+                                                @csrf
+                                                <div class="modal-header bg-warning text-dark">
+                                                    <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>Setujui Ulang dari 0</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="alert alert-warning">
+                                                        Semua jawaban dan hasil sementara peserta akan dihapus, lalu sesi dibuka ulang dari awal.
+                                                    </div>
+                                                    <p>Peserta: <strong>{{ $sesi->peserta->nama }}</strong></p>
+                                                    <p>Tes: <strong>{{ $sesi->tes->nama }}</strong></p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Catatan admin</label>
+                                                        <textarea class="form-control" name="catatan" rows="2" maxlength="500" placeholder="Opsional"></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" class="btn btn-warning text-dark">
+                                                        <i class="bi bi-check-lg me-1"></i>Setujui Ulang
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal fade" id="modalTimeoutTolak{{ $sesi->id }}" tabindex="-1">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <form action="{{ route('admin.verifikasi.hasil-tes.tolak-permohonan-timeout', $sesi) }}" method="POST">
+                                                @csrf
+                                                <div class="modal-header bg-danger text-white">
+                                                    <h5 class="modal-title"><i class="bi bi-x-circle me-2"></i>Tolak Permohonan</h5>
+                                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <p>Peserta: <strong>{{ $sesi->peserta->nama }}</strong></p>
+                                                    <div class="mb-3">
+                                                        <label class="form-label">Catatan penolakan <span class="text-danger">*</span></label>
+                                                        <textarea class="form-control" name="catatan" rows="3" required maxlength="500" placeholder="Alasan penolakan..."></textarea>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                                    <button type="submit" class="btn btn-danger">
+                                                        <i class="bi bi-x-lg me-1"></i>Tolak
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                {{ $permohonanTimeout->links() }}
+            @endif
+        </div>
+    </div>
 
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">

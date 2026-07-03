@@ -15,7 +15,7 @@ class KeamananService
     /**
      * Daftar tag HTML yang diizinkan
      */
-    private const ALLOWED_TAGS = '<p><br><strong><em><u><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><table><thead><tbody><tr><th><td><img><a><span><div>';
+    private const ALLOWED_TAGS = '<p><br><strong><em><u><ol><ul><li><h1><h2><h3><h4><h5><h6><blockquote><pre><code><table><thead><tbody><tr><th><td><img><a><span><div><sup><sub>';
 
     /**
      * Daftar ekstensi file yang diizinkan untuk upload

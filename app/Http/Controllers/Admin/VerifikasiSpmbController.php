@@ -7,6 +7,7 @@ use App\Models\Pembayaran;
 use App\Models\FormulirSpmb;
 use App\Models\Peserta;
 use App\Models\SesiTes;
+use App\Services\MonitoringUjianService;
 use App\Services\VerifikasiSpmbService;
 use App\Services\PembayaranService;
 use App\Enums\StatusPembayaran;
@@ -423,6 +424,10 @@ class VerifikasiSpmbController extends Controller
                 $q->where('status_verifikasi_tes', 'menunggu')
                   ->orWhereNull('status_verifikasi_tes');
             })
+            ->where(function ($q) {
+                $q->whereNull('permohonan_ulang_status')
+                  ->orWhere('permohonan_ulang_status', '!=', SesiTes::PERMOHONAN_ULANG_PENDING);
+            })
             ->whereHas('peserta')
             ->whereHas('tes', function ($q) {
                 $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
@@ -430,7 +435,15 @@ class VerifikasiSpmbController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('admin.verifikasi.hasil-tes', compact('sesiMenunggu', 'jumlahLulusOtomatis'));
+        $permohonanTimeout = SesiTes::with(['peserta', 'tes'])
+            ->where('status', 'timeout')
+            ->where('permohonan_ulang_status', SesiTes::PERMOHONAN_ULANG_PENDING)
+            ->whereHas('peserta')
+            ->whereHas('tes')
+            ->latest('permohonan_ulang_pada')
+            ->paginate(10, ['*'], 'permohonan_page');
+
+        return view('admin.verifikasi.hasil-tes', compact('sesiMenunggu', 'jumlahLulusOtomatis', 'permohonanTimeout'));
     }
 
     /**
@@ -483,6 +496,80 @@ class VerifikasiSpmbController extends Controller
 
         return redirect()->route('admin.verifikasi.hasil-tes')
             ->with('success', "Sesi tes '{$tesNama}' untuk {$pesertaNama} dihapus. Peserta dapat mengulang tes.");
+    }
+
+    public function setujuiPerpanjanganTimeout(Request $request, SesiTes $sesi): RedirectResponse
+    {
+        $maxMenit = max((int) ($sesi->tes?->durasi_menit ?? 60), 1);
+
+        $request->validate([
+            'menit' => "required|integer|min:1|max:{$maxMenit}",
+            'catatan' => 'nullable|string|max:500',
+        ]);
+
+        if (!$sesi->permohonanUlangPending()) {
+            return redirect()->route('admin.verifikasi.hasil-tes')
+                ->with('error', 'Permohonan ini sudah diproses atau belum diajukan.');
+        }
+
+        try {
+            app(MonitoringUjianService::class)->setujuiPerpanjanganTimeout(
+                $sesi,
+                (int) $request->menit,
+                auth('pengguna')->id(),
+                $request->catatan
+            );
+
+            return redirect()->route('admin.verifikasi.hasil-tes')
+                ->with('success', "Perpanjangan {$request->menit} menit untuk {$sesi->peserta?->nama} disetujui.");
+        } catch (\Exception $e) {
+            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+        }
+    }
+
+    public function setujuiUlangTimeout(Request $request, SesiTes $sesi): RedirectResponse
+    {
+        $request->validate([
+            'catatan' => 'nullable|string|max:500',
+        ]);
+
+        if (!$sesi->permohonanUlangPending()) {
+            return redirect()->route('admin.verifikasi.hasil-tes')
+                ->with('error', 'Permohonan ini sudah diproses atau belum diajukan.');
+        }
+
+        try {
+            app(MonitoringUjianService::class)->setujuiUlangDariAwalTimeout(
+                $sesi,
+                auth('pengguna')->id(),
+                $request->catatan
+            );
+
+            return redirect()->route('admin.verifikasi.hasil-tes')
+                ->with('success', "Permohonan ulang dari 0 untuk {$sesi->peserta?->nama} disetujui.");
+        } catch (\Exception $e) {
+            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+        }
+    }
+
+    public function tolakPermohonanTimeout(Request $request, SesiTes $sesi): RedirectResponse
+    {
+        $request->validate([
+            'catatan' => 'required|string|max:500',
+        ]);
+
+        try {
+            app(MonitoringUjianService::class)->tolakPermohonanTimeout(
+                $sesi,
+                auth('pengguna')->id(),
+                $request->catatan
+            );
+
+            return redirect()->route('admin.verifikasi.hasil-tes')
+                ->with('success', "Permohonan timeout {$sesi->peserta?->nama} ditolak.");
+        } catch (\Exception $e) {
+            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+        }
     }
 
     /**

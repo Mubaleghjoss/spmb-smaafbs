@@ -139,6 +139,8 @@ class MonitoringUjianService
     public function resetSesi(SesiTes $sesi): SesiTes
     {
         return DB::transaction(function () use ($sesi) {
+            $this->hapusHasilTurunan($sesi);
+
             // Hapus semua jawaban
             $sesi->jawabanPeserta()->delete();
 
@@ -148,6 +150,10 @@ class MonitoringUjianService
                 'waktu_selesai' => null,
                 'status' => 'berlangsung',
                 'nilai' => null,
+                'status_verifikasi_tes' => null,
+                'catatan_verifikasi' => null,
+                'diverifikasi_oleh' => null,
+                'diverifikasi_pada' => null,
                 'soal_saat_ini' => 1,
             ]);
 
@@ -161,6 +167,81 @@ class MonitoringUjianService
 
             return $sesi->fresh();
         });
+    }
+
+    public function setujuiPerpanjanganTimeout(
+        SesiTes $sesi,
+        int $menit,
+        int $adminId,
+        ?string $catatan = null
+    ): SesiTes {
+        if ($sesi->status !== 'timeout') {
+            throw new \Exception('Hanya sesi yang waktu habis yang bisa diperpanjang dari halaman verifikasi.');
+        }
+
+        return DB::transaction(function () use ($sesi, $menit, $adminId, $catatan) {
+            $this->hapusHasilTurunan($sesi);
+
+            $durasiMenit = max((int) ($sesi->tes?->durasi_menit ?? $menit), 1);
+            $menitDiberikan = min($menit, $durasiMenit);
+            $waktuMulaiBaru = now()->subMinutes(max($durasiMenit - $menitDiberikan, 0));
+
+            $sesi->update([
+                'waktu_mulai' => $waktuMulaiBaru,
+                'waktu_selesai' => null,
+                'status' => 'berlangsung',
+                'nilai' => null,
+                'status_verifikasi_tes' => null,
+                'catatan_verifikasi' => null,
+                'diverifikasi_oleh' => null,
+                'diverifikasi_pada' => null,
+                'permohonan_ulang_status' => SesiTes::PERMOHONAN_ULANG_DISETUJUI,
+                'permohonan_ulang_tipe' => SesiTes::PERMOHONAN_TIPE_PERPANJANGAN,
+                'permohonan_ulang_menit' => $menitDiberikan,
+                'permohonan_ulang_catatan_admin' => $catatan,
+                'permohonan_ulang_diproses_oleh' => $adminId,
+                'permohonan_ulang_diproses_pada' => now(),
+            ]);
+
+            return $sesi->fresh();
+        });
+    }
+
+    public function setujuiUlangDariAwalTimeout(SesiTes $sesi, int $adminId, ?string $catatan = null): SesiTes
+    {
+        if ($sesi->status !== 'timeout') {
+            throw new \Exception('Hanya sesi yang waktu habis yang bisa diulang dari halaman verifikasi.');
+        }
+
+        return DB::transaction(function () use ($sesi, $adminId, $catatan) {
+            $this->resetSesi($sesi);
+
+            $sesi->update([
+                'permohonan_ulang_status' => SesiTes::PERMOHONAN_ULANG_DISETUJUI,
+                'permohonan_ulang_tipe' => SesiTes::PERMOHONAN_TIPE_ULANG_DARI_AWAL,
+                'permohonan_ulang_catatan_admin' => $catatan,
+                'permohonan_ulang_diproses_oleh' => $adminId,
+                'permohonan_ulang_diproses_pada' => now(),
+            ]);
+
+            return $sesi->fresh();
+        });
+    }
+
+    public function tolakPermohonanTimeout(SesiTes $sesi, int $adminId, ?string $catatan = null): SesiTes
+    {
+        if ($sesi->permohonan_ulang_status !== SesiTes::PERMOHONAN_ULANG_PENDING) {
+            throw new \Exception('Permohonan ini sudah diproses atau belum diajukan.');
+        }
+
+        $sesi->update([
+            'permohonan_ulang_status' => SesiTes::PERMOHONAN_ULANG_DITOLAK,
+            'permohonan_ulang_catatan_admin' => $catatan,
+            'permohonan_ulang_diproses_oleh' => $adminId,
+            'permohonan_ulang_diproses_pada' => now(),
+        ]);
+
+        return $sesi->fresh();
     }
 
     /**
@@ -184,6 +265,14 @@ class MonitoringUjianService
         ]);
 
         return $sesi->fresh();
+    }
+
+    private function hapusHasilTurunan(SesiTes $sesi): void
+    {
+        $sesi->hasilGayaBelajar()->delete();
+        $sesi->hasilPsikotesKepribadian()->delete();
+        $sesi->hasilMbti()->delete();
+        $sesi->hasilProfiling()->delete();
     }
 
     /**

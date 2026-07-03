@@ -13,10 +13,20 @@
     $isKepribadian = $isMbti || $isPsikotes || $isGayaBelajar || $isProfiling;
     
     // Ambil hasil kepribadian jika ada
-    $hasilMbti = $isMbti ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
-    $hasilPsikotes = $isPsikotes ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
-    $hasilGB = $isGayaBelajar ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
-    $hasilProfiling = $isProfiling ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
+    $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
+    $hasilMbti = ($isMbti && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
+    $hasilPsikotes = ($isPsikotes && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
+    $hasilGB = ($isGayaBelajar && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
+    $hasilProfiling = ($isProfiling && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
+    $keamananService = app(\App\Services\KeamananService::class);
+    $renderRichText = fn ($value) => $keamananService->sanitasiHtml((string) $value);
+    $renderJawaban = function ($value) use ($keamananService) {
+        $html = $keamananService->sanitasiHtml((string) $value);
+        $html = preg_replace('/<\/?(p|div)[^>]*>/i', '', $html);
+        $html = trim($html ?? '');
+
+        return $html !== '' ? $html : '<span class="text-muted">-</span>';
+    };
 @endphp
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -49,6 +59,28 @@
         <div class="alert alert-success alert-dismissible fade show">
             <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if($hasPerbedaanPenilaian ?? false)
+        <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3">
+            <div>
+                <h6 class="alert-heading mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Nilai perlu dihitung ulang</h6>
+                <p class="mb-0">Ada jawaban yang status tersimpannya berbeda dari kunci jawaban saat ini. Tampilan di bawah sudah memakai kunci terkini.</p>
+            </div>
+            <form action="{{ route('admin.hasil.hitung-ulang-sesi', [$tes, $sesi]) }}" method="POST" class="flex-shrink-0">
+                @csrf
+                <button type="submit" class="btn btn-warning text-dark">
+                    <i class="bi bi-calculator me-1"></i>Hitung Ulang Sesi
+                </button>
+            </form>
         </div>
     @endif
 
@@ -136,9 +168,10 @@
                                 <h5 class="text-muted">{{ $pilarList[$pilarDominan]['kode_qx'] ?? '' }} - {{ $pilarList[$pilarDominan]['nama_qx'] ?? '' }}</h5>
                             @else
                                 <div class="alert alert-warning">
-                                    <i class="bi bi-exclamation-triangle me-2"></i>Hasil belum dihitung
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    {{ $sesi->status === 'timeout' ? 'Hasil belum final karena waktu habis.' : 'Hasil belum dihitung' }}
                                 </div>
-                                @if($isMbti)
+                                @if($isMbti && $sesi->status !== 'timeout')
                                 <form action="{{ route('admin.hasil.hitung-ulang-mbti', $tes) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-success">
@@ -262,14 +295,29 @@
                                     @case('selesai')
                                         <span class="badge bg-success">Selesai</span>
                                         @break
-                                    @case('timeout')
-                                        <span class="badge bg-warning">Waktu Habis</span>
+                        @case('timeout')
+                                        <span class="badge bg-warning text-dark">Waktu Habis</span>
                                         @break
                                     @default
                                         <span class="badge bg-secondary">{{ $sesi->status }}</span>
                                 @endswitch
                             </td>
                         </tr>
+                        @if($sesi->status === 'timeout')
+                        <tr>
+                            <td>Permohonan Timeout</td>
+                            <td>
+                                @if($sesi->permohonan_ulang_status)
+                                    <span class="badge bg-{{ $sesi->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING ? 'warning text-dark' : ($sesi->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_DISETUJUI ? 'success' : 'danger') }}">
+                                        {{ ucfirst($sesi->permohonan_ulang_status) }}
+                                    </span>
+                                    <small class="text-muted ms-1">{{ $sesi->labelPermohonanUlangTipe() }}</small>
+                                @else
+                                    <span class="text-muted">Belum diajukan</span>
+                                @endif
+                            </td>
+                        </tr>
+                        @endif
                         <tr>
                             <td>Peringatan Anti-Cheat</td>
                             <td>
@@ -485,7 +533,7 @@
                         
                         <div class="mb-3">
                             <strong>Pertanyaan:</strong>
-                            <div class="mt-1">{!! $detail['soal']->pertanyaan !!}</div>
+                            <div class="mt-1">{!! $renderRichText($detail['soal']->pertanyaan) !!}</div>
                         </div>
 
                         <div>
@@ -494,14 +542,14 @@
                                 @if($detail['soal']->tipe === 'jawaban_ganda')
                                     @if($detail['jawaban_peserta']->jawaban_ganda)
                                         @foreach($detail['soal']->jawaban->whereIn('id', $detail['jawaban_peserta']->jawaban_ganda) as $jwb)
-                                            <div class="text-primary">• {{ $jwb->isi_jawaban }}</div>
+                                            <div class="text-primary">&bull; {!! $renderJawaban($jwb->isi_jawaban) !!}</div>
                                         @endforeach
                                     @else
                                         <span class="text-muted">Tidak dijawab</span>
                                     @endif
                                 @else
                                     @if($detail['jawaban_peserta']->jawaban)
-                                        <span class="text-primary fw-bold">{{ $detail['jawaban_peserta']->jawaban->isi_jawaban }}</span>
+                                        <span class="text-primary fw-bold">{!! $renderJawaban($detail['jawaban_peserta']->jawaban->isi_jawaban) !!}</span>
                                     @else
                                         <span class="text-muted">Tidak dijawab</span>
                                     @endif
@@ -516,12 +564,15 @@
                             <span class="badge {{ $detail['benar'] ? 'bg-success' : 'bg-danger' }}">
                                 Soal {{ $index + 1 }} - {{ $detail['benar'] ? 'Benar' : 'Salah' }}
                             </span>
+                            @if($detail['perlu_hitung_ulang'] ?? false)
+                                <span class="badge bg-warning text-dark">Perlu hitung ulang</span>
+                            @endif
                             <span class="badge bg-secondary">{{ ucfirst(str_replace('_', ' ', $detail['soal']->tipe)) }}</span>
                         </div>
                         
                         <div class="mb-3">
                             <strong>Pertanyaan:</strong>
-                            <div class="mt-1">{!! $detail['soal']->pertanyaan !!}</div>
+                            <div class="mt-1">{!! $renderRichText($detail['soal']->pertanyaan) !!}</div>
                         </div>
 
                         @if(in_array($detail['soal']->tipe, ['pilihan_ganda', 'benar_salah', 'jawaban_ganda']))
@@ -532,7 +583,7 @@
                                         @if($detail['soal']->tipe === 'jawaban_ganda')
                                             @if($detail['jawaban_peserta']->jawaban_ganda)
                                                 @foreach($detail['soal']->jawaban->whereIn('id', $detail['jawaban_peserta']->jawaban_ganda) as $jwb)
-                                                    <div class="text-danger">• {{ $jwb->isi_jawaban }}</div>
+                                                    <div class="{{ $detail['benar'] ? 'text-success' : 'text-danger' }}">&bull; {!! $renderJawaban($jwb->isi_jawaban) !!}</div>
                                                 @endforeach
                                             @else
                                                 <span class="text-muted">Tidak dijawab</span>
@@ -540,7 +591,7 @@
                                         @else
                                             @if($detail['jawaban_peserta']->jawaban)
                                                 <span class="{{ $detail['benar'] ? 'text-success' : 'text-danger' }}">
-                                                    {{ $detail['jawaban_peserta']->jawaban->isi_jawaban }}
+                                                    {!! $renderJawaban($detail['jawaban_peserta']->jawaban->isi_jawaban) !!}
                                                 </span>
                                             @else
                                                 <span class="text-muted">Tidak dijawab</span>
@@ -553,14 +604,20 @@
                                     <div class="mt-1 text-success">
                                         @if($detail['soal']->tipe === 'jawaban_ganda')
                                             @foreach($detail['soal']->jawaban->where('benar', true) as $jwb)
-                                                <div>• {{ $jwb->isi_jawaban }}</div>
+                                                <div>&bull; {!! $renderJawaban($jwb->isi_jawaban) !!}</div>
                                             @endforeach
                                         @else
-                                            {{ $detail['jawaban_benar']?->isi_jawaban ?? '-' }}
+                                            {!! $detail['jawaban_benar'] ? $renderJawaban($detail['jawaban_benar']->isi_jawaban) : '<span class="text-muted">-</span>' !!}
                                         @endif
                                     </div>
                                 </div>
                             </div>
+                            @if($detail['perlu_hitung_ulang'] ?? false)
+                                <div class="alert alert-warning py-2 mt-3 mb-0">
+                                    Status tersimpan: <strong>{{ $detail['benar_tersimpan'] ? 'Benar' : 'Salah' }}</strong>.
+                                    Kunci saat ini: <strong>{{ $detail['benar_terkini'] ? 'Benar' : 'Salah' }}</strong>.
+                                </div>
+                            @endif
                         @elseif($detail['soal']->tipe === 'esai')
                             <div>
                                 <strong>Jawaban Peserta:</strong>
@@ -573,7 +630,7 @@
                         @if($detail['soal']->pembahasan)
                             <div class="mt-3 p-2 bg-info bg-opacity-10 rounded">
                                 <strong><i class="bi bi-lightbulb"></i> Pembahasan:</strong>
-                                <div class="mt-1">{!! $detail['soal']->pembahasan !!}</div>
+                                <div class="mt-1">{!! $renderRichText($detail['soal']->pembahasan) !!}</div>
                             </div>
                         @endif
                     </div>

@@ -172,7 +172,17 @@
                                         {{-- Info khusus untuk tahap 4 (Tes Online) jika sudah mengerjakan tapi tidak lulus --}}
                                         @if($nomor == 4 && isset($sesiTesList) && $sesiTesList->count() > 0)
                                             @foreach($sesiTesList as $sesiItem)
-                                                @if($sesiItem->status_verifikasi_tes === 'menunggu')
+                                                @if($sesiItem->status === 'timeout')
+                                                    <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
+                                                        <i class="bi bi-hourglass-bottom me-1"></i>
+                                                        <strong>{{ $sesiItem->tes->nama }}</strong>: Waktu habis.
+                                                        @if($sesiItem->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING)
+                                                            <br>Permohonan {{ $sesiItem->labelPermohonanUlangTipe() }} sedang menunggu keputusan admin.
+                                                        @else
+                                                            <br><a href="{{ route('ujian.index') }}" class="alert-link">Ajukan perpanjangan waktu atau ulang dari 0</a>.
+                                                        @endif
+                                                    </div>
+                                                @elseif($sesiItem->status_verifikasi_tes === 'menunggu')
                                                     <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
                                                         <i class="bi bi-hourglass-split me-1"></i>
                                                         <strong>{{ $sesiItem->tes->nama }}</strong>: Nilai {{ number_format($sesiItem->nilai, 1) }} (di bawah nilai lulus {{ $sesiItem->tes->nilai_lulus }})
@@ -187,7 +197,17 @@
                                                 @endif
                                             @endforeach
                                         @elseif($nomor == 4 && isset($sesiTes) && $sesiTes)
-                                            @if($sesiTes->status_verifikasi_tes === 'menunggu')
+                                            @if($sesiTes->status === 'timeout')
+                                                <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
+                                                    <i class="bi bi-hourglass-bottom me-1"></i>
+                                                    <strong>{{ $sesiTes->tes->nama }}</strong>: Waktu habis.
+                                                    @if($sesiTes->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING)
+                                                        <br>Permohonan {{ $sesiTes->labelPermohonanUlangTipe() }} sedang menunggu keputusan admin.
+                                                    @else
+                                                        <br><a href="{{ route('ujian.index') }}" class="alert-link">Ajukan perpanjangan waktu atau ulang dari 0</a>.
+                                                    @endif
+                                                </div>
+                                            @elseif($sesiTes->status_verifikasi_tes === 'menunggu')
                                                 <div class="alert alert-warning mt-2 mb-0 py-2 px-3 small">
                                                     <i class="bi bi-hourglass-split me-1"></i>
                                                     <strong>{{ $sesiTes->tes->nama }}</strong>: Nilai {{ number_format($sesiTes->nilai, 1) }} (di bawah nilai lulus {{ $sesiTes->tes->nilai_lulus }})

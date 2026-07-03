@@ -33,7 +33,7 @@ class DashboardSpmbController extends Controller
         
         // Ambil semua sesi tes yang menunggu verifikasi (untuk menampilkan nama tes)
         $sesiTesList = $peserta->sesiTes->filter(function($sesi) {
-            return in_array($sesi->status_verifikasi_tes, ['menunggu', 'ditolak']);
+            return $sesi->status === 'timeout' || in_array($sesi->status_verifikasi_tes, ['menunggu', 'ditolak']);
         });
         
         // Ambil sesi tes terakhir untuk backward compatibility

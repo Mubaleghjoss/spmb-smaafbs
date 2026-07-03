@@ -17,9 +17,27 @@
         </div>
     @endif
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     @if(session('error'))
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul class="mb-0">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
@@ -49,18 +67,19 @@
                     $isMbti = \App\Models\MbtiConfig::where('tes_id', $item['tes']->id)->exists();
                     $profilingConfig = \App\Models\ProfilingConfig::where('tes_id', $item['tes']->id)->first();
                     $isProfiling = $profilingConfig && $profilingConfig->aktif;
+                    $isTimeout = $item['sesi_selesai'] && $item['sesi_selesai']->status === 'timeout' && $item['status'] === 'timeout';
                     
-                    $hasilPsikotes = ($isPsikotes && $item['sesi_selesai']) 
-                        ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $item['sesi_selesai']->id)->first() 
+                    $hasilPsikotes = ($isPsikotes && $item['sesi_selesai'] && !$isTimeout)
+                        ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $item['sesi_selesai']->id)->first()
                         : null;
-                    $hasilGayaBelajar = ($isGayaBelajar && $item['sesi_selesai']) 
-                        ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $item['sesi_selesai']->id)->first() 
+                    $hasilGayaBelajar = ($isGayaBelajar && $item['sesi_selesai'] && !$isTimeout)
+                        ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $item['sesi_selesai']->id)->first()
                         : null;
-                    $hasilMbti = ($isMbti && $item['sesi_selesai']) 
-                        ? \App\Models\HasilMbti::where('sesi_tes_id', $item['sesi_selesai']->id)->first() 
+                    $hasilMbti = ($isMbti && $item['sesi_selesai'] && !$isTimeout)
+                        ? \App\Models\HasilMbti::where('sesi_tes_id', $item['sesi_selesai']->id)->first()
                         : null;
-                    $hasilProfiling = ($isProfiling && $item['sesi_selesai']) 
-                        ? \App\Models\HasilProfiling::where('sesi_tes_id', $item['sesi_selesai']->id)->first() 
+                    $hasilProfiling = ($isProfiling && $item['sesi_selesai'] && !$isTimeout)
+                        ? \App\Models\HasilProfiling::where('sesi_tes_id', $item['sesi_selesai']->id)->first()
                         : null;
                     
                     // Ambil daftar pilar untuk Profiling
@@ -149,9 +168,11 @@
                     
                     // Tentukan border class
                     $borderClass = '';
-                    $sudahDikerjakan = in_array($item['status'], ['lulus', 'diloloskan', 'selesai_psikotes', 'selesai_gaya_belajar', 'selesai_mbti', 'selesai_profiling']) || ($isMbti && $hasilMbti) || ($isProfiling && $hasilProfiling);
+                    $sudahDikerjakan = !$isTimeout && (in_array($item['status'], ['lulus', 'diloloskan', 'selesai_psikotes', 'selesai_gaya_belajar', 'selesai_mbti', 'selesai_profiling']) || ($isMbti && $hasilMbti) || ($isProfiling && $hasilProfiling));
                     if ($sudahDikerjakan) {
                         $borderClass = 'border-success';
+                    } elseif ($isTimeout) {
+                        $borderClass = 'border-warning';
                     } elseif ($item['status'] === 'menunggu') {
                         $borderClass = 'border-warning';
                     } elseif (!$item['bisa_akses']) {
@@ -166,7 +187,9 @@
                         <div class="d-flex justify-content-between align-items-start mb-2">
                             <h5 class="card-title mb-0">{{ $item['tes']->nama }}</h5>
                             <div class="d-flex align-items-center gap-1">
-                                @if($isMbti)
+                                @if($isTimeout)
+                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-bottom"></i> Waktu Habis</span>
+                                @elseif($isMbti)
                                     <span class="badge bg-success"><i class="bi bi-diagram-3"></i> MBTI</span>
                                 @elseif($isProfiling)
                                     <span class="badge bg-primary"><i class="bi bi-person-gear"></i> Profiling</span>
@@ -200,9 +223,47 @@
                             <li><i class="bi bi-clock me-2"></i>Durasi: {{ $item['tes']->durasi_menit }} menit</li>
                             <li><i class="bi bi-list-ol me-2"></i>Jumlah Soal: {{ $item['tes']->soal_count }}</li>
                         </ul>
+
+                        @if($isTimeout)
+                            <div class="alert alert-warning small">
+                                <div class="fw-bold mb-1">
+                                    <i class="bi bi-hourglass-bottom me-1"></i>Sesi berakhir karena waktu habis.
+                                </div>
+                                <p class="mb-2">Hasil tes belum dianggap final. Anda dapat mengajukan perpanjangan waktu atau ulang dari 0 kepada admin.</p>
+
+                                @if($item['sesi_selesai']->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING)
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock-history me-1"></i>Menunggu keputusan admin
+                                    </span>
+                                    <div class="mt-2 text-muted">Permohonan: {{ $item['sesi_selesai']->labelPermohonanUlangTipe() }}</div>
+                                @else
+                                    @if($item['sesi_selesai']->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_DITOLAK)
+                                        <div class="alert alert-danger py-2 mb-2">
+                                            <strong>Permohonan sebelumnya ditolak.</strong>
+                                            @if($item['sesi_selesai']->permohonan_ulang_catatan_admin)
+                                                <div>{{ $item['sesi_selesai']->permohonan_ulang_catatan_admin }}</div>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    <form method="POST" action="{{ route('ujian.permohonan-ulang', $item['sesi_selesai']) }}">
+                                        @csrf
+                                        <textarea name="alasan" class="form-control form-control-sm mb-2" rows="2" required maxlength="500" placeholder="Tulis alasan permohonan...">{{ old('alasan') }}</textarea>
+                                        <div class="d-flex gap-2 flex-wrap">
+                                            <button type="submit" name="tipe" value="{{ \App\Models\SesiTes::PERMOHONAN_TIPE_PERPANJANGAN }}" class="btn btn-sm btn-warning text-dark">
+                                                <i class="bi bi-plus-circle me-1"></i>Ajukan Perpanjangan Waktu
+                                            </button>
+                                            <button type="submit" name="tipe" value="{{ \App\Models\SesiTes::PERMOHONAN_TIPE_ULANG_DARI_AWAL }}" class="btn btn-sm btn-outline-warning">
+                                                <i class="bi bi-arrow-repeat me-1"></i>Ajukan Ulang dari 0
+                                            </button>
+                                        </div>
+                                    </form>
+                                @endif
+                            </div>
+                        @endif
                         
                         {{-- Tampilkan hasil gaya belajar dengan collapse --}}
-                        @if($isGayaBelajar && $hasilGayaBelajar)
+                        @if(!$isTimeout && $isGayaBelajar && $hasilGayaBelajar)
                             @php
                                 $hasilTipe = explode(' & ', $hasilGayaBelajar->hasil_gaya_belajar);
                             @endphp
@@ -255,7 +316,7 @@
                                 </div>
                             </div>
                         {{-- Tampilkan hasil psikotes kepribadian dengan collapse --}}
-                        @elseif($isPsikotes && $hasilPsikotes)
+                        @elseif(!$isTimeout && $isPsikotes && $hasilPsikotes)
                             @php
                                 $hasilTipePsikotes = explode(' & ', $hasilPsikotes->hasil_kepribadian);
                                 $detailNilaiPsikotes = $hasilPsikotes->detail_nilai ?? [];
@@ -310,7 +371,7 @@
                                 </div>
                             </div>
                         {{-- Tampilkan hasil MBTI dengan collapse --}}
-                        @elseif($isMbti && $hasilMbti)
+                        @elseif(!$isTimeout && $isMbti && $hasilMbti)
                             <div class="hasil-tes">
                                 <div class="d-flex align-items-center gap-2 mb-2">
                                     <strong class="small">Hasil: </strong>
@@ -402,7 +463,7 @@
                                 </div>
                             </div>
                         {{-- Tampilkan hasil Profiling dengan collapse --}}
-                        @elseif($isProfiling && $hasilProfiling)
+                        @elseif(!$isTimeout && $isProfiling && $hasilProfiling)
                             @php
                                 $pilarDominan = $hasilProfiling->pilar_dominan;
                                 $skorArray = $hasilProfiling->getSkorArray();
@@ -489,6 +550,10 @@
                                 <i class="bi bi-pencil-square me-1"></i> Mulai {{ $item['tes']->nama }}
                             </a>
                             @endif
+                        @elseif($isTimeout)
+                            <button class="btn btn-warning text-dark w-100" disabled>
+                                <i class="bi bi-hourglass-bottom me-1"></i>Waktu Habis
+                            </button>
                         @elseif($sudahDikerjakan)
                             <div class="d-flex gap-2">
                                 <button class="btn btn-success flex-grow-1" disabled>

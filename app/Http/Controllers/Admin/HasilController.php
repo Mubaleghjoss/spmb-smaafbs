@@ -226,16 +226,22 @@ class HasilController extends Controller
         $detailJawaban = $sesi->jawabanPeserta->map(function ($jawaban) {
             $soal = $jawaban->soal;
             $jawabanBenar = $soal->jawaban()->where('benar', true)->first();
+            $benarTerkini = $this->penilaianService->cekJawabanBenar($jawaban, $soal);
+            $benarTersimpan = $jawaban->benar;
 
             return [
                 'soal' => $soal,
                 'jawaban_peserta' => $jawaban,
                 'jawaban_benar' => $jawabanBenar,
-                'benar' => $jawaban->benar,
+                'benar' => $benarTerkini,
+                'benar_terkini' => $benarTerkini,
+                'benar_tersimpan' => $benarTersimpan,
+                'perlu_hitung_ulang' => $benarTersimpan !== null && (bool) $benarTersimpan !== $benarTerkini,
             ];
         });
+        $hasPerbedaanPenilaian = $detailJawaban->contains('perlu_hitung_ulang', true);
 
-        return view('admin.hasil.detail-peserta', compact('tes', 'sesi', 'detailJawaban'));
+        return view('admin.hasil.detail-peserta', compact('tes', 'sesi', 'detailJawaban', 'hasPerbedaanPenilaian'));
     }
 
     /**
@@ -281,6 +287,38 @@ class HasilController extends Controller
         $count = $this->penilaianService->hitungUlangNilaiTes($tes);
 
         return back()->with('success', "Berhasil menghitung ulang nilai untuk {$count} peserta.");
+    }
+
+    public function hitungUlangSesi(Tes $tes, SesiTes $sesi)
+    {
+        if ((int) $sesi->tes_id !== (int) $tes->id) {
+            abort(404);
+        }
+
+        $nilai = $this->penilaianService->hitungNilai($sesi);
+
+        $isKepribadian =
+            \App\Models\MbtiConfig::where('tes_id', $tes->id)->exists()
+            || \App\Models\PsikotesKepribadianConfig::where('tes_id', $tes->id)->exists()
+            || \App\Models\GayaBelajarConfig::where('tes_id', $tes->id)->where('aktif', true)->exists()
+            || \App\Models\ProfilingConfig::where('tes_id', $tes->id)->where('aktif', true)->exists();
+
+        $updateData = ['nilai' => $nilai];
+
+        if (!$isKepribadian && $sesi->status_verifikasi_tes !== 'diloloskan') {
+            if ($nilai < $tes->nilai_lulus) {
+                $updateData['status_verifikasi_tes'] = 'menunggu';
+            } else {
+                $updateData['status_verifikasi_tes'] = null;
+                $updateData['catatan_verifikasi'] = null;
+                $updateData['diverifikasi_oleh'] = null;
+                $updateData['diverifikasi_pada'] = null;
+            }
+        }
+
+        $sesi->update($updateData);
+
+        return back()->with('success', "Nilai sesi {$sesi->peserta?->nama} berhasil dihitung ulang menjadi {$nilai}.");
     }
 
     /**
