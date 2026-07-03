@@ -13,6 +13,20 @@
         </div>
     </div>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show">
+            <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
     {{-- Info Peserta --}}
     <div class="card mb-4">
         <div class="card-header bg-success text-white">
@@ -74,7 +88,7 @@
                 </div>
             @else
                 <div class="table-responsive">
-                    <table class="table table-hover mb-0">
+                    <table class="table table-hover align-middle mb-0">
                         <thead class="table-light">
                             <tr>
                                 <th width="50" class="text-center">#</th>
@@ -87,7 +101,7 @@
                                 <th class="text-center">Waktu Mulai</th>
                                 <th class="text-center">Waktu Selesai</th>
                                 <th class="text-center">Durasi</th>
-                                <th class="text-center">Aksi</th>
+                                <th class="text-center" style="min-width: 170px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -280,16 +294,59 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    <a href="{{ route('admin.hasil.detail-peserta', [$sesi->tes, $sesi]) }}" 
-                                       class="btn btn-sm btn-outline-primary" title="Lihat Detail Jawaban">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
+                                    <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                        <a href="{{ route('admin.hasil.detail-peserta', [$sesi->tes, $sesi]) }}"
+                                           class="btn btn-sm btn-info text-white" title="Lihat Detail Jawaban">
+                                            <i class="bi bi-eye me-1"></i>Detail
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-warning text-dark"
+                                                data-bs-toggle="modal" data-bs-target="#modalUlangTes{{ $sesi->id }}">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Ulangi
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
                 </div>
+
+                @foreach($sesiList as $sesi)
+                    <div class="modal fade" id="modalUlangTes{{ $sesi->id }}" tabindex="-1">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <form action="{{ route('admin.hasil.izinkan-ulang', [$sesi->tes, $sesi]) }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="redirect_to" value="peserta_rekap">
+                                    <div class="modal-header bg-warning text-dark">
+                                        <h5 class="modal-title"><i class="bi bi-arrow-repeat me-2"></i>Ulangi Tes</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="alert alert-warning">
+                                            <i class="bi bi-exclamation-triangle me-2"></i>
+                                            Sesi tes akan <strong>dihapus</strong> sehingga peserta dapat mengerjakan ulang tes ini dari awal.
+                                        </div>
+                                        <p>Peserta: <strong>{{ $peserta->nama }}</strong></p>
+                                        <p>Tes: <strong>{{ $sesi->tes->nama }}</strong></p>
+                                        <p>Status: <span class="badge bg-{{ $sesi->status === 'timeout' ? 'warning text-dark' : 'secondary' }}">{{ $sesi->status === 'timeout' ? 'Waktu Habis' : ucfirst($sesi->status) }}</span></p>
+                                        <div class="mb-3">
+                                            <label class="form-label">Alasan <span class="text-danger">*</span></label>
+                                            <textarea class="form-control" name="alasan" rows="2" required maxlength="500" placeholder="Alasan mengulang tes..."></textarea>
+                                        </div>
+                                        <p class="text-muted small mb-0">Jawaban, nilai, dan hasil psikometri pada sesi ini akan ikut dibersihkan.</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                                        <button type="submit" class="btn btn-warning text-dark">
+                                            <i class="bi bi-arrow-repeat me-1"></i>Ya, Ulangi Tes
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
             @endif
         </div>
     </div>

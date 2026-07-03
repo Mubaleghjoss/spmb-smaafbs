@@ -454,15 +454,38 @@ class HasilController extends Controller
      */
     public function izinkanUlang(Request $request, Tes $tes, SesiTes $sesi)
     {
-        $pesertaNama = $sesi->peserta->nama;
+        if ((int) $sesi->tes_id !== (int) $tes->id) {
+            abort(404);
+        }
 
-        // Hapus jawaban peserta
-        $sesi->jawabanPeserta()->delete();
-        // Hapus sesi tes
-        $sesi->delete();
+        $request->validate([
+            'alasan' => 'nullable|string|max:500',
+            'redirect_to' => 'nullable|in:peserta_rekap,tes_detail',
+        ]);
+
+        $peserta = $sesi->peserta;
+        $pesertaId = $sesi->peserta_id;
+        $pesertaNama = $peserta?->nama ?? 'Peserta';
+        $tesNama = $tes->nama;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($sesi) {
+            $sesi->hasilGayaBelajar()->delete();
+            $sesi->hasilPsikotesKepribadian()->delete();
+            $sesi->hasilMbti()->delete();
+            $sesi->hasilProfiling()->delete();
+            $sesi->jawabanPeserta()->delete();
+            $sesi->delete();
+        });
+
+        $message = "Sesi tes '{$tesNama}' untuk {$pesertaNama} berhasil dihapus. Peserta dapat mengulang tes.";
+
+        if ($request->input('redirect_to') === 'peserta_rekap') {
+            return redirect()->route('admin.hasil.detail-peserta-rekap', $pesertaId)
+                ->with('success', $message);
+        }
 
         return redirect()->route('admin.hasil.show', $tes)
-            ->with('success', "Sesi tes untuk {$pesertaNama} berhasil dihapus. Peserta dapat mengulang tes.");
+            ->with('success', $message);
     }
 
     /**
