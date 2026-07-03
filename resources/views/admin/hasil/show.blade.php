@@ -320,14 +320,18 @@
                     </thead>
                     <tbody>
                         @forelse($sesiList as $index => $sesi)
+                            @if(!$sesi->peserta)
+                                @continue
+                            @endif
                             @php
                                 $peringkatData = isset($peringkat) ? $peringkat->firstWhere('peserta.id', $sesi->peserta_id) : null;
-                                
+                                $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
+
                                 // Ambil hasil kepribadian jika ada
-                                $hasilMbti = $isMbti ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
-                                $hasilPsikotes = $isPsikotes ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
-                                $hasilGB = $isGayaBelajar ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
-                                $hasilProfiling = $isProfiling ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilMbti = ($isMbti && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilPsikotes = ($isPsikotes && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilGB = ($isGayaBelajar && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilProfiling = ($isProfiling && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
                             @endphp
                             <tr>
                                 @if(!$isKepribadian)
@@ -341,7 +345,11 @@
                                     <small class="text-muted">{{ $sesi->peserta->nomor_pendaftaran ?? '-' }}</small>
                                 </td>
                                 <td>
-                                    @if($isMbti && $hasilMbti)
+                                    @if($sesi->status === 'timeout')
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-hourglass-bottom me-1"></i>Waktu Habis
+                                        </span>
+                                    @elseif($isMbti && $hasilMbti)
                                         <span class="badge bg-success fs-5">
                                             <i class="bi bi-diagram-3 me-1"></i>{{ $hasilMbti->tipe_mbti }}
                                         </span>

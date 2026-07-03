@@ -74,12 +74,14 @@ class HasilController extends Controller
                 ];
             }
 
+            $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
+
             // Cek apakah ini psikotes kepribadian
             $isPsikotes = \App\Models\PsikotesKepribadianConfig::where('tes_id', $sesi->tes_id)->exists();
             $hasilKepribadian = null;
             $detailNilaiPsikotes = null;
 
-            if ($isPsikotes) {
+            if ($isPsikotes && $bolehTampilkanHasilPsikometri) {
                 $hasilPsikotes = \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first();
                 $hasilKepribadian = $hasilPsikotes?->hasil_kepribadian;
                 $detailNilaiPsikotes = $hasilPsikotes?->detail_nilai;
@@ -91,7 +93,7 @@ class HasilController extends Controller
             $hasilGayaBelajar = null;
             $detailNilaiGB = null;
 
-            if ($isGayaBelajar) {
+            if ($isGayaBelajar && $bolehTampilkanHasilPsikometri) {
                 $hasilGB = \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first();
                 $hasilGayaBelajar = $hasilGB?->hasil_gaya_belajar;
                 $detailNilaiGB = $hasilGB?->detail_nilai;
@@ -102,7 +104,7 @@ class HasilController extends Controller
             $hasilMbti = null;
             $hasilMbti2 = null;
 
-            if ($isMbti) {
+            if ($isMbti && $bolehTampilkanHasilPsikometri) {
                 $hasilMbtiData = \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first();
                 $hasilMbti = $hasilMbtiData?->tipe_mbti;
                 $hasilMbti2 = $hasilMbtiData?->tipe_mbti_2;
@@ -115,7 +117,7 @@ class HasilController extends Controller
             $pilarDominan2 = null;
             $skorProfiling = null;
 
-            if ($isProfiling) {
+            if ($isProfiling && $bolehTampilkanHasilPsikometri) {
                 $hasilProfilingData = \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first();
                 $pilarDominan = $hasilProfilingData?->pilar_dominan;
                 $pilarDominan2 = $hasilProfilingData?->pilar_dominan_2;
@@ -125,6 +127,7 @@ class HasilController extends Controller
             $rekapPeserta[$pesertaId]['hasil'][$sesi->tes_id] = [
                 'nilai' => $sesi->nilai,
                 'lulus' => $sesi->nilai >= $sesi->tes->nilai_lulus,
+                'status' => $sesi->status,
                 'waktu_selesai' => $sesi->waktu_selesai,
                 'is_psikotes' => $isPsikotes,
                 'hasil_kepribadian' => $hasilKepribadian,
@@ -193,6 +196,7 @@ class HasilController extends Controller
         $query = $tes->sesiTes()
             ->with('peserta')
             ->whereIn('status', ['selesai', 'timeout'])
+            ->whereHas('peserta')
             ->orderBy('nilai', 'desc');
 
         if ($request->filled('cari')) {
@@ -368,10 +372,13 @@ class HasilController extends Controller
         }
 
         $sesiList = SesiTes::where('tes_id', $tes->id)
-            ->whereIn('status', ['selesai', 'timeout'])
+            ->where('status', 'selesai')
             ->get();
 
-        $count = $sesiList->filter(fn($sesi) => $service->hitungHasil($sesi))->count();
+        $count = $sesiList
+            ->filter(fn($sesi) => $this->sesiLayakHitungPsikometri($sesi))
+            ->filter(fn($sesi) => $service->hitungHasil($sesi))
+            ->count();
 
         return back()->with('success', "Berhasil menghitung ulang hasil {$label} untuk {$count} peserta.");
     }
@@ -391,40 +398,55 @@ class HasilController extends Controller
         // Hitung ulang Psikotes
         $tesPsikotesIds = \App\Models\PsikotesKepribadianConfig::distinct()->pluck('tes_id');
         $sesiPsikotes = SesiTes::whereIn('tes_id', $tesPsikotesIds)
-            ->whereIn('status', ['selesai', 'timeout', 'selesai_psikotes'])
+            ->where('status', 'selesai')
             ->get();
         foreach ($sesiPsikotes as $sesi) {
-            if ($psikotesService->hitungHasil($sesi)) $count++;
+            if ($this->sesiLayakHitungPsikometri($sesi) && $psikotesService->hitungHasil($sesi)) $count++;
         }
 
         // Hitung ulang Gaya Belajar
         $tesGBIds = \App\Models\GayaBelajarConfig::where('aktif', true)->pluck('tes_id');
         $sesiGB = SesiTes::whereIn('tes_id', $tesGBIds)
-            ->whereIn('status', ['selesai', 'timeout', 'selesai_gaya_belajar'])
+            ->where('status', 'selesai')
             ->get();
         foreach ($sesiGB as $sesi) {
-            if ($gayaBelajarService->hitungHasil($sesi)) $count++;
+            if ($this->sesiLayakHitungPsikometri($sesi) && $gayaBelajarService->hitungHasil($sesi)) $count++;
         }
 
         // Hitung ulang MBTI
         $tesMbtiIds = \App\Models\MbtiConfig::distinct()->pluck('tes_id');
         $sesiMbti = SesiTes::whereIn('tes_id', $tesMbtiIds)
-            ->whereIn('status', ['selesai', 'timeout', 'selesai_mbti'])
+            ->where('status', 'selesai')
             ->get();
         foreach ($sesiMbti as $sesi) {
-            if ($mbtiService->hitungHasil($sesi)) $count++;
+            if ($this->sesiLayakHitungPsikometri($sesi) && $mbtiService->hitungHasil($sesi)) $count++;
         }
 
         // Hitung ulang Profiling
         $tesProfilingIds = \App\Models\ProfilingConfig::where('aktif', true)->pluck('tes_id');
         $sesiProfiling = SesiTes::whereIn('tes_id', $tesProfilingIds)
-            ->whereIn('status', ['selesai', 'timeout', 'selesai_profiling'])
+            ->where('status', 'selesai')
             ->get();
         foreach ($sesiProfiling as $sesi) {
-            if ($profilingService->hitungHasil($sesi)) $count++;
+            if ($this->sesiLayakHitungPsikometri($sesi) && $profilingService->hitungHasil($sesi)) $count++;
         }
 
         return back()->with('success', "Berhasil menghitung ulang {$count} hasil tes kepribadian (Psikotes, Gaya Belajar, MBTI, Profiling).");
+    }
+
+    private function sesiLayakHitungPsikometri(SesiTes $sesi): bool
+    {
+        if ($sesi->status !== 'selesai') {
+            return false;
+        }
+
+        return $sesi->jawabanPeserta()
+            ->where(function ($query) {
+                $query->whereNotNull('jawaban_id')
+                    ->orWhereNotNull('jawaban_ganda')
+                    ->orWhereNotNull('jawaban_esai');
+            })
+            ->exists();
     }
 
     /**
@@ -577,16 +599,17 @@ class HasilController extends Controller
             $pilarDominan = null;
             $detailProfiling = null;
             $detailMbti = null;
+            $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
 
-            if ($isPsikotes) {
+            if ($isPsikotes && $bolehTampilkanHasilPsikometri) {
                 $hasilPsikotes = \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first();
                 $hasilKepribadian = $hasilPsikotes?->hasil_kepribadian;
             }
-            if ($isGayaBelajar) {
+            if ($isGayaBelajar && $bolehTampilkanHasilPsikometri) {
                 $hasilGB = \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first();
                 $hasilGayaBelajar = $hasilGB?->hasil_gaya_belajar;
             }
-            if ($isMbti) {
+            if ($isMbti && $bolehTampilkanHasilPsikometri) {
                 $hasilMbtiData = \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first();
                 $hasilMbti = $hasilMbtiData?->tipe_mbti;
                 if ($hasilMbtiData) {
@@ -602,7 +625,7 @@ class HasilController extends Controller
                     ];
                 }
             }
-            if ($isProfiling) {
+            if ($isProfiling && $bolehTampilkanHasilPsikometri) {
                 $hasilProfilingData = \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first();
                 $pilarDominan = $hasilProfilingData?->pilar_dominan;
                 if ($hasilProfilingData) {
@@ -620,6 +643,7 @@ class HasilController extends Controller
                 'sesi' => $sesi,
                 'nilai' => $sesi->nilai,
                 'lulus' => $sesi->nilai >= $sesi->tes->nilai_lulus,
+                'status' => $sesi->status,
                 'is_psikotes' => $isPsikotes,
                 'hasil_kepribadian' => $hasilKepribadian,
                 'is_gaya_belajar' => $isGayaBelajar,

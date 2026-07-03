@@ -62,6 +62,10 @@ class GayaBelajarService
     public function hitungHasil(SesiTes $sesi): ?HasilGayaBelajar
     {
         $tes = $sesi->tes;
+
+        if ($sesi->status !== 'selesai') {
+            return null;
+        }
         
         if (!$this->isGayaBelajar($tes)) {
             return null;
@@ -74,6 +78,10 @@ class GayaBelajarService
         $jawabanPeserta = $sesi->jawabanPeserta()
             ->with(['soal', 'jawaban'])
             ->get();
+
+        if (!$jawabanPeserta->contains(fn($jawaban) => !empty($jawaban->jawaban_id))) {
+            return null;
+        }
 
         // Buat mapping nomor urut soal -> jawaban
         $soalDiTes = $tes->soal()->orderBy('tes_soal.urutan')->get();
@@ -91,7 +99,7 @@ class GayaBelajarService
             if ($jawaban && $jawaban->jawaban_id) {
                 // Ambil kode jawaban (A, B, C) dari urutan jawaban
                 $jawabanSoal = $soal->jawaban()->orderBy('urutan')->get();
-                $indexJawaban = $jawabanSoal->search(fn($j) => $j->id === $jawaban->jawaban_id);
+                $indexJawaban = $jawabanSoal->search(fn($j) => (int) $j->id === (int) $jawaban->jawaban_id);
                 
                 if ($indexJawaban !== false) {
                     $kodeJawaban = chr(65 + $indexJawaban); // 0=A, 1=B, 2=C
@@ -105,6 +113,10 @@ class GayaBelajarService
                     }
                 }
             }
+        }
+
+        if (array_sum($detailNilai) === 0) {
+            return null;
         }
 
         // Tentukan hasil (tipe dengan nilai tertinggi, jika sama tampilkan semua yang sama)

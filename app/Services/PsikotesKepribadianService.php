@@ -94,6 +94,10 @@ class PsikotesKepribadianService
             return null;
         }
 
+        if ($sesi->status !== 'selesai') {
+            return null;
+        }
+
         $config = $this->getConfig($tes);
         $nilaiJawaban = $this->getNilaiJawaban($tes)->keyBy('kode_jawaban');
         
@@ -101,6 +105,10 @@ class PsikotesKepribadianService
         $jawabanPeserta = $sesi->jawabanPeserta()
             ->with(['soal', 'jawaban'])
             ->get();
+
+        if (!$jawabanPeserta->contains(fn($jawaban) => !empty($jawaban->jawaban_id))) {
+            return null;
+        }
 
         // Buat mapping nomor urut soal -> jawaban
         $soalDiTes = $tes->soal()->orderBy('tes_soal.urutan')->get();
@@ -113,13 +121,17 @@ class PsikotesKepribadianService
             if ($jawaban && $jawaban->jawaban) {
                 // Ambil kode jawaban (A, B, C, D) dari urutan jawaban
                 $jawabanSoal = $soal->jawaban()->orderBy('urutan')->get();
-                $indexJawaban = $jawabanSoal->search(fn($j) => $j->id === $jawaban->jawaban_id);
+                $indexJawaban = $jawabanSoal->search(fn($j) => (int) $j->id === (int) $jawaban->jawaban_id);
                 
                 if ($indexJawaban !== false) {
                     $kodeJawaban = chr(65 + $indexJawaban); // 0=A, 1=B, 2=C, 3=D
                     $jawabanByNomor[$nomorSoal] = $kodeJawaban;
                 }
             }
+        }
+
+        if (empty($jawabanByNomor)) {
+            return null;
         }
 
         // Hitung total nilai per tipe kepribadian
@@ -135,6 +147,10 @@ class PsikotesKepribadianService
                 }
             }
             $detailNilai[$cfg->tipe_kepribadian] = $total;
+        }
+
+        if (array_sum($detailNilai) === 0) {
+            return null;
         }
 
         // Tentukan 2 hasil tertinggi

@@ -93,19 +93,20 @@
                         <tbody>
                             @foreach($sesiList as $index => $sesi)
                             @php
+                                $bolehTampilkanHasilPsikometri = $sesi->status !== 'timeout';
                                 $isPsikotes = \App\Models\PsikotesKepribadianConfig::where('tes_id', $sesi->tes_id)->exists();
-                                $hasilPsikotes = $isPsikotes ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilPsikotes = ($isPsikotes && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesi->id)->first() : null;
                                 
                                 $gayaBelajarConfig = \App\Models\GayaBelajarConfig::where('tes_id', $sesi->tes_id)->first();
                                 $isGayaBelajar = $gayaBelajarConfig && $gayaBelajarConfig->aktif;
-                                $hasilGayaBelajar = $isGayaBelajar ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilGayaBelajar = ($isGayaBelajar && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesi->id)->first() : null;
                                 
                                 $isMbti = \App\Models\MbtiConfig::where('tes_id', $sesi->tes_id)->exists();
-                                $hasilMbti = $isMbti ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilMbti = ($isMbti && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilMbti::where('sesi_tes_id', $sesi->id)->first() : null;
                                 
                                 $profilingConfig = \App\Models\ProfilingConfig::where('tes_id', $sesi->tes_id)->first();
                                 $isProfiling = $profilingConfig && $profilingConfig->aktif;
-                                $hasilProfiling = $isProfiling ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
+                                $hasilProfiling = ($isProfiling && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesi->id)->first() : null;
                                 
                                 $colors = [
                                     'koleris' => 'danger',
@@ -143,7 +144,11 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    @if($isMbti && $hasilMbti)
+                                    @if($sesi->status === 'timeout')
+                                        <span class="badge bg-warning text-dark fs-6">
+                                            <i class="bi bi-hourglass-bottom me-1"></i>Waktu Habis
+                                        </span>
+                                    @elseif($isMbti && $hasilMbti)
                                         {{-- Tampilkan hasil MBTI --}}
                                         <span class="badge bg-success fs-5">
                                             <i class="bi bi-diagram-3 me-1"></i>{{ $hasilMbti->tipe_mbti }}
@@ -189,7 +194,11 @@
                                     @endif
                                 </td>
                                 <td class="text-center">
-                                    @if($isMbti && $hasilMbti)
+                                    @if($sesi->status === 'timeout')
+                                        <span class="badge bg-warning text-dark fs-6">
+                                            <i class="bi bi-hourglass-bottom me-1"></i>Waktu Habis
+                                        </span>
+                                    @elseif($isMbti && $hasilMbti)
                                         {{-- Detail nilai MBTI --}}
                                         <button type="button" class="btn btn-sm btn-outline-success" 
                                                 data-bs-toggle="popover" 
@@ -381,25 +390,28 @@
                     <div class="d-flex flex-wrap gap-3">
                         @foreach($tesKepribadian as $sesiKep)
                             @php
+                                $bolehTampilkanHasilPsikometri = $sesiKep->status !== 'timeout';
                                 $isMbti = \App\Models\MbtiConfig::where('tes_id', $sesiKep->tes_id)->exists();
-                                $hasilMbti = $isMbti ? \App\Models\HasilMbti::where('sesi_tes_id', $sesiKep->id)->first() : null;
+                                $hasilMbti = ($isMbti && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilMbti::where('sesi_tes_id', $sesiKep->id)->first() : null;
                                 
                                 $isPsikotes = \App\Models\PsikotesKepribadianConfig::where('tes_id', $sesiKep->tes_id)->exists();
-                                $hasilPsikotes = $isPsikotes ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesiKep->id)->first() : null;
+                                $hasilPsikotes = ($isPsikotes && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilPsikotesKepribadian::where('sesi_tes_id', $sesiKep->id)->first() : null;
                                 
                                 $gayaBelajarConfig = \App\Models\GayaBelajarConfig::where('tes_id', $sesiKep->tes_id)->first();
                                 $isGayaBelajar = $gayaBelajarConfig && $gayaBelajarConfig->aktif;
-                                $hasilGayaBelajar = $isGayaBelajar ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesiKep->id)->first() : null;
+                                $hasilGayaBelajar = ($isGayaBelajar && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilGayaBelajar::where('sesi_tes_id', $sesiKep->id)->first() : null;
                                 
                                 $profilingConfig = \App\Models\ProfilingConfig::where('tes_id', $sesiKep->tes_id)->first();
                                 $isProfiling = $profilingConfig && $profilingConfig->aktif;
-                                $hasilProfiling = $isProfiling ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesiKep->id)->first() : null;
+                                $hasilProfiling = ($isProfiling && $bolehTampilkanHasilPsikometri) ? \App\Models\HasilProfiling::where('sesi_tes_id', $sesiKep->id)->first() : null;
                                 
                                 $pilarList = \App\Models\ProfilingConfig::pilarList();
                             @endphp
                             <div class="border rounded p-2">
                                 <small class="text-muted d-block">{{ $sesiKep->tes->nama }}</small>
-                                @if($isMbti && $hasilMbti)
+                                @if($sesiKep->status === 'timeout')
+                                    <span class="badge bg-warning text-dark">Waktu Habis</span>
+                                @elseif($isMbti && $hasilMbti)
                                     <span class="badge bg-success fs-6"><i class="bi bi-diagram-3 me-1"></i>{{ $hasilMbti->tipe_mbti }}</span>
                                 @elseif($isProfiling && $hasilProfiling)
                                     <span class="badge bg-{{ $pilarList[$hasilProfiling->pilar_dominan]['warna'] ?? 'primary' }} fs-6">

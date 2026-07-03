@@ -118,6 +118,11 @@ class MbtiService
     public function hitungHasil(SesiTes $sesi): ?HasilMbti
     {
         $tes = $sesi->tes;
+
+        if ($sesi->status !== 'selesai') {
+            return null;
+        }
+
         $config = $this->getConfig($tes);
 
         if ($config->isEmpty()) {
@@ -126,8 +131,12 @@ class MbtiService
 
         // Ambil jawaban peserta dengan relasi jawaban dan soal
         $jawabanPesertaList = JawabanPeserta::where('sesi_tes_id', $sesi->id)
-            ->with(['soal', 'jawaban'])
+            ->with(['soal.jawaban', 'jawaban'])
             ->get();
+
+        if (!$jawabanPesertaList->contains(fn($jawaban) => !empty($jawaban->jawaban_id))) {
+            return null;
+        }
         
         // Buat mapping berdasarkan urutan soal dalam tes
         // Ambil urutan soal dari pivot table tes_soal
@@ -223,6 +232,10 @@ class MbtiService
             'P' => ($skorPerBagian['JP']['bagian_1']['b'] ?? 0) + ($skorPerBagian['JP']['bagian_2']['b'] ?? 0) + ($skorPerBagian['JP']['bagian_3']['b'] ?? 0),
         ];
 
+        if (array_sum($totalSkor) === 0) {
+            return null;
+        }
+
         // Simpan hasil (hanya 1 tipe MBTI)
         return HasilMbti::updateOrCreate(
             ['sesi_tes_id' => $sesi->id],
@@ -253,36 +266,35 @@ class MbtiService
         foreach ($soalList as $nomorSoal) {
             $jawabanPeserta = $jawaban[$nomorSoal] ?? null;
             if ($jawabanPeserta && $jawabanPeserta->jawaban) {
-                $jawabanObj = $jawabanPeserta->jawaban;
-                $urutanJawaban = $jawabanObj->urutan ?? 0;
-                $isiJawaban = strtoupper(trim($jawabanObj->isi_jawaban ?? ''));
-                
-                // Tentukan apakah ini jawaban A atau B
-                $isJawabanA = false;
-                $isJawabanB = false;
-                
-                // Cek berdasarkan urutan (0=A, 1=B) - format database menggunakan 0-based index
-                if ($urutanJawaban === 0 || $urutanJawaban === '0') {
-                    $isJawabanA = true;
-                } elseif ($urutanJawaban === 1 || $urutanJawaban === '1') {
-                    $isJawabanB = true;
-                }
-                // Fallback: cek berdasarkan isi jawaban yang dimulai dengan A atau B
-                elseif (str_starts_with($isiJawaban, 'A.') || str_starts_with($isiJawaban, 'A ') || $isiJawaban === 'A') {
-                    $isJawabanA = true;
-                } elseif (str_starts_with($isiJawaban, 'B.') || str_starts_with($isiJawaban, 'B ') || $isiJawaban === 'B') {
-                    $isJawabanB = true;
-                }
-                
-                if ($isJawabanA) {
+                $hurufJawaban = $this->hurufJawaban($jawabanPeserta);
+
+                if ($hurufJawaban === 'A') {
                     $skorA++;
-                } elseif ($isJawabanB) {
+                } elseif ($hurufJawaban === 'B') {
                     $skorB++;
                 }
             }
         }
 
         return ['a' => $skorA, 'b' => $skorB];
+    }
+
+    private function hurufJawaban(JawabanPeserta $jawabanPeserta): ?string
+    {
+        if (!$jawabanPeserta->jawaban_id || !$jawabanPeserta->soal) {
+            return null;
+        }
+
+        $jawabanSoal = $jawabanPeserta->soal->jawaban
+            ->sortBy('urutan')
+            ->values();
+        $indexJawaban = $jawabanSoal->search(fn($jawaban) => (int) $jawaban->id === (int) $jawabanPeserta->jawaban_id);
+
+        if ($indexJawaban === false) {
+            return null;
+        }
+
+        return chr(65 + $indexJawaban);
     }
 
     /**

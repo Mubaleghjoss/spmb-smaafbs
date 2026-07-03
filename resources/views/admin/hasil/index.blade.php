@@ -56,6 +56,13 @@
         {{-- Statistik per Tes --}}
         <div class="row mb-3">
             @foreach($tesList as $tes)
+            @php
+                $isTesPsikometri =
+                    \App\Models\MbtiConfig::where('tes_id', $tes->id)->exists()
+                    || \App\Models\PsikotesKepribadianConfig::where('tes_id', $tes->id)->exists()
+                    || \App\Models\GayaBelajarConfig::where('tes_id', $tes->id)->where('aktif', true)->exists()
+                    || \App\Models\ProfilingConfig::where('tes_id', $tes->id)->where('aktif', true)->exists();
+            @endphp
             <div class="col-md-4 col-lg-3 mb-2">
                 <div class="card border-0 shadow-sm h-100">
                     <div class="card-body py-2">
@@ -65,8 +72,8 @@
                                 <span class="badge bg-primary">{{ $tes->peserta_selesai }} peserta</span>
                             </div>
                             <div class="text-end">
-                                <small class="text-muted">Nilai Lulus</small>
-                                <div class="fw-bold text-success">{{ $tes->nilai_lulus }}</div>
+                                <small class="text-muted">{{ $isTesPsikometri ? 'Jenis Tes' : 'Nilai Lulus' }}</small>
+                                <div class="fw-bold text-success">{{ $isTesPsikometri ? 'Psikometri' : $tes->nilai_lulus }}</div>
                             </div>
                         </div>
                     </div>
@@ -89,9 +96,16 @@
                                 <th style="min-width: 200px;">Nama Peserta</th>
                                 <th style="min-width: 180px;">Asal Sekolah SMP</th>
                                 @foreach($tesList as $tes)
+                                @php
+                                    $isTesPsikometri =
+                                        \App\Models\MbtiConfig::where('tes_id', $tes->id)->exists()
+                                        || \App\Models\PsikotesKepribadianConfig::where('tes_id', $tes->id)->exists()
+                                        || \App\Models\GayaBelajarConfig::where('tes_id', $tes->id)->where('aktif', true)->exists()
+                                        || \App\Models\ProfilingConfig::where('tes_id', $tes->id)->where('aktif', true)->exists();
+                                @endphp
                                 <th class="text-center" style="min-width: 120px;">
                                     {{ Str::limit($tes->nama, 15) }}
-                                    <br><small class="fw-normal opacity-75">(Lulus: {{ $tes->nilai_lulus }})</small>
+                                    <br><small class="fw-normal opacity-75">{{ $isTesPsikometri ? '(Psikometri)' : '(Lulus: ' . $tes->nilai_lulus . ')' }}</small>
                                 </th>
                                 @endforeach
                                 <th class="text-center" style="width: 80px;">Aksi</th>
@@ -118,6 +132,7 @@
                                             $isGayaBelajar = isset($hasil['is_gaya_belajar']) && $hasil['is_gaya_belajar'];
                                             $isMbti = isset($hasil['is_mbti']) && $hasil['is_mbti'];
                                             $isProfiling = isset($hasil['is_profiling']) && $hasil['is_profiling'];
+                                            $isTimeout = ($hasil['status'] ?? null) === 'timeout';
                                             $colors = [
                                                 'koleris' => 'danger',
                                                 'sanguin' => 'warning', 
@@ -136,7 +151,11 @@
                                             ];
                                             $pilarList = \App\Models\ProfilingConfig::pilarList();
                                         @endphp
-                                        @if($isMbti && isset($hasil['hasil_mbti']))
+                                        @if($isTimeout)
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="bi bi-hourglass-bottom"></i> Waktu Habis
+                                            </span>
+                                        @elseif($isMbti && isset($hasil['hasil_mbti']))
                                             {{-- MBTI: hanya 1 hasil --}}
                                             <span class="badge bg-success fs-6">
                                                 <i class="bi bi-diagram-3"></i> {{ $hasil['hasil_mbti'] }}

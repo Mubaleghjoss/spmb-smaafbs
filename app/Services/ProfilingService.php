@@ -135,6 +135,11 @@ class ProfilingService
     public function hitungHasil(SesiTes $sesi): ?HasilProfiling
     {
         $tes = $sesi->tes;
+
+        if ($sesi->status !== 'selesai') {
+            return null;
+        }
+
         $config = $this->getConfig($tes);
 
         if (!$config || !$config->aktif) {
@@ -149,8 +154,12 @@ class ProfilingService
 
         // Ambil jawaban peserta
         $jawabanPesertaList = JawabanPeserta::where('sesi_tes_id', $sesi->id)
-            ->with(['soal', 'jawaban'])
+            ->with(['soal.jawaban', 'jawaban'])
             ->get();
+
+        if (!$jawabanPesertaList->contains(fn($jawaban) => !empty($jawaban->jawaban_id))) {
+            return null;
+        }
 
         // Ambil urutan soal dari pivot table
         $tesSoal = DB::table('tes_soal')
@@ -181,9 +190,11 @@ class ProfilingService
                 continue;
             }
 
-            // Tentukan jawaban (A, B, C, D, E) berdasarkan urutan jawaban
-            $urutanJawaban = $jp->jawaban->urutan ?? 0;
-            $hurufJawaban = chr(65 + $urutanJawaban); // 0=A, 1=B, 2=C, 3=D, 4=E
+            $hurufJawaban = $this->hurufJawaban($jp);
+
+            if (!$hurufJawaban) {
+                continue;
+            }
 
             // Ambil pilar untuk jawaban ini
             $pilar = $soalMapping->getPilarForJawaban($hurufJawaban);
@@ -196,6 +207,10 @@ class ProfilingService
                 'jawaban' => $hurufJawaban,
                 'pilar' => $pilar,
             ];
+        }
+
+        if (array_sum($skor) === 0) {
+            return null;
         }
 
         // Tentukan pilar dominan (skor tertinggi, jika sama tampilkan semua yang sama)
@@ -218,6 +233,24 @@ class ProfilingService
                 'detail_jawaban' => $detailJawaban,
             ]
         );
+    }
+
+    private function hurufJawaban(JawabanPeserta $jawabanPeserta): ?string
+    {
+        if (!$jawabanPeserta->jawaban_id || !$jawabanPeserta->soal) {
+            return null;
+        }
+
+        $jawabanSoal = $jawabanPeserta->soal->jawaban
+            ->sortBy('urutan')
+            ->values();
+        $indexJawaban = $jawabanSoal->search(fn($jawaban) => (int) $jawaban->id === (int) $jawabanPeserta->jawaban_id);
+
+        if ($indexJawaban === false) {
+            return null;
+        }
+
+        return chr(65 + $indexJawaban);
     }
 
     /**
