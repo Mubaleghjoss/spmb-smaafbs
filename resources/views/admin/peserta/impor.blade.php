@@ -81,6 +81,10 @@
                         <li>Telepon</li>
                         <li>Alamat</li>
                         <li>Asal Sekolah</li>
+                        <li>Tahun Ajaran (opsional, contoh 2026-2027)</li>
+                        <li>Gelombang (opsional)</li>
+                        <li>Jenis Pendaftaran (siswa_baru/pindahan, opsional)</li>
+                        <li>Kelas Tujuan (10/11, opsional)</li>
                     </ol>
                     <div class="alert alert-info small mb-0">
                         <i class="bi bi-info-circle"></i> 

@@ -61,6 +61,15 @@
             {{-- TAB: TAHAP 1 - PENDAFTARAN --}}
             {{-- ======================================== --}}
             <div class="tab-pane fade show active" id="pane-tahap1" role="tabpanel">
+                <div class="alert alert-light border d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                    <div>
+                        <strong><i class="bi bi-calendar3 me-2"></i>Tahun Ajaran & Gelombang Pendaftaran</strong>
+                        <div class="text-muted small mt-1">Kelola pilihan periode yang tampil pada formulir pendaftaran peserta.</div>
+                    </div>
+                    <a href="{{ route('admin.pengaturan.spmb.periode') }}" class="btn btn-outline-primary">
+                        <i class="bi bi-sliders me-1"></i>Kelola Periode
+                    </a>
+                </div>
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mb-4 border-0 shadow-sm">

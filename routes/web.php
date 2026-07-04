@@ -259,6 +259,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::post('/peserta', [\App\Http\Controllers\Admin\PesertaController::class, 'store'])->name('peserta.store');
     Route::post('/peserta/impor', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImpor'])->name('peserta.impor.proses');
     Route::post('/peserta/bulk-assign-grup', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkAssignGrup'])->name('peserta.bulk-assign-grup');
+    Route::post('/peserta/bulk-update-kategori', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateKategori'])->name('peserta.bulk-update-kategori');
     Route::post('/peserta/bulk-update-tahap', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateTahap'])->name('peserta.bulk-update-tahap');
     Route::post('/peserta/{id}/restore', [\App\Http\Controllers\Admin\PesertaController::class, 'restore'])->name('peserta.restore');
     Route::get('/peserta/{peserta}', [\App\Http\Controllers\Admin\PesertaController::class, 'show'])->name('peserta.show');
@@ -375,6 +376,13 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/pengaturan/spmb', [\App\Http\Controllers\Admin\PengaturanController::class, 'spmb'])->name('pengaturan.spmb');
     Route::post('/pengaturan/spmb', [\App\Http\Controllers\Admin\PengaturanController::class, 'simpanSpmb'])->name('pengaturan.spmb.simpan');
     Route::post('/pengaturan/spmb/toggle-pendaftaran', [\App\Http\Controllers\Admin\PengaturanController::class, 'togglePendaftaran'])->name('pengaturan.spmb.toggle-pendaftaran');
+    Route::get('/pengaturan/spmb/periode', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'index'])->name('pengaturan.spmb.periode');
+    Route::post('/pengaturan/spmb/periode/tahun', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'storeTahun'])->name('pengaturan.spmb.periode.tahun.store');
+    Route::put('/pengaturan/spmb/periode/tahun/{tahunAjaran}', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'updateTahun'])->name('pengaturan.spmb.periode.tahun.update');
+    Route::delete('/pengaturan/spmb/periode/tahun/{tahunAjaran}', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'destroyTahun'])->name('pengaturan.spmb.periode.tahun.destroy');
+    Route::post('/pengaturan/spmb/periode/tahun/{tahunAjaran}/gelombang', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'storeGelombang'])->name('pengaturan.spmb.periode.gelombang.store');
+    Route::put('/pengaturan/spmb/periode/tahun/{tahunAjaran}/gelombang/{gelombang}', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'updateGelombang'])->name('pengaturan.spmb.periode.gelombang.update');
+    Route::delete('/pengaturan/spmb/periode/tahun/{tahunAjaran}/gelombang/{gelombang}', [\App\Http\Controllers\Admin\PeriodePendaftaranController::class, 'destroyGelombang'])->name('pengaturan.spmb.periode.gelombang.destroy');
     Route::get('/pengaturan/ujian', [\App\Http\Controllers\Admin\PengaturanController::class, 'ujian'])->name('pengaturan.ujian');
     Route::post('/pengaturan/ujian', [\App\Http\Controllers\Admin\PengaturanController::class, 'simpanUjian'])->name('pengaturan.ujian.simpan');
     Route::get('/pengaturan/ekspor', [\App\Http\Controllers\Admin\PengaturanController::class, 'ekspor'])->name('pengaturan.ekspor');

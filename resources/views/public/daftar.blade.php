@@ -51,8 +51,106 @@
                         </div>
                         @else
                         {{-- Form pendaftaran --}}
-                        <form method="POST" action="{{ route('daftar.proses') }}" x-data="formDaftar()">
+                        <form method="POST" action="{{ route('daftar.proses') }}"
+                              x-data="formDaftar(
+                                  @js($periodePendaftaran->map(fn($tahun) => [
+                                      'id' => (string) $tahun->id,
+                                      'nama' => $tahun->nama,
+                                      'gelombang' => $tahun->gelombangPendaftaran->map(fn($gelombang) => [
+                                          'id' => (string) $gelombang->id,
+                                          'nama' => $gelombang->nama,
+                                          'periode' => trim(
+                                              ($gelombang->tanggal_buka?->translatedFormat('d M Y') ?? '')
+                                              . ($gelombang->tanggal_tutup ? ' - ' . $gelombang->tanggal_tutup->translatedFormat('d M Y') : '')
+                                          ),
+                                      ])->values(),
+                                  ])->values()),
+                                  @js((string) old('tahun_ajaran_id', $tahunDefaultId)),
+                                  @js((string) old('gelombang_pendaftaran_id')),
+                                  @js(old('jenis_pendaftaran', 'siswa_baru')),
+                                  @js((string) old('kelas_tujuan', 10))
+                              )">
                             @csrf
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="tahun_ajaran_id" class="form-label">Tahun Ajaran <span class="text-danger">*</span></label>
+                                    <select id="tahun_ajaran_id"
+                                            name="tahun_ajaran_id"
+                                            class="form-select @error('tahun_ajaran_id') is-invalid @enderror"
+                                            x-model="tahunAjaranId"
+                                            @change="pilihTahun()"
+                                            required>
+                                        <option value="">Pilih tahun ajaran</option>
+                                        <template x-for="tahun in periode" :key="tahun.id">
+                                            <option :value="tahun.id" x-text="tahun.nama"></option>
+                                        </template>
+                                    </select>
+                                    @error('tahun_ajaran_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="gelombang_pendaftaran_id" class="form-label">Gelombang <span class="text-danger">*</span></label>
+                                    <select id="gelombang_pendaftaran_id"
+                                            name="gelombang_pendaftaran_id"
+                                            class="form-select @error('gelombang_pendaftaran_id') is-invalid @enderror"
+                                            x-model="gelombangId"
+                                            required>
+                                        <option value="">Pilih gelombang</option>
+                                        <template x-for="gelombang in gelombangTersedia" :key="gelombang.id">
+                                            <option :value="gelombang.id"
+                                                    x-text="gelombang.periode ? `${gelombang.nama} (${gelombang.periode})` : gelombang.nama"></option>
+                                        </template>
+                                    </select>
+                                    @error('gelombang_pendaftaran_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label d-block">Daftar Sebagai <span class="text-danger">*</span></label>
+                                <div class="btn-group w-100" role="group" aria-label="Jenis pendaftaran">
+                                    <input type="radio" class="btn-check" name="jenis_pendaftaran"
+                                           id="jenisSiswaBaru" value="siswa_baru"
+                                           x-model="jenisPendaftaran" @change="ubahJenis()" required>
+                                    <label class="btn btn-outline-success" for="jenisSiswaBaru">
+                                        <i class="bi bi-person-plus me-1"></i>Siswa Baru
+                                    </label>
+                                    <input type="radio" class="btn-check" name="jenis_pendaftaran"
+                                           id="jenisPindahan" value="pindahan"
+                                           x-model="jenisPendaftaran" @change="ubahJenis()" required>
+                                    <label class="btn btn-outline-primary" for="jenisPindahan">
+                                        <i class="bi bi-arrow-left-right me-1"></i>Pindahan
+                                    </label>
+                                </div>
+                                @error('jenis_pendaftaran')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="kelas_tujuan" class="form-label">Kelas Tujuan <span class="text-danger">*</span></label>
+                                <select id="kelas_tujuan"
+                                        name="kelas_tujuan"
+                                        class="form-select @error('kelas_tujuan') is-invalid @enderror"
+                                        x-model="kelasTujuan"
+                                        :disabled="jenisPendaftaran === 'siswa_baru'"
+                                        required>
+                                    <option value="10">Kelas 10</option>
+                                    <option value="11">Kelas 11</option>
+                                </select>
+                                <input type="hidden" name="kelas_tujuan" value="10"
+                                       x-show="jenisPendaftaran === 'siswa_baru'"
+                                       :disabled="jenisPendaftaran !== 'siswa_baru'">
+                                <div class="form-text" x-show="jenisPendaftaran === 'siswa_baru'">
+                                    Siswa baru otomatis mendaftar ke kelas 10.
+                                </div>
+                                @error('kelas_tujuan')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
                             
                             <div class="mb-3">
                                 <label for="nama" class="form-label">Nama Lengkap <span class="text-danger">*</span></label>
@@ -202,10 +300,36 @@
 
 @push('scripts')
 <script>
-function formDaftar() {
+function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) {
     return {
+        periode,
+        tahunAjaranId: tahunDefault,
+        gelombangId: gelombangLama,
+        jenisPendaftaran: jenisLama,
+        kelasTujuan: kelasLama,
         showPassword: false,
-        loading: false
+        loading: false,
+        get gelombangTersedia() {
+            return this.periode.find(tahun => tahun.id === this.tahunAjaranId)?.gelombang ?? [];
+        },
+        init() {
+            this.pilihTahun(true);
+            this.ubahJenis();
+        },
+        pilihTahun(pertahankanPilihan = false) {
+            const tersedia = this.gelombangTersedia;
+            const masihValid = tersedia.some(gelombang => gelombang.id === this.gelombangId);
+            if (!pertahankanPilihan || !masihValid) {
+                this.gelombangId = tersedia.length === 1 ? tersedia[0].id : '';
+            }
+        },
+        ubahJenis() {
+            if (this.jenisPendaftaran === 'siswa_baru') {
+                this.kelasTujuan = '10';
+            } else if (!['10', '11'].includes(this.kelasTujuan)) {
+                this.kelasTujuan = '10';
+            }
+        }
     }
 }
 </script>

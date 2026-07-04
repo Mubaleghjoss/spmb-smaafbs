@@ -6,6 +6,7 @@ use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Helpers\NomorPendaftaranHelper;
 use App\Services\PengaturanService;
+use App\Services\PeriodePendaftaranService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -16,7 +17,8 @@ use Carbon\Carbon;
 class PendaftaranController extends Controller
 {
     public function __construct(
-        private PengaturanService $pengaturanService
+        private PengaturanService $pengaturanService,
+        private PeriodePendaftaranService $periodePendaftaranService
     ) {}
 
     /**
@@ -27,28 +29,27 @@ class PendaftaranController extends Controller
         $spmb = $this->pengaturanService->ambilSpmb();
         $branding = $this->pengaturanService->ambilBranding();
         
-        // Cek apakah pendaftaran dibuka
-        $pendaftaranDibuka = $spmb['pendaftaran_buka'] ?? false;
-        $tanggalBuka = $spmb['tanggal_buka'] ?? null;
-        $tanggalTutup = $spmb['tanggal_tutup'] ?? null;
-        
-        // Cek berdasarkan tanggal jika ada
-        $now = Carbon::now();
-        $pesanTutup = null;
-        
-        if (!$pendaftaranDibuka) {
-            $pesanTutup = 'Pendaftaran SPMB saat ini sedang ditutup.';
-        } elseif ($tanggalBuka && $now < Carbon::parse($tanggalBuka)) {
+        [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran($spmb);
+        $periodePendaftaran = $this->periodePendaftaranService->pilihanPublik();
+
+        if ($pendaftaranDibuka && $periodePendaftaran->isEmpty()) {
             $pendaftaranDibuka = false;
-            $pesanTutup = 'Pendaftaran SPMB akan dibuka pada tanggal ' . Carbon::parse($tanggalBuka)->translatedFormat('d F Y') . '.';
-        } elseif ($tanggalTutup && $now > Carbon::parse($tanggalTutup)->endOfDay()) {
-            $pendaftaranDibuka = false;
-            $pesanTutup = 'Pendaftaran SPMB telah ditutup pada tanggal ' . Carbon::parse($tanggalTutup)->translatedFormat('d F Y') . '.';
+            $pesanTutup = 'Belum ada tahun ajaran dan gelombang pendaftaran yang sedang dibuka.';
         }
-        
+
+        $tahunDefaultId = $periodePendaftaran->firstWhere('default', true)?->id
+            ?? $periodePendaftaran->first()?->id;
         $syaratKetentuan = $this->pengaturanService->ambilSyaratKetentuan();
         
-        return view('public.daftar', compact('pendaftaranDibuka', 'pesanTutup', 'spmb', 'branding', 'syaratKetentuan'));
+        return view('public.daftar', compact(
+            'pendaftaranDibuka',
+            'pesanTutup',
+            'spmb',
+            'branding',
+            'syaratKetentuan',
+            'periodePendaftaran',
+            'tahunDefaultId'
+        ));
     }
 
     /**
@@ -56,10 +57,22 @@ class PendaftaranController extends Controller
      */
     public function proses(Request $request): RedirectResponse
     {
-        $request->validate([
+        [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran(
+            $this->pengaturanService->ambilSpmb()
+        );
+
+        if (!$pendaftaranDibuka) {
+            return back()->withInput()->with('error', $pesanTutup);
+        }
+
+        $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'telepon' => 'required|string|max:20|unique:peserta,telepon',
             'asal_sekolah' => 'required|string|max:255',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
+            'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
+            'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
+            'kelas_tujuan' => 'required|integer|in:10,11',
             'password' => 'required|string|min:8|confirmed',
             'setuju' => 'required|accepted',
         ], [
@@ -67,11 +80,17 @@ class PendaftaranController extends Controller
             'telepon.required' => 'Nomor HP/WhatsApp wajib diisi',
             'telepon.unique' => 'Nomor HP sudah terdaftar',
             'asal_sekolah.required' => 'Asal sekolah wajib diisi',
+            'tahun_ajaran_id.required' => 'Tahun ajaran wajib dipilih',
+            'gelombang_pendaftaran_id.required' => 'Gelombang pendaftaran wajib dipilih',
+            'jenis_pendaftaran.required' => 'Jenis pendaftaran wajib dipilih',
+            'kelas_tujuan.required' => 'Kelas tujuan wajib dipilih',
             'password.required' => 'Password wajib diisi',
             'password.min' => 'Password minimal 8 karakter',
             'password.confirmed' => 'Konfirmasi password tidak cocok',
             'setuju.required' => 'Anda harus menyetujui syarat dan ketentuan',
         ]);
+
+        $kategori = $this->periodePendaftaranService->validasiKategori($validated, true);
 
         try {
             DB::beginTransaction();
@@ -87,6 +106,7 @@ class PendaftaranController extends Controller
                 'telepon' => $request->telepon,
                 'asal_sekolah' => $request->asal_sekolah,
                 'password' => $request->password,
+                ...$kategori,
             ]);
 
             // Buat record tahapan SPMB
@@ -112,5 +132,37 @@ class PendaftaranController extends Controller
                 ->withInput()
                 ->with('error', 'Terjadi kesalahan saat mendaftar: ' . $e->getMessage());
         }
+    }
+
+    private function statusPendaftaran(array $spmb): array
+    {
+        $dibuka = (bool) ($spmb['pendaftaran_buka'] ?? false);
+        $tanggalBuka = $spmb['tanggal_buka'] ?? null;
+        $tanggalTutup = $spmb['tanggal_tutup'] ?? null;
+        $now = Carbon::now();
+
+        if (!$dibuka) {
+            return [false, 'Pendaftaran SPMB saat ini sedang ditutup.'];
+        }
+
+        if ($tanggalBuka && $now < Carbon::parse($tanggalBuka)->startOfDay()) {
+            return [
+                false,
+                'Pendaftaran SPMB akan dibuka pada tanggal '
+                    . Carbon::parse($tanggalBuka)->translatedFormat('d F Y')
+                    . '.',
+            ];
+        }
+
+        if ($tanggalTutup && $now > Carbon::parse($tanggalTutup)->endOfDay()) {
+            return [
+                false,
+                'Pendaftaran SPMB telah ditutup pada tanggal '
+                    . Carbon::parse($tanggalTutup)->translatedFormat('d F Y')
+                    . '.',
+            ];
+        }
+
+        return [true, null];
     }
 }

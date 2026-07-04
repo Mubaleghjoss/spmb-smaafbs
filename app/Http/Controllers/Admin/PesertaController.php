@@ -7,6 +7,9 @@ use App\Models\Peserta;
 use App\Services\PesertaService;
 use App\Services\GrupService;
 use App\Services\ImporEksporPesertaService;
+use App\Services\PeriodePendaftaranService;
+use App\Models\TahunAjaran;
+use App\Models\GelombangPendaftaran;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -21,7 +24,8 @@ class PesertaController extends Controller
     public function __construct(
         private PesertaService $pesertaService,
         private GrupService $grupService,
-        private ImporEksporPesertaService $imporEksporService
+        private ImporEksporPesertaService $imporEksporService,
+        private PeriodePendaftaranService $periodePendaftaranService
     ) {}
 
     /**
@@ -34,14 +38,27 @@ class PesertaController extends Controller
             'tahap' => $request->get('tahap'),
             'cari' => $request->get('cari'),
             'dengan_dihapus' => $request->boolean('dengan_dihapus'),
+            'tahun_ajaran_id' => $request->get('tahun_ajaran_id'),
+            'gelombang_pendaftaran_id' => $request->get('gelombang_pendaftaran_id'),
+            'jenis_pendaftaran' => $request->get('jenis_pendaftaran'),
+            'kelas_tujuan' => $request->get('kelas_tujuan'),
         ];
 
         $peserta = $this->pesertaService->ambilDenganFilter($filter, 15);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();
         $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
+        [$tahunAjaran, $gelombangPendaftaran] = $this->periodeOptions();
 
-        return view('admin.peserta.index', compact('peserta', 'grup', 'statistik', 'filter', 'skGelombang'));
+        return view('admin.peserta.index', compact(
+            'peserta',
+            'grup',
+            'statistik',
+            'filter',
+            'skGelombang',
+            'tahunAjaran',
+            'gelombangPendaftaran'
+        ));
     }
 
     /**
@@ -50,7 +67,15 @@ class PesertaController extends Controller
     public function create(): View
     {
         $grup = $this->grupService->ambilSemua();
-        return view('admin.peserta.create', compact('grup'));
+        [$tahunAjaran, $gelombangPendaftaran] = $this->periodeOptions();
+        $kategoriDefault = $this->periodePendaftaranService->kategoriDefault();
+
+        return view('admin.peserta.create', compact(
+            'grup',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+            'kategoriDefault'
+        ));
     }
 
     /**
@@ -66,8 +91,16 @@ class PesertaController extends Controller
             'alamat' => 'nullable|string',
             'asal_sekolah' => 'nullable|string|max:255',
             'grup_id' => 'nullable|exists:grup,id',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
+            'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
+            'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
+            'kelas_tujuan' => 'required|integer|in:10,11',
         ]);
 
+        $validated = [
+            ...$validated,
+            ...$this->periodePendaftaranService->validasiKategori($validated),
+        ];
         $this->pesertaService->buat($validated);
 
         return redirect()
@@ -80,7 +113,15 @@ class PesertaController extends Controller
      */
     public function show(Peserta $peserta): View
     {
-        $peserta->load(['tahapanSpmb', 'grup', 'formulirSpmb', 'pembayaran', 'logTahapan']);
+        $peserta->load([
+            'tahapanSpmb',
+            'grup',
+            'formulirSpmb',
+            'pembayaran',
+            'logTahapan',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+        ]);
         return view('admin.peserta.show', compact('peserta'));
     }
 
@@ -89,9 +130,18 @@ class PesertaController extends Controller
      */
     public function edit(Peserta $peserta): View
     {
-        $peserta->load('grup');
+        $peserta->load(['grup', 'tahunAjaran', 'gelombangPendaftaran']);
         $grup = $this->grupService->ambilSemua();
-        return view('admin.peserta.edit', compact('peserta', 'grup'));
+        [$tahunAjaran, $gelombangPendaftaran] = $this->periodeOptions();
+        $kategoriDefault = $this->periodePendaftaranService->kategoriDefault();
+
+        return view('admin.peserta.edit', compact(
+            'peserta',
+            'grup',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+            'kategoriDefault'
+        ));
     }
 
     /**
@@ -107,8 +157,16 @@ class PesertaController extends Controller
             'alamat' => 'nullable|string',
             'asal_sekolah' => 'nullable|string|max:255',
             'grup_id' => 'nullable|exists:grup,id',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
+            'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
+            'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
+            'kelas_tujuan' => 'required|integer|in:10,11',
         ]);
 
+        $validated = [
+            ...$validated,
+            ...$this->periodePendaftaranService->validasiKategori($validated),
+        ];
         $this->pesertaService->perbarui($peserta, $validated);
 
         return redirect()
@@ -177,6 +235,42 @@ class PesertaController extends Controller
         return redirect()
             ->back()
             ->with('success', "{$count} peserta berhasil ditambahkan ke grup.");
+    }
+
+    public function bulkUpdateKategori(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'peserta_ids' => 'required|array|min:1',
+            'peserta_ids.*' => 'exists:peserta,id',
+            'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
+            'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
+            'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
+            'kelas_tujuan' => 'required|integer|in:10,11',
+        ]);
+        $kategori = $this->periodePendaftaranService->validasiKategori($validated);
+        $count = $this->pesertaService->bulkPerbaruiKategori(
+            $validated['peserta_ids'],
+            $kategori
+        );
+
+        return back()->with('success', "{$count} peserta berhasil diperbarui kategorinya.");
+    }
+
+    private function periodeOptions(): array
+    {
+        return [
+            TahunAjaran::query()
+                ->with('gelombangPendaftaran')
+                ->orderByDesc('default')
+                ->orderByDesc('nama')
+                ->get(),
+            GelombangPendaftaran::query()
+                ->with('tahunAjaran')
+                ->orderBy('tahun_ajaran_id')
+                ->orderBy('tanggal_buka')
+                ->orderBy('nama')
+                ->get(),
+        ];
     }
 
     /**
@@ -369,7 +463,11 @@ class PesertaController extends Controller
      */
     public function downloadAkun(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $peserta = Peserta::with('tahapanSpmb')
+        $peserta = Peserta::with([
+            'tahapanSpmb',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+        ])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -382,7 +480,19 @@ class PesertaController extends Controller
             fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
             
             // Header
-            fputcsv($handle, ['No Pendaftaran', 'Nama', 'No HP/WA', 'Email', 'Password', 'Tahap', 'Tanggal Daftar'], ';');
+            fputcsv($handle, [
+                'No Pendaftaran',
+                'Nama',
+                'No HP/WA',
+                'Email',
+                'Password',
+                'Tahun Ajaran',
+                'Gelombang',
+                'Jenis Pendaftaran',
+                'Kelas Tujuan',
+                'Tahap',
+                'Tanggal Daftar',
+            ], ';');
             
             // Data
             foreach ($peserta as $p) {
@@ -392,6 +502,10 @@ class PesertaController extends Controller
                     $p->telepon,
                     $p->email ?? '-',
                     $p->password_temp ?? '(sudah diubah)',
+                    $p->tahunAjaran?->nama ?? '-',
+                    $p->gelombangPendaftaran?->nama ?? '-',
+                    $p->jenis_pendaftaran_label,
+                    $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
                     'Tahap ' . $p->tahap_saat_ini,
                     $p->created_at->format('d/m/Y H:i'),
                 ], ';');
@@ -408,7 +522,12 @@ class PesertaController extends Controller
      */
     public function downloadBiodata(): \Symfony\Component\HttpFoundation\StreamedResponse
     {
-        $peserta = Peserta::with(['formulirSpmb', 'tahapanSpmb'])
+        $peserta = Peserta::with([
+            'formulirSpmb',
+            'tahapanSpmb',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+        ])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -423,6 +542,7 @@ class PesertaController extends Controller
             // Header
             fputcsv($handle, [
                 'No Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin',
+                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan',
                 'Tempat Lahir', 'Provinsi Lahir', 'Tanggal Lahir',
                 'Asal Sekolah', 'NISN', 'Prestasi',
                 'Tinggi Badan', 'Berat Badan', 'Lingkar Kepala',
@@ -443,6 +563,10 @@ class PesertaController extends Controller
                     $p->nomor_pendaftaran,
                     $f?->nama_lengkap ?? $p->nama,
                     $f?->jenis_kelamin ?? '-',
+                    $p->tahunAjaran?->nama ?? '-',
+                    $p->gelombangPendaftaran?->nama ?? '-',
+                    $p->jenis_pendaftaran_label,
+                    $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
                     $f?->tempat_lahir ?? '-',
                     $f?->provinsi_lahir ?? '-',
                     $f?->tanggal_lahir?->format('d/m/Y') ?? '-',

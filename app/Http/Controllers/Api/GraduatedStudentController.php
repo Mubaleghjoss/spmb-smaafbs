@@ -24,6 +24,8 @@ class GraduatedStudentController extends Controller
             ->with([
                 'formulirSpmb',
                 'tahapanSpmb',
+                'tahunAjaran',
+                'gelombangPendaftaran',
                 'sesiTes' => fn ($query) => $query
                     ->whereIn('status', ['selesai', 'timeout'])
                     ->with([

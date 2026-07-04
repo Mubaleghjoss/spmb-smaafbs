@@ -20,6 +20,12 @@ class GraduatedStudentResource extends JsonResource
         $profiling = $this->latestResult('hasilProfiling');
 
         $payload = [
+            'pendaftaran' => [
+                'tahun_ajaran' => $this->tahunAjaran?->nama,
+                'gelombang' => $this->gelombangPendaftaran?->nama,
+                'jenis_pendaftaran' => $this->jenis_pendaftaran,
+                'kelas_tujuan' => $this->kelas_tujuan,
+            ],
             'biodata' => [
                 'nama' => $formulir?->nama_lengkap ?: $this->nama,
                 'email' => $formulir?->email ?: $this->email,
@@ -114,6 +120,8 @@ class GraduatedStudentResource extends JsonResource
             $this->updated_at,
             $this->formulirSpmb?->updated_at,
             $this->tahapanSpmb?->updated_at,
+            $this->tahunAjaran?->updated_at,
+            $this->gelombangPendaftaran?->updated_at,
         ]);
 
         $this->sesiTes->each(function (SesiTes $sesi) use ($timestamps): void {

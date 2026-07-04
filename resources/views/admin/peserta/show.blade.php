@@ -85,6 +85,23 @@
                                     <td>{{ $peserta->alamat ?? '-' }}</td>
                                 </tr>
                                 <tr>
+                                    <td class="text-muted">Tahun Ajaran</td>
+                                    <td>{{ $peserta->tahunAjaran?->nama ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Gelombang</td>
+                                    <td>{{ $peserta->gelombangPendaftaran?->nama ?? '-' }}</td>
+                                </tr>
+                                <tr>
+                                    <td class="text-muted">Jenis / Kelas</td>
+                                    <td>
+                                        {{ $peserta->jenis_pendaftaran_label }}
+                                        @if($peserta->kelas_tujuan)
+                                            <span class="badge bg-primary ms-1">Kelas {{ $peserta->kelas_tujuan }}</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td class="text-muted">Grup</td>
                                     <td>
                                         @forelse($peserta->grup as $g)

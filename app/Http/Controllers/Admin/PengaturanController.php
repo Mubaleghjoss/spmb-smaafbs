@@ -53,12 +53,11 @@ class PengaturanController extends Controller
             'website' => 'nullable|url|max:255',
             'warna_primer' => 'nullable|string|max:7',
             'warna_sekunder' => 'nullable|string|max:7',
-            'tahun_ajaran' => 'nullable|string|max:20',
             'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'favicon' => 'nullable|image|mimes:png,ico|max:512',
         ]);
 
-        $this->pengaturanService->simpanBranding($request->except(['logo', 'favicon']));
+        $this->pengaturanService->simpanBranding($request->except(['logo', 'favicon', 'tahun_ajaran']));
 
         if ($request->hasFile('logo')) {
             $this->pengaturanService->uploadLogo($request->file('logo'));

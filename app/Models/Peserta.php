@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -18,10 +19,17 @@ class Peserta extends Authenticatable
 {
     use HasFactory, Notifiable, SoftDeletes;
 
+    public const JENIS_SISWA_BARU = 'siswa_baru';
+    public const JENIS_PINDAHAN = 'pindahan';
+
     protected $table = 'peserta';
 
     protected $fillable = [
         'nomor_pendaftaran',
+        'tahun_ajaran_id',
+        'gelombang_pendaftaran_id',
+        'jenis_pendaftaran',
+        'kelas_tujuan',
         'nama',
         'email',
         'password',
@@ -41,7 +49,29 @@ class Peserta extends Authenticatable
     {
         return [
             'password' => 'hashed',
+            'tahun_ajaran_id' => 'integer',
+            'gelombang_pendaftaran_id' => 'integer',
+            'kelas_tujuan' => 'integer',
         ];
+    }
+
+    public function tahunAjaran(): BelongsTo
+    {
+        return $this->belongsTo(TahunAjaran::class);
+    }
+
+    public function gelombangPendaftaran(): BelongsTo
+    {
+        return $this->belongsTo(GelombangPendaftaran::class);
+    }
+
+    public function getJenisPendaftaranLabelAttribute(): string
+    {
+        return match ($this->jenis_pendaftaran) {
+            self::JENIS_SISWA_BARU => 'Siswa Baru',
+            self::JENIS_PINDAHAN => 'Pindahan',
+            default => 'Belum ditentukan',
+        };
     }
 
     /**

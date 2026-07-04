@@ -117,6 +117,47 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Tahun Ajaran</label>
+                    <select name="tahun_ajaran_id" class="form-select" id="filterTahunAjaran"
+                            onchange="filterGelombangByTahun(this.value, 'filterGelombang')">
+                        <option value="">Semua Tahun</option>
+                        @foreach($tahunAjaran as $tahun)
+                            <option value="{{ $tahun->id }}" {{ (string) $filter['tahun_ajaran_id'] === (string) $tahun->id ? 'selected' : '' }}>
+                                {{ $tahun->nama }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Gelombang</label>
+                    <select name="gelombang_pendaftaran_id" class="form-select" id="filterGelombang">
+                        <option value="">Semua Gelombang</option>
+                        @foreach($gelombangPendaftaran as $gelombang)
+                            <option value="{{ $gelombang->id }}"
+                                    data-tahun="{{ $gelombang->tahun_ajaran_id }}"
+                                    {{ (string) $filter['gelombang_pendaftaran_id'] === (string) $gelombang->id ? 'selected' : '' }}>
+                                {{ $gelombang->nama }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Jenis</label>
+                    <select name="jenis_pendaftaran" class="form-select">
+                        <option value="">Semua Jenis</option>
+                        <option value="siswa_baru" {{ $filter['jenis_pendaftaran'] === 'siswa_baru' ? 'selected' : '' }}>Siswa Baru</option>
+                        <option value="pindahan" {{ $filter['jenis_pendaftaran'] === 'pindahan' ? 'selected' : '' }}>Pindahan</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Kelas</label>
+                    <select name="kelas_tujuan" class="form-select">
+                        <option value="">Semua Kelas</option>
+                        <option value="10" {{ (string) $filter['kelas_tujuan'] === '10' ? 'selected' : '' }}>Kelas 10</option>
+                        <option value="11" {{ (string) $filter['kelas_tujuan'] === '11' ? 'selected' : '' }}>Kelas 11</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Cari</label>
                     <input type="text" name="cari" class="form-control" placeholder="Nama/No. Pendaftaran/Email" value="{{ $filter['cari'] }}">
                 </div>
@@ -152,12 +193,77 @@
         <div id="selectedPesertaIdsTahap"></div>
     </form>
 
+    <form id="bulkKategoriForm" action="{{ route('admin.peserta.bulk-update-kategori') }}" method="POST">
+        @csrf
+        <div id="selectedPesertaIdsKategori"></div>
+        <div class="modal fade" id="bulkKategoriModal" tabindex="-1" aria-labelledby="bulkKategoriLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bulkKategoriLabel">Ubah Kategori Pendaftaran</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Tahun Ajaran</label>
+                                <select name="tahun_ajaran_id" id="bulkTahunAjaran" class="form-select"
+                                        onchange="filterGelombangByTahun(this.value, 'bulkGelombang')" required>
+                                    <option value="">Pilih tahun</option>
+                                    @foreach($tahunAjaran as $tahun)
+                                        <option value="{{ $tahun->id }}">{{ $tahun->nama }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Gelombang</label>
+                                <select name="gelombang_pendaftaran_id" id="bulkGelombang" class="form-select" required>
+                                    <option value="">Pilih gelombang</option>
+                                    @foreach($gelombangPendaftaran as $gelombang)
+                                        <option value="{{ $gelombang->id }}" data-tahun="{{ $gelombang->tahun_ajaran_id }}">
+                                            {{ $gelombang->nama }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Jenis Pendaftaran</label>
+                                <select name="jenis_pendaftaran" id="bulkJenisPendaftaran" class="form-select"
+                                        onchange="toggleBulkKelas()" required>
+                                    <option value="siswa_baru">Siswa Baru</option>
+                                    <option value="pindahan">Pindahan</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Kelas Tujuan</label>
+                                <select name="kelas_tujuan" id="bulkKelasTujuan" class="form-select" required>
+                                    <option value="10">Kelas 10</option>
+                                    <option value="11">Kelas 11</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" onclick="return prepareBulkKategori()">
+                            <i class="bi bi-check-lg me-1"></i>Terapkan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
     <!-- Daftar Peserta -->
     <div class="card">
         <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
             <h5 class="mb-0">Daftar Peserta</h5>
             <div class="d-flex flex-wrap gap-2 align-items-center">
                 <span class="text-muted" id="selectedCount" style="font-size:0.85rem">0 dipilih</span>
+                <button type="button" id="bulkKategoriBtn" class="btn btn-sm btn-outline-primary"
+                        data-bs-toggle="modal" data-bs-target="#bulkKategoriModal" disabled>
+                    <i class="bi bi-tags me-1"></i>Kategori
+                </button>
                 <select id="bulkGrupSelect" class="form-select form-select-sm" style="width: auto; min-width: 140px;" disabled>
                     <option value="">-- Pilih Grup --</option>
                     @foreach($grup as $g)
@@ -206,6 +312,7 @@
                             <th>Nama</th>
                             <th>No HP</th>
                             <th>Password</th>
+                            <th>Kategori Pendaftaran</th>
                             <th>Grup</th>
                             <th width="80">Tahap</th>
                             <th width="150">Aksi</th>
@@ -235,6 +342,18 @@
                                     @else
                                         <span class="text-muted small">(sudah diubah)</span>
                                     @endif
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-wrap gap-1">
+                                        <span class="badge bg-dark">{{ $p->tahunAjaran?->nama ?? 'Belum ada tahun' }}</span>
+                                        <span class="badge bg-secondary">{{ $p->gelombangPendaftaran?->nama ?? 'Belum ada gelombang' }}</span>
+                                    </div>
+                                    <small class="text-muted d-block mt-1">
+                                        {{ $p->jenis_pendaftaran_label }}
+                                        @if($p->kelas_tujuan)
+                                            · Kelas {{ $p->kelas_tujuan }}
+                                        @endif
+                                    </small>
                                 </td>
                                 <td>
                                     @forelse($p->grup as $g)
@@ -276,7 +395,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="9" class="text-center py-4 text-muted">
+                                <td colspan="10" class="text-center py-4 text-muted">
                                     Belum ada peserta. <a href="{{ route('admin.peserta.create') }}">Tambah peserta pertama</a>
                                 </td>
                             </tr>
@@ -337,17 +456,20 @@ function updateSelectedCount() {
     const assignBtn = document.getElementById('bulkAssignBtn');
     const tahapSelect = document.getElementById('bulkTahapSelect');
     const tahapBtn = document.getElementById('bulkTahapBtn');
+    const kategoriBtn = document.getElementById('bulkKategoriBtn');
     
     if (count > 0) {
         grupSelect.disabled = false;
         assignBtn.disabled = false;
         tahapSelect.disabled = false;
         tahapBtn.disabled = false;
+        kategoriBtn.disabled = false;
     } else {
         grupSelect.disabled = true;
         assignBtn.disabled = true;
         tahapSelect.disabled = true;
         tahapBtn.disabled = true;
+        kategoriBtn.disabled = true;
         tahapSelect.value = '';
         document.getElementById('bulkLuluskanFinal').checked = false;
     }
@@ -362,6 +484,60 @@ function updateSelectedCount() {
         selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
     }
 }
+
+function filterGelombangByTahun(tahunId, targetId) {
+    const target = document.getElementById(targetId);
+    if (!target) return;
+
+    Array.from(target.options).forEach(option => {
+        if (!option.value) return;
+        const visible = !tahunId || option.dataset.tahun === tahunId;
+        option.hidden = !visible;
+        option.disabled = !visible;
+    });
+
+    if (target.selectedOptions[0]?.disabled) {
+        target.value = '';
+    }
+}
+
+function toggleBulkKelas() {
+    const jenis = document.getElementById('bulkJenisPendaftaran').value;
+    const kelas = document.getElementById('bulkKelasTujuan');
+    if (jenis === 'siswa_baru') {
+        kelas.value = '10';
+        kelas.disabled = true;
+    } else {
+        kelas.disabled = false;
+    }
+}
+
+function prepareBulkKategori() {
+    const checkboxes = selectedPesertaCheckboxes();
+    if (checkboxes.length === 0) {
+        alert('Pilih minimal satu peserta.');
+        return false;
+    }
+
+    const tahun = document.getElementById('bulkTahunAjaran');
+    const gelombang = document.getElementById('bulkGelombang');
+    if (!tahun.value || !gelombang.value) {
+        alert('Pilih tahun ajaran dan gelombang.');
+        return false;
+    }
+
+    const kelas = document.getElementById('bulkKelasTujuan');
+    kelas.disabled = false;
+    appendSelectedPesertaIds('selectedPesertaIdsKategori');
+
+    return confirm('Terapkan kategori baru ke ' + checkboxes.length + ' peserta?');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    filterGelombangByTahun(document.getElementById('filterTahunAjaran')?.value ?? '', 'filterGelombang');
+    filterGelombangByTahun('', 'bulkGelombang');
+    toggleBulkKelas();
+});
 
 function toggleBulkLulusOption() {
     const tahapSelect = document.getElementById('bulkTahapSelect');

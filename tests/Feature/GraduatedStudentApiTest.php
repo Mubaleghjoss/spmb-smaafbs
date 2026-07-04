@@ -78,6 +78,10 @@ class GraduatedStudentApiTest extends TestCase
             ->assertJsonPath('data.0.nomor_pendaftaran', 'SPMB-2026-00001')
             ->assertJsonPath('data.0.biodata.nama', 'Siswa Lulus Lengkap')
             ->assertJsonPath('data.0.biodata.nisn', '1234567890')
+            ->assertJsonPath('data.0.pendaftaran.tahun_ajaran', '2026-2027')
+            ->assertJsonPath('data.0.pendaftaran.gelombang', 'Gelombang 1')
+            ->assertJsonPath('data.0.pendaftaran.jenis_pendaftaran', 'siswa_baru')
+            ->assertJsonPath('data.0.pendaftaran.kelas_tujuan', 10)
             ->assertJsonPath('data.0.hasil_tes.kepribadian', 'Plegmatis')
             ->assertJsonStructure([
                 'data' => [[
@@ -85,6 +89,7 @@ class GraduatedStudentApiTest extends TestCase
                     'nomor_pendaftaran',
                     'source_updated_at',
                     'checksum',
+                    'pendaftaran',
                     'biodata',
                     'orang_tua',
                     'sekolah_asal',
@@ -110,6 +115,7 @@ class GraduatedStudentApiTest extends TestCase
             'nomor_pendaftaran' => $nomor,
             'nama' => $nama,
             'email' => strtolower(str_replace(' ', '.', $nama)).'@example.test',
+            ...app(\App\Services\PeriodePendaftaranService::class)->kategoriDefault(),
         ]);
 
         TahapanSpmb::query()->create([

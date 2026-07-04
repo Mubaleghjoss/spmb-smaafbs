@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Peserta;
 use App\Models\TahapanSpmb;
+use App\Models\TahunAjaran;
+use App\Models\GelombangPendaftaran;
 use App\Helpers\NomorPendaftaranHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -17,6 +19,10 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class ImporEksporPesertaService
 {
+    public function __construct(
+        private PeriodePendaftaranService $periodePendaftaranService
+    ) {}
+
     /**
      * Impor peserta dari file Excel
      * Format: Nama | Email | Telepon | Alamat | Asal Sekolah
@@ -86,6 +92,8 @@ class ImporEksporPesertaService
     private function simpanPesertaDariExcel(array $row): Peserta
     {
         return DB::transaction(function () use ($row) {
+            $kategori = $this->kategoriDariBaris($row);
+
             // Password akan otomatis di-hash oleh model cast 'hashed'
             $peserta = Peserta::create([
                 'nomor_pendaftaran' => NomorPendaftaranHelper::generate(),
@@ -95,6 +103,7 @@ class ImporEksporPesertaService
                 'telepon' => $row[2] ?? null,
                 'alamat' => $row[3] ?? null,
                 'asal_sekolah' => $row[4] ?? null,
+                ...$kategori,
             ]);
 
             TahapanSpmb::create([
@@ -112,7 +121,12 @@ class ImporEksporPesertaService
      */
     public function eksporKeExcel(?int $grupId = null): string
     {
-        $query = Peserta::with(['tahapanSpmb', 'grup']);
+        $query = Peserta::with([
+            'tahapanSpmb',
+            'grup',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+        ]);
 
         if ($grupId) {
             $query->whereHas('grup', fn($q) => $q->where('grup.id', $grupId));
@@ -126,10 +140,11 @@ class ImporEksporPesertaService
         // Header
         $headers = [
             'No. Pendaftaran', 'Nama', 'Email', 'Telepon', 
-            'Alamat', 'Asal Sekolah', 'Grup', 'Tahap Saat Ini', 'Terdaftar'
+            'Alamat', 'Asal Sekolah', 'Tahun Ajaran', 'Gelombang',
+            'Jenis Pendaftaran', 'Kelas Tujuan', 'Grup', 'Tahap Saat Ini', 'Terdaftar'
         ];
         $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
 
         // Data
         $row = 2;
@@ -141,6 +156,10 @@ class ImporEksporPesertaService
                 $peserta->telepon ?? '',
                 $peserta->alamat ?? '',
                 $peserta->asal_sekolah ?? '',
+                $peserta->tahunAjaran?->nama ?? '',
+                $peserta->gelombangPendaftaran?->nama ?? '',
+                $peserta->jenis_pendaftaran_label,
+                $peserta->kelas_tujuan ?? '',
                 $peserta->grup->pluck('nama')->implode(', '),
                 $peserta->tahap_saat_ini,
                 $peserta->created_at->format('d/m/Y H:i'),
@@ -151,7 +170,7 @@ class ImporEksporPesertaService
         }
 
         // Auto-size columns
-        foreach (range('A', 'I') as $col) {
+        foreach (range('A', 'M') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -178,12 +197,35 @@ class ImporEksporPesertaService
         $sheet = $spreadsheet->getActiveSheet();
 
         // Header
-        $headers = ['Nama*', 'Email*', 'Telepon', 'Alamat', 'Asal Sekolah'];
+        $headers = [
+            'Nama*',
+            'Email*',
+            'Telepon',
+            'Alamat',
+            'Asal Sekolah',
+            'Tahun Ajaran',
+            'Gelombang',
+            'Jenis Pendaftaran',
+            'Kelas Tujuan',
+        ];
         $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:E1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
 
         // Contoh data
-        $contoh = ['Ahmad Fauzi', 'ahmad@email.com', '08123456789', 'Jl. Contoh No. 1', 'SMP Negeri 1'];
+        $default = $this->periodePendaftaranService->kategoriDefault();
+        $tahun = TahunAjaran::query()->find($default['tahun_ajaran_id']);
+        $gelombang = GelombangPendaftaran::query()->find($default['gelombang_pendaftaran_id']);
+        $contoh = [
+            'Ahmad Fauzi',
+            'ahmad@email.com',
+            '08123456789',
+            'Jl. Contoh No. 1',
+            'SMP Negeri 1',
+            $tahun?->nama,
+            $gelombang?->nama,
+            'siswa_baru',
+            10,
+        ];
         $sheet->fromArray($contoh, null, 'A2');
 
         // Instruksi
@@ -191,8 +233,10 @@ class ImporEksporPesertaService
         $sheet->setCellValue('A5', '- Kolom dengan tanda * wajib diisi');
         $sheet->setCellValue('A6', '- Email harus unik (belum terdaftar)');
         $sheet->setCellValue('A7', '- Password default: password123');
+        $sheet->setCellValue('A8', '- Kolom kategori boleh kosong dan akan memakai periode default');
+        $sheet->setCellValue('A9', '- Jenis pendaftaran: siswa_baru atau pindahan');
 
-        foreach (range('A', 'E') as $col) {
+        foreach (range('A', 'I') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -207,5 +251,39 @@ class ImporEksporPesertaService
         $writer->save($path);
 
         return $path;
+    }
+
+    private function kategoriDariBaris(array $row): array
+    {
+        $tahunNama = trim((string) ($row[5] ?? ''));
+        $gelombangNama = trim((string) ($row[6] ?? ''));
+        $jenis = trim((string) ($row[7] ?? ''));
+        $kelas = $row[8] ?? null;
+
+        if ($tahunNama === '' && $gelombangNama === '' && $jenis === '' && blank($kelas)) {
+            $default = $this->periodePendaftaranService->kategoriDefault();
+
+            return $this->periodePendaftaranService->validasiKategori($default);
+        }
+
+        $tahunNama = $this->periodePendaftaranService->normalisasiNamaTahun($tahunNama);
+        $tahun = TahunAjaran::query()->where('nama', $tahunNama)->first();
+        if (!$tahun) {
+            throw new \Exception("Tahun ajaran {$tahunNama} tidak ditemukan");
+        }
+
+        $gelombang = $tahun->gelombangPendaftaran()
+            ->where('nama', $gelombangNama)
+            ->first();
+        if (!$gelombang) {
+            throw new \Exception("Gelombang {$gelombangNama} tidak ditemukan pada {$tahunNama}");
+        }
+
+        return $this->periodePendaftaranService->validasiKategori([
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => $jenis,
+            'kelas_tujuan' => $kelas,
+        ]);
     }
 }

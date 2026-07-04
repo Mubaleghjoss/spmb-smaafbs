@@ -118,7 +118,7 @@ class PengaturanService
     {
         $allowedKeys = [
             'nama_institusi', 'nama_singkat', 'alamat', 'telepon',
-            'email', 'website', 'warna_primer', 'warna_sekunder', 'tahun_ajaran',
+            'email', 'website', 'warna_primer', 'warna_sekunder',
             'teks_hero', 'teks_cta', 'teks_alur_spmb'
         ];
 

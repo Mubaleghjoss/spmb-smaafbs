@@ -284,6 +284,7 @@ class MigrasiService
         foreach ($pesertaLama as $user) {
             try {
                 $nomorPendaftaran = $this->generateNomorPendaftaran();
+                $kategoriPendaftaran = app(PeriodePendaftaranService::class)->kategoriDefault();
 
                 $pesertaBaru = Peserta::create([
                     'nomor_pendaftaran' => $nomorPendaftaran,
@@ -296,6 +297,7 @@ class MigrasiService
                     'asal_sekolah' => null,
                     'tempat_lahir' => $user->user_birthplace,
                     'tanggal_lahir' => $user->user_birthdate,
+                    ...$kategoriPendaftaran,
                 ]);
 
                 $this->mappingId['peserta'][$user->user_id] = $pesertaBaru->id;

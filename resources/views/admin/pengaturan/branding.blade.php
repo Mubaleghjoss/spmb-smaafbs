@@ -70,7 +70,11 @@
                             </div>
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Tahun Ajaran</label>
-                                <input type="text" name="tahun_ajaran" class="form-control" value="{{ old('tahun_ajaran', $branding['tahun_ajaran']) }}" placeholder="2024/2025">
+                                <input type="text" class="form-control" value="{{ $branding['tahun_ajaran'] }}" readonly>
+                                <div class="form-text">
+                                    Diatur dari
+                                    <a href="{{ route('admin.pengaturan.spmb.periode') }}">Tahun Ajaran & Gelombang</a>.
+                                </div>
                             </div>
                         </div>
                     </div>

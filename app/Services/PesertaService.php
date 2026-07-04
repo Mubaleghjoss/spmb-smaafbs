@@ -23,7 +23,12 @@ class PesertaService
      */
     public function ambilDenganFilter(array $filter = [], int $perHalaman = 15): LengthAwarePaginator
     {
-        $query = Peserta::with(['tahapanSpmb', 'grup']);
+        $query = Peserta::with([
+            'tahapanSpmb',
+            'grup',
+            'tahunAjaran',
+            'gelombangPendaftaran',
+        ]);
 
         // Filter berdasarkan grup
         if (!empty($filter['grup_id'])) {
@@ -33,6 +38,22 @@ class PesertaService
         // Filter berdasarkan tahapan
         if (!empty($filter['tahap'])) {
             $query->whereHas('tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', $filter['tahap']));
+        }
+
+        if (!empty($filter['tahun_ajaran_id'])) {
+            $query->where('tahun_ajaran_id', $filter['tahun_ajaran_id']);
+        }
+
+        if (!empty($filter['gelombang_pendaftaran_id'])) {
+            $query->where('gelombang_pendaftaran_id', $filter['gelombang_pendaftaran_id']);
+        }
+
+        if (!empty($filter['jenis_pendaftaran'])) {
+            $query->where('jenis_pendaftaran', $filter['jenis_pendaftaran']);
+        }
+
+        if (!empty($filter['kelas_tujuan'])) {
+            $query->where('kelas_tujuan', $filter['kelas_tujuan']);
         }
 
         // Filter berdasarkan status (aktif/dihapus)
@@ -67,6 +88,10 @@ class PesertaService
     public function buat(array $data): Peserta
     {
         return DB::transaction(function () use ($data) {
+            $periodeService = app(PeriodePendaftaranService::class);
+            $data = array_merge($periodeService->kategoriDefault(), $data);
+            $data = array_merge($data, $periodeService->validasiKategori($data));
+
             // Generate nomor pendaftaran jika tidak ada
             if (empty($data['nomor_pendaftaran'])) {
                 $data['nomor_pendaftaran'] = NomorPendaftaranHelper::generate();
@@ -78,6 +103,10 @@ class PesertaService
             // Password akan otomatis di-hash oleh model cast 'hashed'
             $peserta = Peserta::create([
                 'nomor_pendaftaran' => $data['nomor_pendaftaran'],
+                'tahun_ajaran_id' => $data['tahun_ajaran_id'],
+                'gelombang_pendaftaran_id' => $data['gelombang_pendaftaran_id'],
+                'jenis_pendaftaran' => $data['jenis_pendaftaran'],
+                'kelas_tujuan' => $data['kelas_tujuan'],
                 'nama' => $data['nama'],
                 'email' => $data['email'],
                 'password' => $plainPassword,
@@ -116,6 +145,10 @@ class PesertaService
                 'telepon' => $data['telepon'] ?? $peserta->telepon,
                 'alamat' => $data['alamat'] ?? $peserta->alamat,
                 'asal_sekolah' => $data['asal_sekolah'] ?? $peserta->asal_sekolah,
+                'tahun_ajaran_id' => $data['tahun_ajaran_id'] ?? $peserta->tahun_ajaran_id,
+                'gelombang_pendaftaran_id' => $data['gelombang_pendaftaran_id'] ?? $peserta->gelombang_pendaftaran_id,
+                'jenis_pendaftaran' => $data['jenis_pendaftaran'] ?? $peserta->jenis_pendaftaran,
+                'kelas_tujuan' => $data['kelas_tujuan'] ?? $peserta->kelas_tujuan,
             ];
 
             // Update password jika ada (akan otomatis di-hash oleh model cast 'hashed')
@@ -218,6 +251,21 @@ class PesertaService
             }
         }
         return $count;
+    }
+
+    public function buatPeserta(array $data): Peserta
+    {
+        return $this->buat($data);
+    }
+
+    public function bulkPerbaruiKategori(array $pesertaIds, array $kategori): int
+    {
+        return Peserta::query()
+            ->whereIn('id', $pesertaIds)
+            ->update([
+                ...$kategori,
+                'updated_at' => now(),
+            ]);
     }
 
     /**
