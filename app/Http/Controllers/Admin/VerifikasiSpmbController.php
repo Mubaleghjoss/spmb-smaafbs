@@ -697,19 +697,14 @@ class VerifikasiSpmbController extends Controller
         $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb'])
             ->whereHas('tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', 7))
             ->latest()
-            ->paginate(20);
+            ->get();
 
         // Statistik
         $statistik = [
-            'menunggu' => Peserta::whereHas('tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', 7)
-                ->where(function ($q2) {
-                    $q2->whereNull('status_kelulusan')
-                       ->orWhere('status_kelulusan', '')
-                       ->orWhere('status_kelulusan', 'menunggu');
-                })
-            )->count(),
-            'lulus' => Peserta::whereHas('tahapanSpmb', fn($q) => $q->where('status_kelulusan', 'lulus'))->count(),
-            'tidak_lulus' => Peserta::whereHas('tahapanSpmb', fn($q) => $q->where('status_kelulusan', 'tidak_lulus'))->count(),
+            'total' => $peserta->count(),
+            'menunggu' => $peserta->filter(fn($p) => blank($p->tahapanSpmb?->status_kelulusan) || $p->tahapanSpmb?->status_kelulusan === 'menunggu')->count(),
+            'lulus' => $peserta->filter(fn($p) => $p->tahapanSpmb?->status_kelulusan === 'lulus')->count(),
+            'tidak_lulus' => $peserta->filter(fn($p) => $p->tahapanSpmb?->status_kelulusan === 'tidak_lulus')->count(),
         ];
 
         // Ambil pengaturan kelulusan
