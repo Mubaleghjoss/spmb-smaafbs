@@ -6,9 +6,17 @@ use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Models\TahunAjaran;
 use App\Models\GelombangPendaftaran;
+use App\Models\FormulirSpmb;
+use App\Models\GayaBelajarConfig;
+use App\Models\HasilGayaBelajar;
+use App\Models\HasilPsikotesKepribadian;
+use App\Models\PsikotesKepribadianConfig;
+use App\Models\SesiTes;
+use App\Models\Tes;
 use App\Helpers\NomorPendaftaranHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 use PhpOffice\PhpSpreadsheet\IOFactory;
@@ -19,6 +27,9 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
  */
 class ImporEksporPesertaService
 {
+    private const REKAP_PASSWORD_DEFAULT = 'password123';
+    private const REKAP_EMAIL_DOMAIN = 'import.spmb.local';
+
     public function __construct(
         private PeriodePendaftaranService $periodePendaftaranService
     ) {}
@@ -141,10 +152,10 @@ class ImporEksporPesertaService
         $headers = [
             'No. Pendaftaran', 'Nama', 'Email', 'Telepon', 
             'Alamat', 'Asal Sekolah', 'Tahun Ajaran', 'Gelombang',
-            'Jenis Pendaftaran', 'Kelas Tujuan', 'Grup', 'Tahap Saat Ini', 'Terdaftar'
+            'Jenis Pendaftaran', 'Kelas Tujuan', 'Kelas Penempatan', 'Grup', 'Tahap Saat Ini', 'Terdaftar'
         ];
         $sheet->fromArray($headers, null, 'A1');
-        $sheet->getStyle('A1:M1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:N1')->getFont()->setBold(true);
 
         // Data
         $row = 2;
@@ -160,6 +171,7 @@ class ImporEksporPesertaService
                 $peserta->gelombangPendaftaran?->nama ?? '',
                 $peserta->jenis_pendaftaran_label,
                 $peserta->kelas_tujuan ?? '',
+                $peserta->kelas_penempatan ?? '',
                 $peserta->grup->pluck('nama')->implode(', '),
                 $peserta->tahap_saat_ini,
                 $peserta->created_at->format('d/m/Y H:i'),
@@ -170,7 +182,7 @@ class ImporEksporPesertaService
         }
 
         // Auto-size columns
-        foreach (range('A', 'M') as $col) {
+        foreach (range('A', 'N') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -253,6 +265,123 @@ class ImporEksporPesertaService
         return $path;
     }
 
+    public function imporRekapSeleksi(string $filePath): array
+    {
+        $spreadsheet = IOFactory::load($filePath);
+        $worksheet = $spreadsheet->getActiveSheet();
+        $rows = $worksheet->toArray();
+
+        $hasil = [
+            'sukses' => 0,
+            'baru' => 0,
+            'update' => 0,
+            'gagal' => 0,
+            'errors' => [],
+            'warnings' => [],
+        ];
+
+        if (empty($rows)) {
+            $hasil['errors'][] = 'File kosong.';
+
+            return $hasil;
+        }
+
+        $headers = array_shift($rows);
+        $headerMap = $this->rekapHeaderMap($headers);
+        $context = $this->ambilKonteksRekapSeleksi();
+
+        if (! empty($context['missing'])) {
+            $hasil['errors'][] = 'Konfigurasi tes belum lengkap: ' . implode(', ', $context['missing']) . '.';
+
+            return $hasil;
+        }
+
+        foreach ($rows as $index => $row) {
+            $baris = $index + 2;
+
+            if (empty(array_filter($row, fn ($value) => filled($value)))) {
+                continue;
+            }
+
+            try {
+                $result = DB::transaction(fn () => $this->simpanBarisRekapSeleksi($row, $headerMap, $context));
+
+                $hasil['sukses']++;
+                $hasil[$result['created'] ? 'baru' : 'update']++;
+
+                foreach ($result['warnings'] as $warning) {
+                    $hasil['warnings'][] = "Baris {$baris}: {$warning}";
+                }
+            } catch (\Throwable $e) {
+                $hasil['gagal']++;
+                $hasil['errors'][] = "Baris {$baris}: " . $e->getMessage();
+            }
+        }
+
+        return $hasil;
+    }
+
+    public function generateTemplateRekapSeleksi(): string
+    {
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        $headers = [
+            'NO',
+            'NAMA',
+            'JK',
+            'ASAL SMP',
+            'PERSONALITY PLUS',
+            'MODALITAS',
+            'INDO',
+            'INGG',
+            'MTK',
+            'IPA',
+            'JML',
+            'KLS',
+        ];
+
+        $sheet->fromArray($headers, null, 'A1');
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true);
+
+        $sheet->fromArray([
+            1,
+            'Muhammad Baihaqi Asshiddiqi',
+            'L',
+            'SMP NEGERI 9 KOTA TANGERANG',
+            'Plegmatis',
+            'Visual dan Auditori',
+            70,
+            80,
+            90,
+            90,
+            330,
+            'X1',
+        ], null, 'A2');
+
+        $sheet->setCellValue('A4', 'INSTRUKSI:');
+        $sheet->setCellValue('A5', '- NAMA, ASAL SMP, PERSONALITY PLUS, MODALITAS, INDO, INGG, MTK, IPA wajib diisi.');
+        $sheet->setCellValue('A6', '- Email dan No HP tidak wajib; sistem akan membuat login internal otomatis.');
+        $sheet->setCellValue('A7', '- Nilai JML dipakai untuk validasi total, mismatch tetap diimpor sebagai peringatan.');
+        $sheet->setCellValue('A8', '- Peserta hasil import otomatis ditandai lulus final.');
+
+        foreach (range('A', 'L') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $filename = 'template_impor_rekap_seleksi.xlsx';
+        $path = storage_path('app/public/exports/' . $filename);
+
+        if (! file_exists(dirname($path))) {
+            mkdir(dirname($path), 0755, true);
+        }
+
+        $writer = new Xlsx($spreadsheet);
+        $writer->save($path);
+
+        return $path;
+    }
+
     private function kategoriDariBaris(array $row): array
     {
         $tahunNama = trim((string) ($row[5] ?? ''));
@@ -285,5 +414,437 @@ class ImporEksporPesertaService
             'jenis_pendaftaran' => $jenis,
             'kelas_tujuan' => $kelas,
         ]);
+    }
+
+    private function simpanBarisRekapSeleksi(array $row, array $headerMap, array $context): array
+    {
+        $nama = $this->cellString($row, $headerMap, 'nama');
+        $asalSmp = $this->cellString($row, $headerMap, 'asal_smp');
+
+        if ($nama === '') {
+            throw new \RuntimeException('Nama tidak boleh kosong.');
+        }
+
+        if ($asalSmp === '') {
+            throw new \RuntimeException('Asal SMP tidak boleh kosong.');
+        }
+
+        $personality = $this->normalisasiKepribadian($this->cellString($row, $headerMap, 'personality'));
+        $modalitas = $this->normalisasiModalitas($this->cellString($row, $headerMap, 'modalitas'));
+        $nilaiAkademik = [
+            'indo' => $this->cellNumber($row, $headerMap, 'indo', 'INDO'),
+            'ingg' => $this->cellNumber($row, $headerMap, 'ingg', 'INGG'),
+            'mtk' => $this->cellNumber($row, $headerMap, 'mtk', 'MTK'),
+            'ipa' => $this->cellNumber($row, $headerMap, 'ipa', 'IPA'),
+        ];
+
+        $warnings = [];
+        $jml = $this->cellNumberOrNull($row, $headerMap, 'jml');
+        $total = array_sum($nilaiAkademik);
+        if ($jml !== null && abs($jml - $total) > 0.01) {
+            $warnings[] = "JML {$jml} berbeda dengan total nilai akademik {$total}.";
+        }
+
+        $nomorPendaftaran = $this->cellString($row, $headerMap, 'nomor_pendaftaran');
+        $emailInput = strtolower($this->cellString($row, $headerMap, 'email'));
+        $teleponInput = $this->cellString($row, $headerMap, 'telepon');
+        $kelasPenempatan = Str::upper($this->cellString($row, $headerMap, 'kelas_penempatan'));
+        $jenisKelamin = $this->normalisasiJenisKelamin($this->cellString($row, $headerMap, 'jk'));
+
+        [$peserta, $created] = $this->cariAtauBuatPesertaRekap(
+            $nama,
+            $asalSmp,
+            $nomorPendaftaran,
+            $emailInput,
+            $teleponInput,
+            $kelasPenempatan,
+            $context['kategori']
+        );
+
+        $this->sinkronFormulirRekap($peserta, $nama, $asalSmp, $jenisKelamin);
+        $this->simpanHasilKepribadian($peserta, $context['tes']['kepribadian'], $personality);
+        $this->simpanHasilGayaBelajar($peserta, $context['tes']['gaya_belajar'], $modalitas);
+
+        foreach ($nilaiAkademik as $kode => $nilai) {
+            $this->simpanSesiNilai($peserta, $context['tes']['akademik'][$kode], $nilai);
+        }
+
+        $this->tandaiLulusFinal($peserta);
+
+        return [
+            'created' => $created,
+            'warnings' => $warnings,
+        ];
+    }
+
+    private function cariAtauBuatPesertaRekap(
+        string $nama,
+        string $asalSmp,
+        string $nomorPendaftaran,
+        string $emailInput,
+        string $teleponInput,
+        string $kelasPenempatan,
+        array $kategori
+    ): array {
+        $peserta = null;
+
+        if ($nomorPendaftaran !== '') {
+            $peserta = Peserta::query()->where('nomor_pendaftaran', $nomorPendaftaran)->first();
+        }
+
+        if (! $peserta && $emailInput !== '') {
+            $peserta = Peserta::query()->where('email', $emailInput)->first();
+        }
+
+        if (! $peserta && $teleponInput !== '') {
+            $peserta = Peserta::query()->where('telepon', $teleponInput)->first();
+        }
+
+        if (! $peserta) {
+            $matches = Peserta::query()
+                ->whereRaw('LOWER(TRIM(nama)) = ?', [Str::lower($nama)])
+                ->whereRaw("LOWER(TRIM(COALESCE(asal_sekolah, ''))) = ?", [Str::lower($asalSmp)])
+                ->get();
+
+            if ($matches->count() > 1) {
+                throw new \RuntimeException('Ditemukan lebih dari satu peserta dengan nama dan asal SMP yang sama.');
+            }
+
+            $peserta = $matches->first();
+        }
+
+        $generated = $this->kredensialGeneratedRekap($nama, $asalSmp);
+        $email = $emailInput !== '' ? $emailInput : ($peserta?->email ?: $generated['email']);
+        $telepon = $teleponInput !== '' ? $teleponInput : ($peserta?->telepon ?: $generated['telepon']);
+
+        if (! $peserta) {
+            return [
+                Peserta::query()->create([
+                    'nomor_pendaftaran' => $nomorPendaftaran !== '' ? $nomorPendaftaran : NomorPendaftaranHelper::generate(),
+                    'tahun_ajaran_id' => $kategori['tahun_ajaran_id'],
+                    'gelombang_pendaftaran_id' => $kategori['gelombang_pendaftaran_id'],
+                    'jenis_pendaftaran' => $kategori['jenis_pendaftaran'],
+                    'kelas_tujuan' => $kategori['kelas_tujuan'],
+                    'kelas_penempatan' => $kelasPenempatan !== '' ? $kelasPenempatan : null,
+                    'nama' => $nama,
+                    'email' => $email,
+                    'telepon' => $telepon,
+                    'password' => self::REKAP_PASSWORD_DEFAULT,
+                    'password_temp' => self::REKAP_PASSWORD_DEFAULT,
+                    'asal_sekolah' => $asalSmp,
+                ]),
+                true,
+            ];
+        }
+
+        $peserta->update([
+            'nama' => $nama,
+            'email' => $email,
+            'telepon' => $telepon,
+            'asal_sekolah' => $asalSmp,
+            'kelas_penempatan' => $kelasPenempatan !== '' ? $kelasPenempatan : $peserta->kelas_penempatan,
+            'tahun_ajaran_id' => $peserta->tahun_ajaran_id ?: $kategori['tahun_ajaran_id'],
+            'gelombang_pendaftaran_id' => $peserta->gelombang_pendaftaran_id ?: $kategori['gelombang_pendaftaran_id'],
+            'jenis_pendaftaran' => $peserta->jenis_pendaftaran ?: $kategori['jenis_pendaftaran'],
+            'kelas_tujuan' => $peserta->kelas_tujuan ?: $kategori['kelas_tujuan'],
+        ]);
+
+        return [$peserta->fresh(), false];
+    }
+
+    private function sinkronFormulirRekap(Peserta $peserta, string $nama, string $asalSmp, ?string $jenisKelamin): void
+    {
+        FormulirSpmb::query()->updateOrCreate(
+            ['peserta_id' => $peserta->id],
+            [
+                'nama_lengkap' => $nama,
+                'jenis_kelamin' => $jenisKelamin,
+                'asal_sekolah' => $asalSmp,
+                'telepon' => $peserta->telepon,
+                'email' => $peserta->email,
+                'tanggal_daftar' => now()->toDateString(),
+                'status_verifikasi' => 'terverifikasi',
+            ]
+        );
+    }
+
+    private function simpanHasilKepribadian(Peserta $peserta, Tes $tes, string $hasilKepribadian): void
+    {
+        $sesi = $this->simpanSesiNilai($peserta, $tes, null);
+        $detail = collect(['koleris', 'sanguin', 'plegmatis', 'melankolis'])
+            ->mapWithKeys(fn ($tipe) => [$tipe => $tipe === $hasilKepribadian ? 1 : 0])
+            ->all();
+
+        HasilPsikotesKepribadian::query()->updateOrCreate(
+            ['sesi_tes_id' => $sesi->id],
+            [
+                'hasil_kepribadian' => $hasilKepribadian,
+                'detail_nilai' => $detail,
+            ]
+        );
+    }
+
+    private function simpanHasilGayaBelajar(Peserta $peserta, Tes $tes, string $hasilGayaBelajar): void
+    {
+        $sesi = $this->simpanSesiNilai($peserta, $tes, null);
+        $selected = explode(' & ', $hasilGayaBelajar);
+        $detail = collect(['visual', 'auditori', 'kinestetik'])
+            ->mapWithKeys(fn ($tipe) => [$tipe => in_array($tipe, $selected, true) ? 1 : 0])
+            ->all();
+
+        HasilGayaBelajar::query()->updateOrCreate(
+            ['sesi_tes_id' => $sesi->id],
+            [
+                'hasil_gaya_belajar' => $hasilGayaBelajar,
+                'detail_nilai' => $detail,
+            ]
+        );
+    }
+
+    private function simpanSesiNilai(Peserta $peserta, Tes $tes, float|int|null $nilai): SesiTes
+    {
+        $sesi = SesiTes::query()->firstOrNew([
+            'peserta_id' => $peserta->id,
+            'tes_id' => $tes->id,
+        ]);
+
+        $sesi->fill([
+            'waktu_mulai' => $sesi->waktu_mulai ?: now(),
+            'waktu_selesai' => now(),
+            'nilai' => $nilai,
+            'status' => 'selesai',
+            'status_verifikasi_tes' => $nilai !== null && $nilai < (float) $tes->nilai_lulus ? 'diloloskan' : null,
+            'catatan_verifikasi' => $nilai !== null && $nilai < (float) $tes->nilai_lulus
+                ? 'Diloloskan dari import rekap seleksi final.'
+                : null,
+        ]);
+        $sesi->save();
+
+        return $sesi;
+    }
+
+    private function tandaiLulusFinal(Peserta $peserta): void
+    {
+        $tahapan = TahapanSpmb::query()->firstOrNew(['peserta_id' => $peserta->id]);
+        $tahapan->fill([
+            'tahap_saat_ini' => 7,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+            'tahap_3_selesai' => true,
+            'tahap_4_selesai' => true,
+            'tahap_5_selesai' => true,
+            'tahap_6_selesai' => true,
+            'tahap_7_selesai' => true,
+            'status_kelulusan' => 'lulus',
+        ]);
+        $tahapan->save();
+    }
+
+    private function ambilKonteksRekapSeleksi(): array
+    {
+        $kategori = $this->periodePendaftaranService->validasiKategori(
+            $this->periodePendaftaranService->kategoriDefault()
+        );
+
+        $tes = [
+            'kepribadian' => $this->cariTesKepribadian(),
+            'gaya_belajar' => $this->cariTesGayaBelajar(),
+            'akademik' => [
+                'indo' => $this->cariTesByNama(['indonesia', 'bindo', 'bindonesia']),
+                'ingg' => $this->cariTesByNama(['inggris', 'binggris', 'bingg']),
+                'mtk' => $this->cariTesByNama(['mtk', 'matematika']),
+                'ipa' => $this->cariTesByNama(['ipa']),
+            ],
+        ];
+
+        $missing = [];
+        if (! $tes['kepribadian']) {
+            $missing[] = 'Personality Plus';
+        }
+        if (! $tes['gaya_belajar']) {
+            $missing[] = 'Modalitas/Gaya Belajar';
+        }
+        foreach (['indo' => 'B. Indonesia', 'ingg' => 'B. Inggris', 'mtk' => 'MTK', 'ipa' => 'IPA'] as $kode => $label) {
+            if (! $tes['akademik'][$kode]) {
+                $missing[] = $label;
+            }
+        }
+
+        return compact('kategori', 'tes', 'missing');
+    }
+
+    private function cariTesKepribadian(): ?Tes
+    {
+        $tesId = PsikotesKepribadianConfig::query()->value('tes_id');
+
+        return $tesId ? Tes::query()->find($tesId) : $this->cariTesByNama(['personality', 'kepribadian', 'psikotes']);
+    }
+
+    private function cariTesGayaBelajar(): ?Tes
+    {
+        $tesId = GayaBelajarConfig::query()->where('aktif', true)->value('tes_id')
+            ?: GayaBelajarConfig::query()->value('tes_id');
+
+        return $tesId ? Tes::query()->find($tesId) : $this->cariTesByNama(['modalitas', 'gayabelajar']);
+    }
+
+    private function cariTesByNama(array $tokens): ?Tes
+    {
+        return Tes::query()
+            ->get()
+            ->first(function (Tes $tes) use ($tokens) {
+                $nama = $this->normalisasiTeksPencarian($tes->nama);
+
+                foreach ($tokens as $token) {
+                    if (str_contains($nama, $this->normalisasiTeksPencarian($token))) {
+                        return true;
+                    }
+                }
+
+                return false;
+            });
+    }
+
+    private function rekapHeaderMap(array $headers): array
+    {
+        $aliases = [
+            'nomor_pendaftaran' => ['nomorpendaftaran', 'nopendaftaran', 'nodaftar', 'nopeserta'],
+            'nama' => ['nama', 'namapeserta', 'namasiswa'],
+            'jk' => ['jk', 'jeniskelamin', 'lp'],
+            'asal_smp' => ['asalsmp', 'asalsekolah', 'asalsekolahsmp', 'smpasal'],
+            'personality' => ['personalityplus', 'personality', 'kepribadian', 'psikotes'],
+            'modalitas' => ['modalitas', 'gayabelajar', 'tesmodalitas'],
+            'indo' => ['indo', 'indonesia', 'bindonesia', 'tesbindonesia'],
+            'ingg' => ['ingg', 'inggris', 'binggris', 'tesbinggris'],
+            'mtk' => ['mtk', 'matematika', 'tesmtk'],
+            'ipa' => ['ipa', 'tesipa'],
+            'jml' => ['jml', 'jumlah', 'total'],
+            'kelas_penempatan' => ['kls', 'kelas', 'kelaspenempatan'],
+            'email' => ['email', 'surel'],
+            'telepon' => ['telepon', 'nohp', 'hp', 'nowa', 'whatsapp'],
+        ];
+
+        $normalizedHeaders = collect($headers)
+            ->map(fn ($header) => $this->normalisasiHeader((string) $header))
+            ->all();
+
+        $map = [];
+        foreach ($aliases as $field => $fieldAliases) {
+            foreach ($fieldAliases as $alias) {
+                $index = array_search($alias, $normalizedHeaders, true);
+                if ($index !== false) {
+                    $map[$field] = $index;
+                    break;
+                }
+            }
+        }
+
+        return array_replace([
+            'nama' => 1,
+            'jk' => 2,
+            'asal_smp' => 3,
+            'personality' => 4,
+            'modalitas' => 5,
+            'indo' => 6,
+            'ingg' => 7,
+            'mtk' => 8,
+            'ipa' => 9,
+            'jml' => 10,
+            'kelas_penempatan' => 11,
+        ], $map);
+    }
+
+    private function cellString(array $row, array $map, string $field): string
+    {
+        if (! array_key_exists($field, $map)) {
+            return '';
+        }
+
+        return trim((string) ($row[$map[$field]] ?? ''));
+    }
+
+    private function cellNumber(array $row, array $map, string $field, string $label): float
+    {
+        $number = $this->cellNumberOrNull($row, $map, $field);
+
+        if ($number === null) {
+            throw new \RuntimeException("Nilai {$label} wajib berupa angka.");
+        }
+
+        return $number;
+    }
+
+    private function cellNumberOrNull(array $row, array $map, string $field): ?float
+    {
+        $value = $this->cellString($row, $map, $field);
+
+        if ($value === '') {
+            return null;
+        }
+
+        $normalized = str_replace(',', '.', preg_replace('/[^0-9,.\-]/', '', $value));
+
+        return is_numeric($normalized) ? (float) $normalized : null;
+    }
+
+    private function normalisasiKepribadian(string $value): string
+    {
+        $normalized = $this->normalisasiTeksPencarian($value);
+        $allowed = ['koleris', 'sanguin', 'plegmatis', 'melankolis'];
+
+        foreach ($allowed as $tipe) {
+            if (str_contains($normalized, $tipe)) {
+                return $tipe;
+            }
+        }
+
+        throw new \RuntimeException('Personality Plus tidak valid. Gunakan Koleris, Sanguin, Plegmatis, atau Melankolis.');
+    }
+
+    private function normalisasiModalitas(string $value): string
+    {
+        $normalized = $this->normalisasiTeksPencarian($value);
+        $selected = [];
+
+        foreach (['visual', 'auditori', 'kinestetik'] as $tipe) {
+            if (str_contains($normalized, $tipe)) {
+                $selected[] = $tipe;
+            }
+        }
+
+        if (empty($selected)) {
+            throw new \RuntimeException('Modalitas tidak valid. Gunakan Visual, Auditori, atau Kinestetik.');
+        }
+
+        return implode(' & ', $selected);
+    }
+
+    private function normalisasiJenisKelamin(string $value): ?string
+    {
+        $normalized = Str::upper(trim($value));
+
+        return in_array($normalized, ['L', 'P'], true) ? $normalized : null;
+    }
+
+    private function kredensialGeneratedRekap(string $nama, string $asalSmp): array
+    {
+        $fingerprint = sha1(Str::lower($nama) . '|' . Str::lower($asalSmp));
+        $slug = Str::slug($nama, '.');
+        $slug = $slug !== '' ? Str::limit($slug, 40, '') : 'peserta';
+
+        return [
+            'email' => "{$slug}." . substr($fingerprint, 0, 10) . '@' . self::REKAP_EMAIL_DOMAIN,
+            'telepon' => 'IMP' . strtoupper(substr($fingerprint, 0, 12)),
+        ];
+    }
+
+    private function normalisasiHeader(string $value): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', Str::lower($value)) ?? '';
+    }
+
+    private function normalisasiTeksPencarian(string $value): string
+    {
+        return preg_replace('/[^a-z0-9]/', '', Str::lower($value)) ?? '';
     }
 }

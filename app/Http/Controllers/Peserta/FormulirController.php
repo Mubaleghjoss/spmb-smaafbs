@@ -47,6 +47,10 @@ class FormulirController extends Controller
             $this->formulirService->validasi($request->all()),
             $this->pesanValidasi()
         );
+
+        foreach (['hobi', 'cita_cita'] as $field) {
+            $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
+        }
         
         // Handle file uploads
         $fileFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'foto'];
@@ -245,5 +249,17 @@ class FormulirController extends Controller
             'file_akta.mimes' => 'File Akta harus berformat jpg, jpeg, png, atau pdf',
             'file_akta.max' => 'Ukuran file Akta maksimal 2MB',
         ];
+    }
+
+    private function normalisasiDaftarKoma(?string $nilai): ?string
+    {
+        if ($nilai === null || trim($nilai) === '') {
+            return null;
+        }
+
+        $items = preg_split('/[\r\n,]+/', $nilai) ?: [];
+        $items = array_filter(array_map('trim', $items));
+
+        return empty($items) ? null : implode(', ', array_values(array_unique($items)));
     }
 }

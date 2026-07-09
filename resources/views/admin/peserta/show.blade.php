@@ -99,6 +99,9 @@
                                         @if($peserta->kelas_tujuan)
                                             <span class="badge bg-primary ms-1">Kelas {{ $peserta->kelas_tujuan }}</span>
                                         @endif
+                                        @if($peserta->kelas_penempatan)
+                                            <span class="badge bg-success ms-1">{{ $peserta->kelas_penempatan }}</span>
+                                        @endif
                                     </td>
                                 </tr>
                                 <tr>

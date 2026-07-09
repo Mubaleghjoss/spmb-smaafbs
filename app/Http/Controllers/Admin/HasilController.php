@@ -55,7 +55,9 @@ class HasilController extends Controller
             });
         }
 
-        $sesiList = $sesiQuery->get();
+        $sesiList = $sesiQuery
+            ->whereHas('tes')
+            ->get();
 
         // Group by peserta
         $rekapPeserta = [];
@@ -581,6 +583,7 @@ class HasilController extends Controller
 
         // Ambil semua sesi tes yang selesai
         $sesiList = SesiTes::whereIn('status', ['selesai', 'timeout'])
+            ->whereHas('tes')
             ->with([
                 'peserta' => fn ($q) => $q
                     ->select('id', 'nama', 'nomor_pendaftaran', 'email', 'telepon', 'asal_sekolah')
@@ -593,7 +596,7 @@ class HasilController extends Controller
         // Group by peserta
         $rekapPeserta = [];
         foreach ($sesiList as $sesi) {
-            if (!$sesi->peserta) {
+            if (!$sesi->peserta || !$sesi->tes) {
                 continue;
             }
 

@@ -114,6 +114,7 @@ class AdminRegistrationCategoryTest extends TestCase
             $this->assertSame('Gelombang', $sheet->getCell('H1')->getValue());
             $this->assertSame('Jenis Pendaftaran', $sheet->getCell('I1')->getValue());
             $this->assertSame('Kelas Tujuan', $sheet->getCell('J1')->getValue());
+            $this->assertSame('Kelas Penempatan', $sheet->getCell('K1')->getValue());
             $this->assertSame('2026-2027', $sheet->getCell('G2')->getValue());
             $this->assertSame('Gelombang 1', $sheet->getCell('H2')->getValue());
         } finally {

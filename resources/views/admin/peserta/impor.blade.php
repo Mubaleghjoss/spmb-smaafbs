@@ -11,9 +11,9 @@
         </a>
     </div>
 
-    @if(session('sukses'))
+    @if(session('sukses') || session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
+            {{ session('sukses') ?? session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
@@ -30,7 +30,70 @@
         </div>
     @endif
 
-    <div class="row">
+    @if(session('warnings_impor'))
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <strong>Catatan import:</strong>
+            <ul class="mb-0 mt-2">
+                @foreach(session('warnings_impor') as $warning)
+                    <li>{{ $warning }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
+
+    <div class="row g-4">
+        <div class="col-12">
+            <div class="card border-success">
+                <div class="card-header bg-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-table"></i> Impor Rekap Seleksi
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-4 align-items-start">
+                        <div class="col-lg-7">
+                            <p class="text-muted mb-3">
+                                Gunakan import ini untuk file rekap berisi peserta, Personality Plus, Modalitas, nilai INDO/INGG/MTK/IPA, total, dan kelas penempatan.
+                            </p>
+                            <form action="{{ route('admin.peserta.impor-rekap-seleksi.proses') }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                <div class="mb-3">
+                                    <label class="form-label">File Rekap Excel <span class="text-danger">*</span></label>
+                                    <input type="file" name="file_rekap" class="form-control @error('file_rekap') is-invalid @enderror"
+                                           accept=".xlsx,.xls" required>
+                                    @error('file_rekap')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Format kolom: NO, NAMA, JK, ASAL SMP, PERSONALITY PLUS, MODALITAS, INDO, INGG, MTK, IPA, JML, KLS.</small>
+                                </div>
+
+                                <div class="d-flex flex-wrap gap-2">
+                                    <button type="submit" class="btn btn-success">
+                                        <i class="bi bi-upload"></i> Impor Rekap Seleksi
+                                    </button>
+                                    <a href="{{ route('admin.peserta.template-rekap-seleksi') }}" class="btn btn-outline-success">
+                                        <i class="bi bi-download"></i> Download Template Rekap
+                                    </a>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="alert alert-light border mb-0">
+                                <div class="fw-semibold mb-2">Yang dilakukan sistem</div>
+                                <ul class="small mb-0">
+                                    <li>Membuat atau mengupdate peserta secara otomatis.</li>
+                                    <li>Membuat login internal jika email/No HP kosong.</li>
+                                    <li>Mengisi hasil tes dan menandai peserta lulus final.</li>
+                                    <li>Memberi catatan jika JML tidak sama dengan total nilai.</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">

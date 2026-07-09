@@ -50,14 +50,21 @@ class LoginController extends Controller
                 ]);
         }
 
-        $pengguna = $this->authService->autentikasi($request->email, $request->password);
+        $authResult = $this->authService->autentikasiDenganStatus($request->email, $request->password);
+        $pengguna = $authResult['pengguna'];
 
         if (!$pengguna) {
             $attempts = $this->authService->ambilJumlahPercobaan($request->email);
             $remaining = 3 - $attempts;
             
-            $message = 'Email atau password salah.';
-            if ($remaining > 0 && $remaining < 3) {
+            $message = match ($authResult['status']) {
+                'not_found' => 'Email admin/operator belum terdaftar di database. Jalankan reset login atau gunakan akun default.',
+                'inactive' => 'Akun nonaktif. Hubungi administrator untuk mengaktifkan akun.',
+                'locked' => 'Akun terkunci. Silakan coba lagi nanti.',
+                default => 'Email atau password salah.',
+            };
+
+            if (in_array($authResult['status'], ['not_found', 'invalid_password'], true) && $remaining > 0 && $remaining < 3) {
                 $message .= " Sisa percobaan: {$remaining}x";
             }
 

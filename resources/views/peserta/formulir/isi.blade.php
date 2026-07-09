@@ -140,12 +140,16 @@
                             <div class="col-sm-6">
                                 <label class="form-label">14. Hobi <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('hobi') is-invalid @enderror" 
-                                       name="hobi" value="{{ old('hobi', $formulir?->hobi) }}">
+                                       name="hobi" value="{{ old('hobi', $formulir?->hobi) }}"
+                                       placeholder="Contoh: Membaca, Futsal, Menggambar">
+                                <div class="form-text">Boleh lebih dari satu. Pisahkan setiap hobi dengan koma (,).</div>
                             </div>
                             <div class="col-sm-6">
                                 <label class="form-label">15. Cita-cita <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('cita_cita') is-invalid @enderror" 
-                                       name="cita_cita" value="{{ old('cita_cita', $formulir?->cita_cita) }}">
+                                       name="cita_cita" value="{{ old('cita_cita', $formulir?->cita_cita) }}"
+                                       placeholder="Contoh: Dokter, Pengusaha, Ustadz">
+                                <div class="form-text">Boleh lebih dari satu. Pisahkan setiap cita-cita dengan koma (,).</div>
                             </div>
                         </div>
 
@@ -266,7 +270,13 @@
                             <div class="col-sm-4">
                                 <label class="form-label">32. NISN <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('nisn') is-invalid @enderror" 
-                                       name="nisn" maxlength="20" value="{{ old('nisn', $formulir?->nisn) }}">
+                                       name="nisn" maxlength="20" inputmode="numeric" autocomplete="off"
+                                       placeholder="Masukkan NISN 10 digit"
+                                       value="{{ old('nisn', $formulir?->nisn) }}">
+                                <div class="form-text">
+                                    Pastikan NISN sesuai data resmi. Cek manual di
+                                    <a href="https://nisn.data.kemendikdasmen.go.id/" target="_blank" rel="noopener">nisn.data.kemendikdasmen.go.id</a>.
+                                </div>
                             </div>
                         </div>
 

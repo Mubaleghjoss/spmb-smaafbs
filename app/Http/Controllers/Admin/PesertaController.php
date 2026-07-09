@@ -372,6 +372,34 @@ class PesertaController extends Controller
             ->with('success', $pesan);
     }
 
+    public function prosesImporRekapSeleksi(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'file_rekap' => 'required|file|mimes:xlsx,xls|max:5120',
+        ], [
+            'file_rekap.required' => 'File rekap seleksi wajib diupload.',
+            'file_rekap.mimes' => 'File rekap seleksi harus berformat xlsx atau xls.',
+        ]);
+
+        $hasil = $this->imporEksporService->imporRekapSeleksi(
+            $request->file('file_rekap')->getRealPath()
+        );
+
+        $pesan = "Impor rekap selesai: {$hasil['sukses']} berhasil ({$hasil['baru']} baru, {$hasil['update']} update), {$hasil['gagal']} gagal.";
+
+        $redirect = redirect()->back()->with('success', $pesan);
+
+        if (! empty($hasil['errors'])) {
+            $redirect->with('errors_impor', $hasil['errors']);
+        }
+
+        if (! empty($hasil['warnings'])) {
+            $redirect->with('warnings_impor', $hasil['warnings']);
+        }
+
+        return $redirect;
+    }
+
     /**
      * Ekspor peserta ke Excel
      */
@@ -389,6 +417,13 @@ class PesertaController extends Controller
     public function downloadTemplate(): BinaryFileResponse
     {
         $path = $this->imporEksporService->generateTemplate();
+        return response()->download($path)->deleteFileAfterSend();
+    }
+
+    public function downloadTemplateRekapSeleksi(): BinaryFileResponse
+    {
+        $path = $this->imporEksporService->generateTemplateRekapSeleksi();
+
         return response()->download($path)->deleteFileAfterSend();
     }
 
@@ -490,6 +525,7 @@ class PesertaController extends Controller
                 'Gelombang',
                 'Jenis Pendaftaran',
                 'Kelas Tujuan',
+                'Kelas Penempatan',
                 'Tahap',
                 'Tanggal Daftar',
             ], ';');
@@ -506,6 +542,7 @@ class PesertaController extends Controller
                     $p->gelombangPendaftaran?->nama ?? '-',
                     $p->jenis_pendaftaran_label,
                     $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
+                    $p->kelas_penempatan ?? '-',
                     'Tahap ' . $p->tahap_saat_ini,
                     $p->created_at->format('d/m/Y H:i'),
                 ], ';');
@@ -542,7 +579,7 @@ class PesertaController extends Controller
             // Header
             fputcsv($handle, [
                 'No Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin',
-                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan',
+                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan', 'Kelas Penempatan',
                 'Tempat Lahir', 'Provinsi Lahir', 'Tanggal Lahir',
                 'Asal Sekolah', 'NISN', 'Prestasi',
                 'Tinggi Badan', 'Berat Badan', 'Lingkar Kepala',
@@ -567,6 +604,7 @@ class PesertaController extends Controller
                     $p->gelombangPendaftaran?->nama ?? '-',
                     $p->jenis_pendaftaran_label,
                     $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
+                    $p->kelas_penempatan ?? '-',
                     $f?->tempat_lahir ?? '-',
                     $f?->provinsi_lahir ?? '-',
                     $f?->tanggal_lahir?->format('d/m/Y') ?? '-',

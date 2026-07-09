@@ -37,6 +37,31 @@ class AuthTest extends TestCase
         $this->assertEquals($pengguna->id, $result->id);
     }
 
+    public function test_login_default_admin_memulihkan_pengguna_saat_tabel_kosong(): void
+    {
+        config([
+            'auth.default_pengguna.auto_repair' => true,
+            'auth.default_pengguna.accounts' => [[
+                'email' => 'admin@smaalfurqon.sch.id',
+                'password' => 'admin123',
+                'nama' => 'Administrator',
+                'peran' => 'admin',
+            ]],
+        ]);
+
+        $result = $this->authService->autentikasiDenganStatus('admin@smaalfurqon.sch.id', 'admin123');
+
+        $this->assertSame('success', $result['status']);
+        $this->assertNotNull($result['pengguna']);
+        $this->assertDatabaseHas('pengguna', [
+            'email' => 'admin@smaalfurqon.sch.id',
+            'nama' => 'Administrator',
+            'peran' => 'admin',
+            'aktif' => true,
+        ]);
+        $this->assertTrue(Hash::check('admin123', $result['pengguna']->password));
+    }
+
     public function test_login_fails_with_wrong_password(): void
     {
         Pengguna::create([

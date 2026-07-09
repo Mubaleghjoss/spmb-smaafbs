@@ -25,6 +25,7 @@ class GraduatedStudentResource extends JsonResource
                 'gelombang' => $this->gelombangPendaftaran?->nama,
                 'jenis_pendaftaran' => $this->jenis_pendaftaran,
                 'kelas_tujuan' => $this->kelas_tujuan,
+                'kelas_penempatan' => $this->kelas_penempatan,
             ],
             'biodata' => [
                 'nama' => $formulir?->nama_lengkap ?: $this->nama,

@@ -353,6 +353,9 @@
                                         @if($p->kelas_tujuan)
                                             · Kelas {{ $p->kelas_tujuan }}
                                         @endif
+                                        @if($p->kelas_penempatan)
+                                            &middot; {{ $p->kelas_penempatan }}
+                                        @endif
                                     </small>
                                 </td>
                                 <td>

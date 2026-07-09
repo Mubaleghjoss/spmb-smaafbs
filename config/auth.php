@@ -46,4 +46,22 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    'default_pengguna' => [
+        'auto_repair' => env('PENGGUNA_AUTO_REPAIR_DEFAULTS', env('APP_ENV', 'production') !== 'production'),
+        'accounts' => [
+            [
+                'email' => env('SPMB_ADMIN_EMAIL', 'admin@smaalfurqon.sch.id'),
+                'password' => env('SPMB_ADMIN_PASSWORD', 'admin123'),
+                'nama' => env('SPMB_ADMIN_NAME', 'Administrator'),
+                'peran' => 'admin',
+            ],
+            [
+                'email' => env('SPMB_OPERATOR_EMAIL', 'operator@smaalfurqon.sch.id'),
+                'password' => env('SPMB_OPERATOR_PASSWORD', 'operator123'),
+                'nama' => env('SPMB_OPERATOR_NAME', 'Operator SPMB'),
+                'peran' => 'operator',
+            ],
+        ],
+    ],
+
 ];

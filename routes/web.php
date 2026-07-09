@@ -136,6 +136,7 @@ Route::prefix('ujian')->name('ujian.')->middleware('cek.peserta')->group(functio
 |--------------------------------------------------------------------------
 */
 Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.menu'])->group(function () {
+    Route::get('/', fn () => redirect()->route('admin.dashboard'))->name('index');
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
     
     // Alur Peserta (Pipeline SPMB)
@@ -254,10 +255,12 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/peserta/impor', [\App\Http\Controllers\Admin\PesertaController::class, 'impor'])->name('peserta.impor');
     Route::get('/peserta/ekspor', [\App\Http\Controllers\Admin\PesertaController::class, 'ekspor'])->name('peserta.ekspor');
     Route::get('/peserta/template', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadTemplate'])->name('peserta.template');
+    Route::get('/peserta/template-rekap-seleksi', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadTemplateRekapSeleksi'])->name('peserta.template-rekap-seleksi');
     Route::get('/peserta/download-akun', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadAkun'])->name('peserta.download-akun');
     Route::get('/peserta/download-biodata', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadBiodata'])->name('peserta.download-biodata');
     Route::post('/peserta', [\App\Http\Controllers\Admin\PesertaController::class, 'store'])->name('peserta.store');
     Route::post('/peserta/impor', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImpor'])->name('peserta.impor.proses');
+    Route::post('/peserta/impor-rekap-seleksi', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImporRekapSeleksi'])->name('peserta.impor-rekap-seleksi.proses');
     Route::post('/peserta/bulk-assign-grup', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkAssignGrup'])->name('peserta.bulk-assign-grup');
     Route::post('/peserta/bulk-update-kategori', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateKategori'])->name('peserta.bulk-update-kategori');
     Route::post('/peserta/bulk-update-tahap', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateTahap'])->name('peserta.bulk-update-tahap');

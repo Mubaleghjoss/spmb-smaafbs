@@ -368,8 +368,8 @@
                 <div class="tab-pane fade" id="sync" role="tabpanel">
                     <!-- Konfigurasi Server -->
                     @php
-                        $syncUrl = \App\Models\Pengaturan::ambil('sync_server_url', '');
-                        $syncToken = \App\Models\Pengaturan::ambil('sync_token', '');
+                        $syncUrl = \App\Models\Pengaturan::ambil('sync_server_url', env('SYNC_SERVER_URL', ''));
+                        $syncToken = \App\Models\Pengaturan::ambil('sync_token', env('SYNC_TOKEN', ''));
                         $syncSiap = !empty($syncUrl) && !empty($syncToken);
                     @endphp
                     <div class="card border-0 shadow-sm mb-3">
@@ -858,6 +858,9 @@ function simpanKonfigSync() {
     .then(data => {
         if (data.success) {
             msgBox.innerHTML = '<div class="alert alert-success small py-2 mb-0"><i class="bi bi-check-circle me-1"></i>' + data.message + '</div>';
+            if (data.server_url) {
+                document.getElementById('syncServerUrl').value = data.server_url;
+            }
             // Update status badge
             document.getElementById('syncStatus').innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Sinkron sudah siap</span>';
         } else {
@@ -893,6 +896,9 @@ function tesKoneksiSync() {
         btn.innerHTML = '<i class="bi bi-wifi me-1"></i>Tes';
         if (data.success) {
             msgBox.innerHTML = '<div class="alert alert-success small py-2 mb-0"><i class="bi bi-check-circle me-1"></i>' + data.message + '</div>';
+            if (data.server_url) {
+                document.getElementById('syncServerUrl').value = data.server_url;
+            }
             document.getElementById('syncStatus').innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>Sinkron sudah siap</span>';
         } else {
             msgBox.innerHTML = '<div class="alert alert-danger small py-2 mb-0"><i class="bi bi-x-circle me-1"></i>' + data.message + '</div>';

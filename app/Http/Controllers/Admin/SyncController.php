@@ -15,14 +15,44 @@ use Illuminate\Support\Facades\Storage;
  */
 class SyncController extends Controller
 {
+    private const LIVE_SYNC_HOST = 'seleksi.smaafbs.sch.id';
+
+    private const SYNC_HOST_ALIASES = [
+        'selesksi.smaafbs.sch.id' => self::LIVE_SYNC_HOST,
+    ];
+
     /**
      * Tabel yang disinkronkan (urutan penting untuk foreign key).
      */
     private array $syncTables = [
+        'pengaturan',
+        'pengguna',
+        'tahun_ajaran',
+        'gelombang_pendaftaran',
+        'grup',
+        'topik',
+        'soal',
+        'jawaban',
+        'riwayat_soal',
+        'tes',
+        'tes_soal',
+        'grup_tes',
+        'psikotes_kepribadian_config',
+        'psikotes_nilai_jawaban',
+        'gaya_belajar_config',
+        'mbti_config',
+        'mbti_tipe_deskripsi',
+        'profiling_config',
+        'profiling_mapping',
+        'profiling_pilar_deskripsi',
         'peserta',
         'formulir_spmb',
         'tahapan_spmb',
         'pembayaran',
+        'jadwal_wawancara',
+        'peserta_wawancara',
+        'wawancara',
+        'log_tahapan_spmb',
         'token',
         'sesi_tes',
         'jawaban_peserta',
@@ -30,10 +60,6 @@ class SyncController extends Controller
         'hasil_psikotes_kepribadian',
         'hasil_mbti',
         'hasil_profiling',
-        'wawancara',
-        'jadwal_wawancara',
-        'peserta_wawancara',
-        'log_tahapan_spmb',
         'grup_peserta',
         'token_global',
         'token_global_tes',
@@ -182,12 +208,15 @@ class SyncController extends Controller
             'sync_token' => 'required|string|min:6',
         ]);
 
-        Pengaturan::atur('sync_server_url', rtrim($request->sync_server_url, '/'));
+        $serverUrl = $this->normalisasiSyncServerUrl($request->sync_server_url);
+
+        Pengaturan::atur('sync_server_url', $serverUrl);
         Pengaturan::atur('sync_token', $request->sync_token);
 
         return response()->json([
             'success' => true,
             'message' => 'Konfigurasi sync berhasil disimpan.',
+            'server_url' => $serverUrl,
         ]);
     }
 
@@ -196,8 +225,8 @@ class SyncController extends Controller
      */
     public function tesKoneksi()
     {
-        $serverUrl = Pengaturan::ambil('sync_server_url');
-        $token = Pengaturan::ambil('sync_token');
+        $serverUrl = $this->ambilSyncServerUrl();
+        $token = $this->ambilSyncToken();
 
         if (empty($serverUrl) || empty($token)) {
             return response()->json([
@@ -209,7 +238,7 @@ class SyncController extends Controller
         try {
             $response = Http::timeout(15)
                 ->withHeaders(['X-Sync-Token' => $token])
-                ->get("{$serverUrl}/api/sync/export");
+                ->get($this->syncEndpoint($serverUrl, 'export'));
 
             if ($response->status() === 403) {
                 return response()->json([
@@ -222,6 +251,7 @@ class SyncController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Koneksi berhasil! Server online siap disinkronkan.',
+                    'server_url' => $serverUrl,
                 ]);
             }
 
@@ -232,7 +262,7 @@ class SyncController extends Controller
         } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal terhubung: ' . $e->getMessage(),
+                'message' => 'Gagal terhubung: ' . $this->formatPesanKoneksiSync($e),
             ]);
         }
     }
@@ -242,8 +272,8 @@ class SyncController extends Controller
      */
     public function tarikDariOnline(Request $request)
     {
-        $serverUrl = Pengaturan::ambil('sync_server_url');
-        $token = Pengaturan::ambil('sync_token');
+        $serverUrl = $this->ambilSyncServerUrl();
+        $token = $this->ambilSyncToken();
 
         if (empty($serverUrl) || empty($token)) {
             return response()->json([
@@ -263,7 +293,7 @@ class SyncController extends Controller
             // 2. Download ZIP dari server online
             $response = Http::timeout(300)
                 ->withHeaders(['X-Sync-Token' => $token])
-                ->get("{$serverUrl}/api/sync/export");
+                ->get($this->syncEndpoint($serverUrl, 'export'));
 
             if (!$response->successful()) {
                 throw new \Exception('Server online menolak: ' . $response->status() . ' - ' . $response->body());
@@ -349,7 +379,7 @@ class SyncController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal tarik data: ' . $e->getMessage(),
+                'message' => 'Gagal tarik data: ' . $this->formatPesanKoneksiSync($e),
             ], 500);
         }
     }
@@ -359,8 +389,8 @@ class SyncController extends Controller
      */
     public function pushKeOnline(Request $request)
     {
-        $serverUrl = Pengaturan::ambil('sync_server_url');
-        $token = Pengaturan::ambil('sync_token');
+        $serverUrl = $this->ambilSyncServerUrl();
+        $token = $this->ambilSyncToken();
 
         if (empty($serverUrl) || empty($token)) {
             return response()->json([
@@ -391,7 +421,7 @@ class SyncController extends Controller
             $response = Http::timeout(300)
                 ->withHeaders(['X-Sync-Token' => $token])
                 ->attach('zip_file', $zipContent, 'sync-data.zip')
-                ->post("{$serverUrl}/api/sync/import");
+                ->post($this->syncEndpoint($serverUrl, 'import'));
 
             $responseData = $response->json() ?? [];
             $httpStatus = $response->status();
@@ -462,7 +492,7 @@ class SyncController extends Controller
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal push data: ' . $e->getMessage(),
+                'message' => 'Gagal push data: ' . $this->formatPesanKoneksiSync($e),
             ], 500);
         }
     }
@@ -574,6 +604,77 @@ class SyncController extends Controller
         $token = Pengaturan::ambil('sync_token', env('SYNC_TOKEN'));
         $requestToken = $request->header('X-Sync-Token') ?? $request->query('token');
         return !empty($token) && $requestToken === $token;
+    }
+
+    private function ambilSyncServerUrl(): ?string
+    {
+        $serverUrl = Pengaturan::ambil('sync_server_url', env('SYNC_SERVER_URL'));
+
+        if (!is_string($serverUrl) || trim($serverUrl) === '') {
+            return null;
+        }
+
+        $normal = $this->normalisasiSyncServerUrl($serverUrl);
+
+        if ($normal !== rtrim(trim($serverUrl), '/')) {
+            Pengaturan::atur('sync_server_url', $normal);
+        }
+
+        return $normal;
+    }
+
+    private function ambilSyncToken(): ?string
+    {
+        $token = Pengaturan::ambil('sync_token', env('SYNC_TOKEN'));
+
+        return is_string($token) ? trim($token) : null;
+    }
+
+    private function normalisasiSyncServerUrl(string $url): string
+    {
+        $url = trim($url);
+
+        if (!preg_match('#^https?://#i', $url)) {
+            $url = 'https://' . $url;
+        }
+
+        $parts = parse_url($url);
+
+        if ($parts === false || empty($parts['host'])) {
+            throw new \InvalidArgumentException('URL server sync tidak valid.');
+        }
+
+        $scheme = strtolower($parts['scheme'] ?? 'https');
+        $host = strtolower($parts['host']);
+        $host = self::SYNC_HOST_ALIASES[$host] ?? $host;
+
+        if ($host === self::LIVE_SYNC_HOST) {
+            $scheme = 'https';
+        }
+
+        $port = isset($parts['port']) ? ':' . $parts['port'] : '';
+        $path = $parts['path'] ?? '';
+        $path = preg_replace('#/api/sync/(export|import)/?$#', '', $path);
+        $path = preg_replace('#/api/sync/?$#', '', $path);
+        $path = rtrim($path ?? '', '/');
+
+        return "{$scheme}://{$host}{$port}{$path}";
+    }
+
+    private function syncEndpoint(string $serverUrl, string $aksi): string
+    {
+        return rtrim($serverUrl, '/') . '/api/sync/' . ltrim($aksi, '/');
+    }
+
+    private function formatPesanKoneksiSync(\Throwable $e): string
+    {
+        $message = $e->getMessage();
+
+        if (str_contains($message, 'cURL error 60') || str_contains($message, 'no alternative certificate subject name')) {
+            return 'SSL menolak host server sync. Gunakan URL https://' . self::LIVE_SYNC_HOST . ' tanpa typo seperti selesksi.smaafbs.sch.id. Detail: ' . $message;
+        }
+
+        return $message;
     }
 
     /**

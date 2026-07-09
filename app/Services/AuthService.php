@@ -34,19 +34,86 @@ class AuthService
      */
     public function autentikasi(string $email, string $password): ?Pengguna
     {
-        if ($this->cekKunciAkun($email)) {
-            return null;
+        $result = $this->autentikasiDenganStatus($email, $password);
+
+        return $result['pengguna'];
+    }
+
+    /**
+     * Autentikasi pengguna sekaligus mengembalikan alasan gagal.
+     *
+     * @return array{status:string,pengguna:?Pengguna}
+     */
+    public function autentikasiDenganStatus(string $email, string $password): array
+    {
+        $email = strtolower(trim($email));
+        $pengguna = Pengguna::where('email', $email)->first();
+
+        if (! $pengguna) {
+            $pengguna = $this->pulihkanPenggunaDefaultJikaCocok($email, $password);
+
+            if (! $pengguna) {
+                $this->catatGagalLogin($email);
+
+                return ['status' => 'not_found', 'pengguna' => null];
+            }
         }
 
-        $pengguna = Pengguna::where('email', $email)->where('aktif', true)->first();
+        if ($pengguna->dikunci_sampai && $pengguna->dikunci_sampai > now()) {
+            return ['status' => 'locked', 'pengguna' => null];
+        }
+
+        if (! $pengguna->aktif) {
+            return ['status' => 'inactive', 'pengguna' => null];
+        }
 
         if (!$pengguna || !Hash::check($password, $pengguna->password)) {
             $this->catatGagalLogin($email);
-            return null;
+
+            return ['status' => 'invalid_password', 'pengguna' => null];
         }
 
         $this->resetGagalLogin($email);
-        return $pengguna;
+
+        return ['status' => 'success', 'pengguna' => $pengguna];
+    }
+
+    private function pulihkanPenggunaDefaultJikaCocok(string $email, string $password): ?Pengguna
+    {
+        if (! config('auth.default_pengguna.auto_repair', false)) {
+            return null;
+        }
+
+        foreach (config('auth.default_pengguna.accounts', []) as $account) {
+            $defaultEmail = strtolower(trim((string) ($account['email'] ?? '')));
+            $defaultPassword = (string) ($account['password'] ?? '');
+
+            if ($defaultEmail === '' || $defaultPassword === '') {
+                continue;
+            }
+
+            if (! hash_equals($defaultEmail, $email) || ! hash_equals($defaultPassword, $password)) {
+                continue;
+            }
+
+            $pengguna = Pengguna::query()->create([
+                'nama' => $account['nama'] ?: 'Pengguna SPMB',
+                'email' => $defaultEmail,
+                'password' => $defaultPassword,
+                'peran' => in_array($account['peran'] ?? 'operator', ['admin', 'operator'], true)
+                    ? $account['peran']
+                    : 'operator',
+                'aktif' => true,
+                'percobaan_login' => 0,
+                'dikunci_sampai' => null,
+            ]);
+
+            Cache::forget('login_attempts_' . md5($defaultEmail));
+
+            return $pengguna;
+        }
+
+        return null;
     }
 
     /**

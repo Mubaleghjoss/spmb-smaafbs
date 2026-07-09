@@ -82,6 +82,7 @@ class GraduatedStudentApiTest extends TestCase
             ->assertJsonPath('data.0.pendaftaran.gelombang', 'Gelombang 1')
             ->assertJsonPath('data.0.pendaftaran.jenis_pendaftaran', 'siswa_baru')
             ->assertJsonPath('data.0.pendaftaran.kelas_tujuan', 10)
+            ->assertJsonPath('data.0.pendaftaran.kelas_penempatan', 'X1')
             ->assertJsonPath('data.0.hasil_tes.kepribadian', 'Plegmatis')
             ->assertJsonStructure([
                 'data' => [[
@@ -115,6 +116,7 @@ class GraduatedStudentApiTest extends TestCase
             'nomor_pendaftaran' => $nomor,
             'nama' => $nama,
             'email' => strtolower(str_replace(' ', '.', $nama)).'@example.test',
+            'kelas_penempatan' => 'X1',
             ...app(\App\Services\PeriodePendaftaranService::class)->kategoriDefault(),
         ]);
 

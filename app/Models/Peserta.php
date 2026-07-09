@@ -30,6 +30,7 @@ class Peserta extends Authenticatable
         'gelombang_pendaftaran_id',
         'jenis_pendaftaran',
         'kelas_tujuan',
+        'kelas_penempatan',
         'nama',
         'email',
         'password',
