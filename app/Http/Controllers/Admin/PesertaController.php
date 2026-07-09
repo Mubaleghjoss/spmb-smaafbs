@@ -12,6 +12,7 @@ use App\Models\TahunAjaran;
 use App\Models\GelombangPendaftaran;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
 use Illuminate\View\View;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
@@ -374,6 +375,37 @@ class PesertaController extends Controller
 
     public function prosesImporRekapSeleksi(Request $request): RedirectResponse
     {
+        if ($request->input('aksi_rekap') === 'batal') {
+            $token = (string) $request->input('rekap_preview_token');
+            if ($token !== '') {
+                session()->forget($this->sessionKeyPreviewRekap($token));
+            }
+
+            return redirect()
+                ->route('admin.peserta.impor')
+                ->with('success', 'Preview import rekap dibatalkan. Tidak ada data yang diubah.');
+        }
+
+        if ($request->filled('rekap_preview_token')) {
+            $token = (string) $request->input('rekap_preview_token');
+            $preview = session($this->sessionKeyPreviewRekap($token));
+
+            if (! is_array($preview)) {
+                return redirect()
+                    ->route('admin.peserta.impor')
+                    ->with('errors_impor', ['Preview import sudah kedaluwarsa. Upload ulang file rekap.']);
+            }
+
+            $hasil = $this->imporEksporService->terapkanPreviewRekapSeleksi(
+                $preview,
+                $request->input('keputusan', [])
+            );
+
+            session()->forget($this->sessionKeyPreviewRekap($token));
+
+            return $this->redirectHasilImporRekap($hasil);
+        }
+
         $request->validate([
             'file_rekap' => 'required|file|mimes:xlsx,xls|max:5120',
         ], [
@@ -381,11 +413,40 @@ class PesertaController extends Controller
             'file_rekap.mimes' => 'File rekap seleksi harus berformat xlsx atau xls.',
         ]);
 
-        $hasil = $this->imporEksporService->imporRekapSeleksi(
+        $preview = $this->imporEksporService->previewImporRekapSeleksi(
             $request->file('file_rekap')->getRealPath()
         );
 
-        $pesan = "Impor rekap selesai: {$hasil['sukses']} berhasil ({$hasil['baru']} baru, {$hasil['update']} update), {$hasil['gagal']} gagal.";
+        if (! empty($preview['errors'])) {
+            return redirect()
+                ->back()
+                ->with('errors_impor', $preview['errors'])
+                ->with('warnings_impor', $preview['warnings'] ?? []);
+        }
+
+        if (! empty($preview['conflicts'])) {
+            $token = (string) Str::uuid();
+            session()->put($this->sessionKeyPreviewRekap($token), $preview);
+
+            return redirect()
+                ->back()
+                ->with('rekap_preview', [
+                    'token' => $token,
+                    'summary' => $preview['summary'] ?? [],
+                    'conflicts' => $preview['conflicts'],
+                    'warnings' => $preview['warnings'] ?? [],
+                ])
+                ->with('warnings_impor', $preview['warnings'] ?? []);
+        }
+
+        return $this->redirectHasilImporRekap(
+            $this->imporEksporService->terapkanPreviewRekapSeleksi($preview, [])
+        );
+    }
+
+    private function redirectHasilImporRekap(array $hasil): RedirectResponse
+    {
+        $pesan = "Impor rekap selesai: {$hasil['sukses']} berhasil ({$hasil['baru']} baru, {$hasil['update']} update, {$hasil['tidak_berubah']} tidak berubah), {$hasil['gagal']} gagal.";
 
         $redirect = redirect()->back()->with('success', $pesan);
 
@@ -398,6 +459,11 @@ class PesertaController extends Controller
         }
 
         return $redirect;
+    }
+
+    private function sessionKeyPreviewRekap(string $token): string
+    {
+        return 'rekap_import_preview_' . $token;
     }
 
     /**

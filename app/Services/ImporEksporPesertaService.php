@@ -16,6 +16,7 @@ use App\Models\Tes;
 use App\Helpers\NomorPendaftaranHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
@@ -267,23 +268,45 @@ class ImporEksporPesertaService
 
     public function imporRekapSeleksi(string $filePath): array
     {
+        $preview = $this->previewImporRekapSeleksi($filePath);
+
+        if (! empty($preview['errors']) || ! empty($preview['conflicts'])) {
+            return array_merge($this->hasilKosongRekap(), [
+                'errors' => $preview['errors'],
+                'warnings' => $preview['warnings'],
+                'needs_confirmation' => ! empty($preview['conflicts']),
+                'conflicts' => $preview['conflicts'],
+                'preview' => $preview,
+            ]);
+        }
+
+        return $this->terapkanPreviewRekapSeleksi($preview, []);
+    }
+
+    public function previewImporRekapSeleksi(string $filePath): array
+    {
         $spreadsheet = IOFactory::load($filePath);
         $worksheet = $spreadsheet->getActiveSheet();
         $rows = $worksheet->toArray();
 
-        $hasil = [
-            'sukses' => 0,
-            'baru' => 0,
-            'update' => 0,
-            'gagal' => 0,
+        $preview = [
+            'rows' => [],
+            'conflicts' => [],
             'errors' => [],
             'warnings' => [],
+            'summary' => [
+                'total' => 0,
+                'baru' => 0,
+                'tidak_berubah' => 0,
+                'konflik' => 0,
+                'gagal' => 0,
+            ],
         ];
 
         if (empty($rows)) {
-            $hasil['errors'][] = 'File kosong.';
+            $preview['errors'][] = 'File kosong.';
 
-            return $hasil;
+            return $preview;
         }
 
         $headers = array_shift($rows);
@@ -291,9 +314,9 @@ class ImporEksporPesertaService
         $context = $this->ambilKonteksRekapSeleksi();
 
         if (! empty($context['missing'])) {
-            $hasil['errors'][] = 'Konfigurasi tes belum lengkap: ' . implode(', ', $context['missing']) . '.';
+            $preview['errors'][] = 'Konfigurasi tes belum lengkap: ' . implode(', ', $context['missing']) . '.';
 
-            return $hasil;
+            return $preview;
         }
 
         foreach ($rows as $index => $row) {
@@ -304,12 +327,100 @@ class ImporEksporPesertaService
             }
 
             try {
-                $result = DB::transaction(fn () => $this->simpanBarisRekapSeleksi($row, $headerMap, $context));
+                $data = $this->dataRekapDariBaris($row, $headerMap);
+                $match = $this->cariPesertaRekap($data);
+                $preview['summary']['total']++;
+
+                $item = [
+                    'row_id' => 'baris_' . $baris,
+                    'baris' => $baris,
+                    'data' => $data,
+                    'peserta_id' => $match['peserta']?->id,
+                    'peserta' => $match['peserta'] ? $this->ringkasPesertaRekap($match['peserta']) : null,
+                    'differences' => [],
+                ];
+
+                if (! empty($match['ambiguous'])) {
+                    throw new \RuntimeException('Ditemukan lebih dari satu peserta dengan nama dan asal SMP yang sama.');
+                }
+
+                foreach ($data['warnings'] as $warning) {
+                    $preview['warnings'][] = "Baris {$baris}: {$warning}";
+                }
+
+                if (! $match['peserta']) {
+                    $preview['summary']['baru']++;
+                    $preview['rows'][] = $item;
+                    continue;
+                }
+
+                $item['differences'] = $this->bedaRekapDenganPeserta($match['peserta'], $data, $context);
+
+                if (! empty($item['differences'])) {
+                    $preview['summary']['konflik']++;
+                    $preview['conflicts'][] = $item;
+                } else {
+                    $preview['summary']['tidak_berubah']++;
+                }
+
+                $preview['rows'][] = $item;
+            } catch (\Throwable $e) {
+                $preview['summary']['gagal']++;
+                $preview['errors'][] = "Baris {$baris}: " . $e->getMessage();
+            }
+        }
+
+        return $preview;
+    }
+
+    public function terapkanPreviewRekapSeleksi(array $preview, array $keputusan): array
+    {
+        $hasil = $this->hasilKosongRekap();
+
+        if (! empty($preview['errors'])) {
+            $hasil['errors'] = $preview['errors'];
+
+            return $hasil;
+        }
+
+        $context = $this->ambilKonteksRekapSeleksi();
+
+        if (! empty($context['missing'])) {
+            $hasil['errors'][] = 'Konfigurasi tes belum lengkap: ' . implode(', ', $context['missing']) . '.';
+
+            return $hasil;
+        }
+
+        foreach ($preview['rows'] ?? [] as $item) {
+            $baris = (int) ($item['baris'] ?? 0);
+            $data = $item['data'] ?? [];
+            $rowId = (string) ($item['row_id'] ?? '');
+            $hasConflict = ! empty($item['differences']);
+            $pilihan = $keputusan[$rowId] ?? ($hasConflict ? null : 'baru');
+
+            try {
+                if ($hasConflict && ! in_array($pilihan, ['baru', 'lama'], true)) {
+                    throw new \RuntimeException('Pilih tindakan: pakai data baru atau pertahankan data lama.');
+                }
+
+                if ($hasConflict && $pilihan === 'lama') {
+                    $hasil['sukses']++;
+                    $hasil['tidak_berubah']++;
+                    continue;
+                }
+
+                if (! $hasConflict && ! empty($item['peserta_id'])) {
+                    $hasil['sukses']++;
+                    $hasil['tidak_berubah']++;
+                    continue;
+                }
+
+                $result = DB::transaction(fn () => $this->simpanDataRekapSeleksi($data, $context));
 
                 $hasil['sukses']++;
                 $hasil[$result['created'] ? 'baru' : 'update']++;
 
-                foreach ($result['warnings'] as $warning) {
+                foreach ($data['warnings'] ?? [] as $warning) {
                     $hasil['warnings'][] = "Baris {$baris}: {$warning}";
                 }
             } catch (\Throwable $e) {
@@ -416,7 +527,22 @@ class ImporEksporPesertaService
         ]);
     }
 
-    private function simpanBarisRekapSeleksi(array $row, array $headerMap, array $context): array
+    private function hasilKosongRekap(): array
+    {
+        return [
+            'sukses' => 0,
+            'baru' => 0,
+            'update' => 0,
+            'tidak_berubah' => 0,
+            'gagal' => 0,
+            'errors' => [],
+            'warnings' => [],
+            'needs_confirmation' => false,
+            'conflicts' => [],
+        ];
+    }
+
+    private function dataRekapDariBaris(array $row, array $headerMap): array
     {
         $nama = $this->cellString($row, $headerMap, 'nama');
         $asalSmp = $this->cellString($row, $headerMap, 'asal_smp');
@@ -451,21 +577,48 @@ class ImporEksporPesertaService
         $kelasPenempatan = Str::upper($this->cellString($row, $headerMap, 'kelas_penempatan'));
         $jenisKelamin = $this->normalisasiJenisKelamin($this->cellString($row, $headerMap, 'jk'));
 
+        return [
+            'nama' => $nama,
+            'asal_smp' => $asalSmp,
+            'personality' => $personality,
+            'modalitas' => $modalitas,
+            'nilai_akademik' => $nilaiAkademik,
+            'jml' => $jml,
+            'total' => $total,
+            'nomor_pendaftaran' => $nomorPendaftaran,
+            'email' => $emailInput,
+            'telepon' => $teleponInput,
+            'kelas_penempatan' => $kelasPenempatan,
+            'jenis_kelamin' => $jenisKelamin,
+            'warnings' => $warnings,
+        ];
+    }
+
+    private function simpanBarisRekapSeleksi(array $row, array $headerMap, array $context): array
+    {
+        return $this->simpanDataRekapSeleksi(
+            $this->dataRekapDariBaris($row, $headerMap),
+            $context
+        );
+    }
+
+    private function simpanDataRekapSeleksi(array $data, array $context): array
+    {
         [$peserta, $created] = $this->cariAtauBuatPesertaRekap(
-            $nama,
-            $asalSmp,
-            $nomorPendaftaran,
-            $emailInput,
-            $teleponInput,
-            $kelasPenempatan,
+            $data['nama'],
+            $data['asal_smp'],
+            $data['nomor_pendaftaran'],
+            $data['email'],
+            $data['telepon'],
+            $data['kelas_penempatan'],
             $context['kategori']
         );
 
-        $this->sinkronFormulirRekap($peserta, $nama, $asalSmp, $jenisKelamin);
-        $this->simpanHasilKepribadian($peserta, $context['tes']['kepribadian'], $personality);
-        $this->simpanHasilGayaBelajar($peserta, $context['tes']['gaya_belajar'], $modalitas);
+        $this->sinkronFormulirRekap($peserta, $data['nama'], $data['asal_smp'], $data['jenis_kelamin']);
+        $this->simpanHasilKepribadian($peserta, $context['tes']['kepribadian'], $data['personality']);
+        $this->simpanHasilGayaBelajar($peserta, $context['tes']['gaya_belajar'], $data['modalitas']);
 
-        foreach ($nilaiAkademik as $kode => $nilai) {
+        foreach ($data['nilai_akademik'] as $kode => $nilai) {
             $this->simpanSesiNilai($peserta, $context['tes']['akademik'][$kode], $nilai);
         }
 
@@ -473,7 +626,146 @@ class ImporEksporPesertaService
 
         return [
             'created' => $created,
-            'warnings' => $warnings,
+            'warnings' => $data['warnings'],
+        ];
+    }
+
+    /**
+     * @return array{peserta:?Peserta, ambiguous:bool}
+     */
+    private function cariPesertaRekap(array $data): array
+    {
+        $peserta = null;
+
+        if (($data['nomor_pendaftaran'] ?? '') !== '') {
+            $peserta = Peserta::query()->where('nomor_pendaftaran', $data['nomor_pendaftaran'])->first();
+        }
+
+        if (! $peserta && ($data['email'] ?? '') !== '') {
+            $peserta = Peserta::query()->where('email', $data['email'])->first();
+        }
+
+        if (! $peserta && ($data['telepon'] ?? '') !== '') {
+            $peserta = Peserta::query()->where('telepon', $data['telepon'])->first();
+        }
+
+        if (! $peserta) {
+            $matches = Peserta::query()
+                ->whereRaw('LOWER(TRIM(nama)) = ?', [Str::lower($data['nama'])])
+                ->whereRaw("LOWER(TRIM(COALESCE(asal_sekolah, ''))) = ?", [Str::lower($data['asal_smp'])])
+                ->get();
+
+            if ($matches->count() > 1) {
+                return ['peserta' => null, 'ambiguous' => true];
+            }
+
+            $peserta = $matches->first();
+        }
+
+        return ['peserta' => $peserta, 'ambiguous' => false];
+    }
+
+    /**
+     * @return array<int,array{field:string,label:string,lama:mixed,baru:mixed}>
+     */
+    private function bedaRekapDenganPeserta(Peserta $peserta, array $data, array $context): array
+    {
+        $differences = [];
+
+        $this->tambahBeda($differences, 'nama', 'Nama', $peserta->nama, $data['nama']);
+        $this->tambahBeda($differences, 'asal_sekolah', 'Asal SMP', $peserta->asal_sekolah, $data['asal_smp']);
+
+        if (($data['email'] ?? '') !== '') {
+            $this->tambahBeda($differences, 'email', 'Email', $peserta->email, $data['email']);
+        }
+
+        if (($data['telepon'] ?? '') !== '') {
+            $this->tambahBeda($differences, 'telepon', 'No HP/Login', $peserta->telepon, $data['telepon']);
+        }
+
+        if ($this->pesertaMendukungKelasPenempatan() && ($data['kelas_penempatan'] ?? '') !== '') {
+            $this->tambahBeda($differences, 'kelas_penempatan', 'Kelas Penempatan', $peserta->kelas_penempatan, $data['kelas_penempatan']);
+        }
+
+        $formulir = $peserta->formulirSpmb;
+        if (($data['jenis_kelamin'] ?? null) !== null) {
+            $this->tambahBeda($differences, 'jenis_kelamin', 'Jenis Kelamin', $formulir?->jenis_kelamin, $data['jenis_kelamin']);
+        }
+
+        $sesiKepribadian = $this->sesiPesertaUntukTes($peserta, $context['tes']['kepribadian']);
+        $this->tambahBeda(
+            $differences,
+            'personality',
+            'Personality Plus',
+            $sesiKepribadian?->hasilPsikotesKepribadian?->hasil_kepribadian,
+            $data['personality']
+        );
+
+        $sesiGayaBelajar = $this->sesiPesertaUntukTes($peserta, $context['tes']['gaya_belajar']);
+        $this->tambahBeda(
+            $differences,
+            'modalitas',
+            'Modalitas',
+            $sesiGayaBelajar?->hasilGayaBelajar?->hasil_gaya_belajar,
+            $data['modalitas']
+        );
+
+        foreach ($data['nilai_akademik'] as $kode => $nilai) {
+            $sesi = $this->sesiPesertaUntukTes($peserta, $context['tes']['akademik'][$kode]);
+            $this->tambahBeda($differences, "nilai_{$kode}", strtoupper($kode), $sesi?->nilai, $nilai);
+        }
+
+        return $differences;
+    }
+
+    private function tambahBeda(array &$differences, string $field, string $label, mixed $lama, mixed $baru): void
+    {
+        $lamaNormal = $this->normalisasiNilaiBanding($lama);
+        $baruNormal = $this->normalisasiNilaiBanding($baru);
+
+        if ($lamaNormal === $baruNormal) {
+            return;
+        }
+
+        $differences[] = [
+            'field' => $field,
+            'label' => $label,
+            'lama' => $lama,
+            'baru' => $baru,
+        ];
+    }
+
+    private function normalisasiNilaiBanding(mixed $value): string
+    {
+        if ($value === null || $value === '') {
+            return '';
+        }
+
+        if (is_numeric($value)) {
+            return rtrim(rtrim(number_format((float) $value, 2, '.', ''), '0'), '.');
+        }
+
+        return Str::lower(trim((string) $value));
+    }
+
+    private function sesiPesertaUntukTes(Peserta $peserta, Tes $tes): ?SesiTes
+    {
+        return SesiTes::query()
+            ->with(['hasilPsikotesKepribadian', 'hasilGayaBelajar'])
+            ->where('peserta_id', $peserta->id)
+            ->where('tes_id', $tes->id)
+            ->first();
+    }
+
+    private function ringkasPesertaRekap(Peserta $peserta): array
+    {
+        return [
+            'id' => $peserta->id,
+            'nomor_pendaftaran' => $peserta->nomor_pendaftaran,
+            'nama' => $peserta->nama,
+            'asal_sekolah' => $peserta->asal_sekolah,
+            'email' => $peserta->email,
+            'telepon' => $peserta->telepon,
         ];
     }
 
@@ -486,70 +778,73 @@ class ImporEksporPesertaService
         string $kelasPenempatan,
         array $kategori
     ): array {
-        $peserta = null;
+        $match = $this->cariPesertaRekap([
+            'nomor_pendaftaran' => $nomorPendaftaran,
+            'email' => $emailInput,
+            'telepon' => $teleponInput,
+            'nama' => $nama,
+            'asal_smp' => $asalSmp,
+        ]);
 
-        if ($nomorPendaftaran !== '') {
-            $peserta = Peserta::query()->where('nomor_pendaftaran', $nomorPendaftaran)->first();
+        if ($match['ambiguous']) {
+            throw new \RuntimeException('Ditemukan lebih dari satu peserta dengan nama dan asal SMP yang sama.');
         }
 
-        if (! $peserta && $emailInput !== '') {
-            $peserta = Peserta::query()->where('email', $emailInput)->first();
-        }
-
-        if (! $peserta && $teleponInput !== '') {
-            $peserta = Peserta::query()->where('telepon', $teleponInput)->first();
-        }
-
-        if (! $peserta) {
-            $matches = Peserta::query()
-                ->whereRaw('LOWER(TRIM(nama)) = ?', [Str::lower($nama)])
-                ->whereRaw("LOWER(TRIM(COALESCE(asal_sekolah, ''))) = ?", [Str::lower($asalSmp)])
-                ->get();
-
-            if ($matches->count() > 1) {
-                throw new \RuntimeException('Ditemukan lebih dari satu peserta dengan nama dan asal SMP yang sama.');
-            }
-
-            $peserta = $matches->first();
-        }
-
+        $peserta = $match['peserta'];
         $generated = $this->kredensialGeneratedRekap($nama, $asalSmp);
         $email = $emailInput !== '' ? $emailInput : ($peserta?->email ?: $generated['email']);
         $telepon = $teleponInput !== '' ? $teleponInput : ($peserta?->telepon ?: $generated['telepon']);
 
         if (! $peserta) {
+            $dataPeserta = [
+                'nomor_pendaftaran' => $nomorPendaftaran !== '' ? $nomorPendaftaran : NomorPendaftaranHelper::generate(),
+                'tahun_ajaran_id' => $kategori['tahun_ajaran_id'],
+                'gelombang_pendaftaran_id' => $kategori['gelombang_pendaftaran_id'],
+                'jenis_pendaftaran' => $kategori['jenis_pendaftaran'],
+                'kelas_tujuan' => $kategori['kelas_tujuan'],
+                'nama' => $nama,
+                'email' => $email,
+                'telepon' => $telepon,
+                'password' => self::REKAP_PASSWORD_DEFAULT,
+                'password_temp' => self::REKAP_PASSWORD_DEFAULT,
+                'asal_sekolah' => $asalSmp,
+            ];
+
+            if ($this->pesertaMendukungKelasPenempatan()) {
+                $dataPeserta['kelas_penempatan'] = $kelasPenempatan !== '' ? $kelasPenempatan : null;
+            }
+
             return [
-                Peserta::query()->create([
-                    'nomor_pendaftaran' => $nomorPendaftaran !== '' ? $nomorPendaftaran : NomorPendaftaranHelper::generate(),
-                    'tahun_ajaran_id' => $kategori['tahun_ajaran_id'],
-                    'gelombang_pendaftaran_id' => $kategori['gelombang_pendaftaran_id'],
-                    'jenis_pendaftaran' => $kategori['jenis_pendaftaran'],
-                    'kelas_tujuan' => $kategori['kelas_tujuan'],
-                    'kelas_penempatan' => $kelasPenempatan !== '' ? $kelasPenempatan : null,
-                    'nama' => $nama,
-                    'email' => $email,
-                    'telepon' => $telepon,
-                    'password' => self::REKAP_PASSWORD_DEFAULT,
-                    'password_temp' => self::REKAP_PASSWORD_DEFAULT,
-                    'asal_sekolah' => $asalSmp,
-                ]),
+                Peserta::query()->create($dataPeserta),
                 true,
             ];
         }
 
-        $peserta->update([
+        $dataUpdate = [
             'nama' => $nama,
             'email' => $email,
             'telepon' => $telepon,
             'asal_sekolah' => $asalSmp,
-            'kelas_penempatan' => $kelasPenempatan !== '' ? $kelasPenempatan : $peserta->kelas_penempatan,
             'tahun_ajaran_id' => $peserta->tahun_ajaran_id ?: $kategori['tahun_ajaran_id'],
             'gelombang_pendaftaran_id' => $peserta->gelombang_pendaftaran_id ?: $kategori['gelombang_pendaftaran_id'],
             'jenis_pendaftaran' => $peserta->jenis_pendaftaran ?: $kategori['jenis_pendaftaran'],
             'kelas_tujuan' => $peserta->kelas_tujuan ?: $kategori['kelas_tujuan'],
-        ]);
+        ];
+
+        if ($this->pesertaMendukungKelasPenempatan()) {
+            $dataUpdate['kelas_penempatan'] = $kelasPenempatan !== '' ? $kelasPenempatan : $peserta->kelas_penempatan;
+        }
+
+        $peserta->update($dataUpdate);
 
         return [$peserta->fresh(), false];
+    }
+
+    private function pesertaMendukungKelasPenempatan(): bool
+    {
+        static $hasColumn = null;
+
+        return $hasColumn ??= Schema::hasColumn('peserta', 'kelas_penempatan');
     }
 
     private function sinkronFormulirRekap(Peserta $peserta, string $nama, string $asalSmp, ?string $jenisKelamin): void
