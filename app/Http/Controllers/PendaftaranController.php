@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Helpers\NomorPendaftaranHelper;
+use App\Models\GelombangPendaftaran;
+use App\Services\KuotaPendaftaranService;
 use App\Services\PengaturanService;
 use App\Services\PeriodePendaftaranService;
 use Illuminate\Http\Request;
@@ -16,7 +18,8 @@ class PendaftaranController extends Controller
 {
     public function __construct(
         private PengaturanService $pengaturanService,
-        private PeriodePendaftaranService $periodePendaftaranService
+        private PeriodePendaftaranService $periodePendaftaranService,
+        private KuotaPendaftaranService $kuotaPendaftaranService
     ) {}
 
     /**
@@ -28,16 +31,22 @@ class PendaftaranController extends Controller
         $branding = $this->pengaturanService->ambilBranding();
         
         [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran($spmb);
-        $periodePendaftaran = $this->periodePendaftaranService->pilihanPublik();
+        $periodePendaftaran = $this->periodePendaftaranService->pilihanPublikDenganStatus();
         $jadwalBerikutnya = $this->periodePendaftaranService->jadwalPublikBerikutnya();
+        $adaGelombangDibuka = $periodePendaftaran->contains(
+            fn($tahun) => $tahun->gelombangPendaftaran->contains(
+                fn(GelombangPendaftaran $gelombang) => $gelombang->sedangDibuka()
+            )
+        );
 
-        if ($pendaftaranDibuka && $periodePendaftaran->isEmpty()) {
+        if ($pendaftaranDibuka && ! $adaGelombangDibuka) {
             $pendaftaranDibuka = false;
             $pesanTutup = 'Belum ada gelombang pendaftaran yang sedang dibuka.';
         }
 
         $tahunDefaultId = $periodePendaftaran->firstWhere('default', true)?->id
             ?? $periodePendaftaran->first()?->id;
+        $periodePayload = $this->formatPeriodePublik($periodePendaftaran);
         $syaratKetentuan = $this->pengaturanService->ambilSyaratKetentuan();
         
         return view('public.daftar', compact(
@@ -47,6 +56,7 @@ class PendaftaranController extends Controller
             'branding',
             'syaratKetentuan',
             'periodePendaftaran',
+            'periodePayload',
             'tahunDefaultId',
             'jadwalBerikutnya'
         ));
@@ -97,6 +107,7 @@ class PendaftaranController extends Controller
 
             // Generate nomor pendaftaran
             $nomorPendaftaran = NomorPendaftaranHelper::generate();
+            $kuota = $this->kuotaPendaftaranService->siapkanAtributPesertaBaru($kategori['tahun_ajaran_id']);
 
             // Buat peserta baru
             // Password akan otomatis di-hash oleh model cast 'hashed'
@@ -107,6 +118,7 @@ class PendaftaranController extends Controller
                 'asal_sekolah' => $request->asal_sekolah,
                 'password' => $request->password,
                 ...$kategori,
+                ...$kuota,
             ]);
 
             // Buat record tahapan SPMB
@@ -119,8 +131,12 @@ class PendaftaranController extends Controller
 
             DB::commit();
 
+            $statusKuota = $peserta->status_kuota === Peserta::STATUS_KUOTA_WAITING
+                ? 'Anda masuk Waiting List karena kuota tahun ajaran sudah penuh.'
+                : 'Anda masuk kuota pendaftaran.';
+
             return redirect()->route('peserta.login')
-                ->with('success', "Pendaftaran berhasil! Nomor pendaftaran Anda: {$nomorPendaftaran}. Silakan login dengan No HP Anda.");
+                ->with('success', "Pendaftaran berhasil! Nomor pendaftaran Anda: {$nomorPendaftaran}. {$statusKuota} Silakan login dengan No HP Anda.");
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -143,5 +159,38 @@ class PendaftaranController extends Controller
         }
 
         return [true, null];
+    }
+
+    private function formatPeriodePublik($periodePendaftaran): array
+    {
+        $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($periodePendaftaran);
+
+        return $periodePendaftaran->map(function ($tahun) use ($ringkasanKuota) {
+            $ringkasan = $ringkasanKuota[$tahun->id] ?? $this->kuotaPendaftaranService->ringkasanTahun($tahun);
+
+            return [
+                'id' => (string) $tahun->id,
+                'nama' => $tahun->nama,
+                'default' => (bool) $tahun->default,
+                'kuota' => $ringkasan,
+                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan) {
+                    $status = $gelombang->statusPendaftaran();
+                    $dibuka = $gelombang->sedangDibuka();
+
+                    return [
+                        'id' => (string) $gelombang->id,
+                        'nama' => $gelombang->nama,
+                        'periode' => $gelombang->labelPeriodePendaftaran(),
+                        'dibuka' => $dibuka,
+                        'status_label' => $dibuka && $ringkasan['penuh']
+                            ? 'Kuota Penuh - Waiting List'
+                            : $status['label'],
+                        'status_class' => $dibuka && $ringkasan['penuh']
+                            ? 'warning text-dark'
+                            : $status['class'],
+                    ];
+                })->values(),
+            ];
+        })->values()->all();
     }
 }

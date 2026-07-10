@@ -105,6 +105,15 @@
                                     </td>
                                 </tr>
                                 <tr>
+                                    <td class="text-muted">Status Kuota</td>
+                                    <td>
+                                        <span class="badge bg-{{ $peserta->status_kuota_badge }}">{{ $peserta->status_kuota_label }}</span>
+                                        @if($peserta->urutan_kuota)
+                                            <small class="text-muted ms-1">Urutan {{ $peserta->urutan_kuota }}</small>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
                                     <td class="text-muted">Grup</td>
                                     <td>
                                         @forelse($peserta->grup as $g)

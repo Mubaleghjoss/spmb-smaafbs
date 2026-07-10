@@ -14,18 +14,31 @@
     <!-- Info Peserta -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
-            <div class="row">
-                <div class="col-md-6">
+            <div class="row g-3">
+                <div class="col-md-4">
                     <p class="mb-1"><strong>Nomor Pendaftaran:</strong></p>
                     <p class="h5 text-success">{{ $peserta->nomor_pendaftaran }}</p>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <p class="mb-1"><strong>Tahap Saat Ini:</strong></p>
                     <p class="h5">Tahap {{ $tahapan->tahap_saat_ini ?? 1 }} dari 7</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="mb-1"><strong>Status Kuota:</strong></p>
+                    <p class="h5 mb-0">
+                        <span class="badge bg-{{ $peserta->status_kuota_badge }}">{{ $peserta->status_kuota_label }}</span>
+                    </p>
                 </div>
             </div>
         </div>
     </div>
+
+    @if($peserta->status_kuota === \App\Models\Peserta::STATUS_KUOTA_WAITING)
+        <div class="alert alert-warning border-0 shadow-sm mb-4">
+            <i class="bi bi-hourglass-split me-1"></i>
+            Anda berada di <strong>Waiting List</strong>. Tahapan SPMB tetap dapat dilanjutkan seperti biasa sambil menunggu keputusan admin.
+        </div>
+    @endif
     
     @php
         $statusKelulusan = $tahapan->status_kelulusan ?? 'menunggu';

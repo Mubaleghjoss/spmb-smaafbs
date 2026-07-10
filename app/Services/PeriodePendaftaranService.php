@@ -26,6 +26,22 @@ class PeriodePendaftaranService
             ->get();
     }
 
+    public function pilihanPublikDenganStatus(): Collection
+    {
+        return TahunAjaran::query()
+            ->aktif()
+            ->whereHas('gelombangPendaftaran', fn($query) => $query->where('aktif', true))
+            ->with([
+                'gelombangPendaftaran' => fn($query) => $query
+                    ->where('aktif', true)
+                    ->orderBy('tanggal_buka')
+                    ->orderBy('nama'),
+            ])
+            ->orderByDesc('default')
+            ->orderByDesc('nama')
+            ->get();
+    }
+
     public function tahunDefault(): ?TahunAjaran
     {
         return TahunAjaran::query()

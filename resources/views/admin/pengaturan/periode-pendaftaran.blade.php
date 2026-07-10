@@ -54,9 +54,13 @@
         <div class="card-body">
             <form method="POST" action="{{ route('admin.pengaturan.spmb.periode.tahun.store') }}" class="row g-3 align-items-end">
                 @csrf
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label">Tahun Ajaran</label>
                     <input type="text" name="nama" class="form-control" placeholder="2027-2028" value="{{ old('nama') }}" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Kuota Peserta</label>
+                    <input type="number" name="kuota_peserta" class="form-control" min="0" value="{{ old('kuota_peserta') }}" placeholder="0 = tanpa batas">
                 </div>
                 <div class="col-md-2">
                     <div class="form-check form-switch mb-2">
@@ -65,16 +69,16 @@
                         <label class="form-check-label" for="tahunAktifBaru">Aktif</label>
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <div class="form-check form-switch mb-2">
                         <input type="hidden" name="default" value="0">
                         <input class="form-check-input" type="checkbox" name="default" value="1" id="tahunDefaultBaru">
                         <label class="form-check-label" for="tahunDefaultBaru">Jadikan default</label>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <button class="btn btn-primary w-100" type="submit">
-                        <i class="bi bi-plus-lg me-1"></i>Tambah
+                        <i class="bi bi-plus-lg"></i>
                     </button>
                 </div>
             </form>
@@ -82,6 +86,15 @@
     </div>
 
     @forelse($tahunAjaran as $tahun)
+        @php
+            $kuotaTahun = $ringkasanKuota[$tahun->id] ?? [
+                'kuota_label' => 'Tidak dibatasi',
+                'dalam_kuota' => 0,
+                'waiting_list' => 0,
+                'total' => $tahun->peserta_count,
+                'sisa_label' => 'Tidak dibatasi',
+            ];
+        @endphp
         <div class="card mb-4">
             <div class="card-header bg-white d-flex flex-column flex-lg-row justify-content-between gap-3">
                 <form method="POST"
@@ -89,8 +102,12 @@
                       class="row g-2 align-items-center flex-grow-1">
                     @csrf
                     @method('PUT')
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <input type="text" name="nama" class="form-control fw-bold" value="{{ $tahun->nama }}" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="kuota_peserta" class="form-control"
+                               min="0" value="{{ $tahun->kuota_peserta ?? '' }}" placeholder="Kuota">
                     </div>
                     <div class="col-auto">
                         <input type="hidden" name="aktif" value="0">
@@ -114,8 +131,12 @@
                         </button>
                     </div>
                 </form>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="badge bg-secondary">{{ $tahun->peserta_count }} peserta</span>
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <span class="badge bg-primary">Kuota: {{ $kuotaTahun['kuota_label'] }}</span>
+                    <span class="badge bg-success">Dalam: {{ $kuotaTahun['dalam_kuota'] }}</span>
+                    <span class="badge bg-warning text-dark">Waiting: {{ $kuotaTahun['waiting_list'] }}</span>
+                    <span class="badge bg-light text-dark border">Total: {{ $kuotaTahun['total'] }}</span>
+                    <span class="badge bg-info text-dark">Sisa: {{ $kuotaTahun['sisa_label'] }}</span>
                     <form method="POST" action="{{ route('admin.pengaturan.spmb.periode.tahun.destroy', $tahun) }}"
                           onsubmit="return confirm('Hapus tahun ajaran ini?')">
                         @csrf

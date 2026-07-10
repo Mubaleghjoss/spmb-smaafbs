@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\GelombangPendaftaran;
 use App\Models\TahunAjaran;
+use App\Services\KuotaPendaftaranService;
 use App\Services\PeriodePendaftaranService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -17,7 +18,8 @@ use Illuminate\View\View;
 class PeriodePendaftaranController extends Controller
 {
     public function __construct(
-        private PeriodePendaftaranService $periodeService
+        private PeriodePendaftaranService $periodeService,
+        private KuotaPendaftaranService $kuotaPendaftaranService
     ) {}
 
     public function index(): View
@@ -34,13 +36,16 @@ class PeriodePendaftaranController extends Controller
             ->orderByDesc('nama')
             ->get();
 
-        return view('admin.pengaturan.periode-pendaftaran', compact('tahunAjaran'));
+        $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($tahunAjaran);
+
+        return view('admin.pengaturan.periode-pendaftaran', compact('tahunAjaran', 'ringkasanKuota'));
     }
 
     public function storeTahun(Request $request): RedirectResponse
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:20'],
+            'kuota_peserta' => ['nullable', 'integer', 'min:0'],
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
         ]);
@@ -55,6 +60,7 @@ class PeriodePendaftaranController extends Controller
                 'nama' => $nama,
                 'aktif' => $request->boolean('aktif'),
                 'default' => false,
+                'kuota_peserta' => $this->normalisasiKuota($request->input('kuota_peserta')),
             ]);
 
             if ($request->boolean('default') || TahunAjaran::query()->count() === 1) {
@@ -71,6 +77,7 @@ class PeriodePendaftaranController extends Controller
     {
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:20'],
+            'kuota_peserta' => ['nullable', 'integer', 'min:0'],
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
         ]);
@@ -91,6 +98,7 @@ class PeriodePendaftaranController extends Controller
             $tahunAjaran->update([
                 'nama' => $nama,
                 'aktif' => $request->boolean('aktif'),
+                'kuota_peserta' => $this->normalisasiKuota($request->input('kuota_peserta')),
             ]);
 
             if ($request->boolean('default')) {
@@ -98,6 +106,8 @@ class PeriodePendaftaranController extends Controller
             } elseif ($tahunAjaran->default) {
                 app(\App\Services\PengaturanService::class)->simpan('tahun_ajaran', $nama);
             }
+
+            $this->kuotaPendaftaranService->rekalkulasiTahun($tahunAjaran->id);
         });
 
         return back()->with('success', "Tahun ajaran {$nama} berhasil diperbarui.");
@@ -215,5 +225,12 @@ class PeriodePendaftaranController extends Controller
         GelombangPendaftaran $gelombang
     ): void {
         abort_unless((int) $gelombang->tahun_ajaran_id === (int) $tahunAjaran->id, 404);
+    }
+
+    private function normalisasiKuota(mixed $kuota): ?int
+    {
+        $kuota = (int) ($kuota ?? 0);
+
+        return $kuota > 0 ? $kuota : null;
     }
 }

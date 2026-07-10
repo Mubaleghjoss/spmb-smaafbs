@@ -74,6 +74,47 @@ class RegistrationCategoryTest extends TestCase
         $this->assertSame($gelombang->id, $peserta->gelombang_pendaftaran_id);
     }
 
+    public function test_peserta_di_luar_kuota_otomatis_masuk_waiting_list(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $tahun->update(['kuota_peserta' => 1]);
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+
+        $payload = [
+            'asal_sekolah' => 'SMP Contoh',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'siswa_baru',
+            'kelas_tujuan' => 10,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'setuju' => '1',
+        ];
+
+        $this->post('/daftar', [
+            ...$payload,
+            'nama' => 'Peserta Kuota Pertama',
+            'telepon' => '081234567893',
+        ])->assertRedirect(route('peserta.login'));
+
+        $this->post('/daftar', [
+            ...$payload,
+            'nama' => 'Peserta Waiting List',
+            'telepon' => '081234567894',
+        ])->assertRedirect(route('peserta.login'));
+
+        $this->assertDatabaseHas('peserta', [
+            'telepon' => '081234567893',
+            'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+            'urutan_kuota' => 1,
+        ]);
+        $this->assertDatabaseHas('peserta', [
+            'telepon' => '081234567894',
+            'status_kuota' => Peserta::STATUS_KUOTA_WAITING,
+            'urutan_kuota' => 2,
+        ]);
+    }
+
     public function test_gelombang_dari_tahun_lain_ditolak(): void
     {
         $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
@@ -148,6 +189,7 @@ class RegistrationCategoryTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee('Belum ada gelombang pendaftaran yang sedang dibuka.')
+            ->assertSee('Belum dibuka')
             ->assertDontSee('Daftar Sekarang');
 
         Carbon::setTestNow('2026-07-10 09:01:00');

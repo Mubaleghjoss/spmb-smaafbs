@@ -56,6 +56,10 @@ class PesertaService
             $query->where('kelas_tujuan', $filter['kelas_tujuan']);
         }
 
+        if (!empty($filter['status_kuota'])) {
+            $query->where('status_kuota', $filter['status_kuota']);
+        }
+
         // Filter berdasarkan status (aktif/dihapus)
         if (isset($filter['dengan_dihapus']) && $filter['dengan_dihapus']) {
             $query->withTrashed();
@@ -97,6 +101,9 @@ class PesertaService
                 $data['nomor_pendaftaran'] = NomorPendaftaranHelper::generate();
             }
 
+            $kuota = app(KuotaPendaftaranService::class)
+                ->siapkanAtributPesertaBaru($data['tahun_ajaran_id']);
+
             // Simpan password plain untuk ditampilkan ke admin
             $plainPassword = $data['password'] ?? 'password123';
 
@@ -107,6 +114,8 @@ class PesertaService
                 'gelombang_pendaftaran_id' => $data['gelombang_pendaftaran_id'],
                 'jenis_pendaftaran' => $data['jenis_pendaftaran'],
                 'kelas_tujuan' => $data['kelas_tujuan'],
+                'status_kuota' => $kuota['status_kuota'],
+                'urutan_kuota' => $kuota['urutan_kuota'],
                 'nama' => $data['nama'],
                 'email' => $data['email'],
                 'password' => $plainPassword,
@@ -139,6 +148,7 @@ class PesertaService
     public function perbarui(Peserta $peserta, array $data): Peserta
     {
         return DB::transaction(function () use ($peserta, $data) {
+            $tahunLama = $peserta->tahun_ajaran_id;
             $updateData = [
                 'nama' => $data['nama'] ?? $peserta->nama,
                 'email' => $data['email'] ?? $peserta->email,
@@ -151,12 +161,23 @@ class PesertaService
                 'kelas_tujuan' => $data['kelas_tujuan'] ?? $peserta->kelas_tujuan,
             ];
 
+            if ((int) $tahunLama !== (int) $updateData['tahun_ajaran_id']) {
+                $updateData['urutan_kuota'] = null;
+            }
+
             // Update password jika ada (akan otomatis di-hash oleh model cast 'hashed')
             if (!empty($data['password'])) {
                 $updateData['password'] = $data['password'];
             }
 
             $peserta->update($updateData);
+
+            if ((int) $tahunLama !== (int) $updateData['tahun_ajaran_id']) {
+                app(KuotaPendaftaranService::class)->rekalkulasiTahunBanyak([
+                    $tahunLama,
+                    $updateData['tahun_ajaran_id'],
+                ]);
+            }
 
             // Update grup jika ada
             if (isset($data['grup_id'])) {
@@ -172,7 +193,14 @@ class PesertaService
      */
     public function hapus(Peserta $peserta): bool
     {
-        return $peserta->delete();
+        $tahunId = $peserta->tahun_ajaran_id;
+        $deleted = $peserta->delete();
+
+        if ($deleted) {
+            app(KuotaPendaftaranService::class)->rekalkulasiTahun((int) $tahunId);
+        }
+
+        return $deleted;
     }
 
     /**
@@ -182,7 +210,9 @@ class PesertaService
     {
         $peserta = Peserta::withTrashed()->find($id);
         if ($peserta && $peserta->trashed()) {
+            $tahunId = $peserta->tahun_ajaran_id;
             $peserta->restore();
+            app(KuotaPendaftaranService::class)->rekalkulasiTahun((int) $tahunId);
             return $peserta;
         }
         return null;
@@ -195,7 +225,14 @@ class PesertaService
     {
         $peserta = Peserta::withTrashed()->find($id);
         if ($peserta) {
-            return $peserta->forceDelete();
+            $tahunId = $peserta->tahun_ajaran_id;
+            $deleted = $peserta->forceDelete();
+
+            if ($deleted) {
+                app(KuotaPendaftaranService::class)->rekalkulasiTahun((int) $tahunId);
+            }
+
+            return $deleted;
         }
         return false;
     }
@@ -260,12 +297,49 @@ class PesertaService
 
     public function bulkPerbaruiKategori(array $pesertaIds, array $kategori): int
     {
-        return Peserta::query()
-            ->whereIn('id', $pesertaIds)
-            ->update([
-                ...$kategori,
-                'updated_at' => now(),
+        return DB::transaction(function () use ($pesertaIds, $kategori) {
+            $peserta = Peserta::query()
+                ->whereIn('id', $pesertaIds)
+                ->get(['id', 'tahun_ajaran_id']);
+            $tahunLama = $peserta->pluck('tahun_ajaran_id')->filter()->all();
+            $tahunBaru = (int) $kategori['tahun_ajaran_id'];
+            $pindahTahunIds = $peserta
+                ->filter(fn(Peserta $item) => (int) $item->tahun_ajaran_id !== $tahunBaru)
+                ->pluck('id')
+                ->all();
+            $tetapTahunIds = $peserta
+                ->filter(fn(Peserta $item) => (int) $item->tahun_ajaran_id === $tahunBaru)
+                ->pluck('id')
+                ->all();
+
+            $count = 0;
+
+            if ($tetapTahunIds !== []) {
+                $count += Peserta::query()
+                    ->whereIn('id', $tetapTahunIds)
+                    ->update([
+                        ...$kategori,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            if ($pindahTahunIds !== []) {
+                $count += Peserta::query()
+                    ->whereIn('id', $pindahTahunIds)
+                    ->update([
+                        ...$kategori,
+                        'urutan_kuota' => null,
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            app(KuotaPendaftaranService::class)->rekalkulasiTahunBanyak([
+                ...$tahunLama,
+                $tahunBaru,
             ]);
+
+            return $count;
+        });
     }
 
     /**

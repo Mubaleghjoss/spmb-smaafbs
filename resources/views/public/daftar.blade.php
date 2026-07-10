@@ -6,7 +6,7 @@
 <section class="py-5">
     <div class="container">
         <div class="row justify-content-center">
-            <div class="col-lg-6">
+            <div class="col-lg-10">
                 <div class="card border-0 shadow">
                     <div class="card-body p-4 p-md-5">
                         <div class="text-center mb-4">
@@ -32,6 +32,39 @@
                                 <span>{{ $jadwalBerikutnya->labelPeriodePendaftaran() }}</span>
                             </div>
                             @endif
+
+                            @if(!empty($periodePayload))
+                            <div class="text-start border rounded-3 p-3 bg-light mb-4">
+                                <h6 class="fw-semibold mb-3">Periode Pendaftaran</h6>
+                                <div class="row g-3">
+                                    @foreach($periodePayload as $tahun)
+                                        <div class="col-md-6">
+                                            <div class="bg-white border rounded-3 p-3 h-100">
+                                                <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                    <div>
+                                                        <div class="fw-semibold">{{ $tahun['nama'] }}</div>
+                                                        <small class="text-muted">
+                                                            Kuota: {{ $tahun['kuota']['kuota_label'] }} &middot;
+                                                            Total: {{ $tahun['kuota']['total'] }} &middot;
+                                                            Waiting: {{ $tahun['kuota']['waiting_list'] }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                                @foreach($tahun['gelombang'] as $gelombang)
+                                                    <div class="border-top pt-2 mt-2">
+                                                        <div class="d-flex justify-content-between gap-2">
+                                                            <span class="fw-medium">{{ $gelombang['nama'] }}</span>
+                                                            <span class="badge bg-{{ $gelombang['status_class'] }}">{{ $gelombang['status_label'] }}</span>
+                                                        </div>
+                                                        <small class="text-muted">{{ $gelombang['periode'] }}</small>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                            @endif
                             
                             <div class="mt-4">
                                 <a href="{{ route('beranda') }}" class="btn btn-outline-success me-2">
@@ -54,16 +87,9 @@
                         @else
                         {{-- Form pendaftaran --}}
                         <form method="POST" action="{{ route('daftar.proses') }}"
+                              @submit="loading = true"
                               x-data="formDaftar(
-                                  @js($periodePendaftaran->map(fn($tahun) => [
-                                      'id' => (string) $tahun->id,
-                                      'nama' => $tahun->nama,
-                                      'gelombang' => $tahun->gelombangPendaftaran->map(fn($gelombang) => [
-                                          'id' => (string) $gelombang->id,
-                                          'nama' => $gelombang->nama,
-                                          'periode' => $gelombang->labelPeriodePendaftaran(),
-                                      ])->values(),
-                                  ])->values()),
+                                  @js($periodePayload),
                                   @js((string) old('tahun_ajaran_id', $tahunDefaultId)),
                                   @js((string) old('gelombang_pendaftaran_id')),
                                   @js(old('jenis_pendaftaran', 'siswa_baru')),
@@ -71,41 +97,113 @@
                               )">
                             @csrf
 
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-6">
-                                    <label for="tahun_ajaran_id" class="form-label">Tahun Ajaran <span class="text-danger">*</span></label>
-                                    <select id="tahun_ajaran_id"
-                                            name="tahun_ajaran_id"
-                                            class="form-select @error('tahun_ajaran_id') is-invalid @enderror"
-                                            x-model="tahunAjaranId"
-                                            @change="pilihTahun()"
-                                            required>
-                                        <option value="">Pilih tahun ajaran</option>
-                                        <template x-for="tahun in periode" :key="tahun.id">
-                                            <option :value="tahun.id" x-text="tahun.nama"></option>
-                                        </template>
-                                    </select>
-                                    @error('tahun_ajaran_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                            <input type="hidden" name="tahun_ajaran_id" x-model="tahunAjaranId">
+                            <input type="hidden" name="gelombang_pendaftaran_id" x-model="gelombangId">
+
+                            <div class="border rounded-3 p-3 mb-4 bg-light">
+                                <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
+                                    <div>
+                                        <h5 class="mb-1">Pilih Periode Pendaftaran</h5>
+                                        <p class="text-muted small mb-0">Pilih tahun ajaran dan gelombang yang sedang dibuka.</p>
+                                    </div>
+                                    <template x-if="selectedTahun">
+                                        <span class="badge align-self-start"
+                                              :class="selectedTahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success'"
+                                              x-text="selectedTahun.kuota.penuh ? 'Kuota Penuh - Waiting List' : 'Masih Dalam Kuota'"></span>
+                                    </template>
                                 </div>
-                                <div class="col-md-6">
-                                    <label for="gelombang_pendaftaran_id" class="form-label">Gelombang <span class="text-danger">*</span></label>
-                                    <select id="gelombang_pendaftaran_id"
-                                            name="gelombang_pendaftaran_id"
-                                            class="form-select @error('gelombang_pendaftaran_id') is-invalid @enderror"
-                                            x-model="gelombangId"
-                                            required>
-                                        <option value="">Pilih gelombang</option>
-                                        <template x-for="gelombang in gelombangTersedia" :key="gelombang.id">
-                                            <option :value="gelombang.id"
-                                                    x-text="gelombang.periode ? `${gelombang.nama} (${gelombang.periode})` : gelombang.nama"></option>
-                                        </template>
-                                    </select>
-                                    @error('gelombang_pendaftaran_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+
+                                <div class="d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Tahun ajaran">
+                                    <template x-for="tahun in periode" :key="tahun.id">
+                                        <button type="button"
+                                                class="btn btn-sm"
+                                                :class="tahunAjaranId === tahun.id ? 'btn-success' : 'btn-outline-success'"
+                                                @click="tahunAjaranId = tahun.id; pilihTahun()">
+                                            <span x-text="tahun.nama"></span>
+                                        </button>
+                                    </template>
                                 </div>
+
+                                <template x-if="selectedTahun">
+                                    <div>
+                                        <div class="row g-2 mb-3">
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Kuota</div>
+                                                    <strong x-text="selectedTahun.kuota.kuota_label"></strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Total Daftar</div>
+                                                    <strong x-text="selectedTahun.kuota.total"></strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Dalam Kuota</div>
+                                                    <strong x-text="selectedTahun.kuota.dalam_kuota"></strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Sisa / Waiting</div>
+                                                    <strong>
+                                                        <span x-text="selectedTahun.kuota.sisa_label"></span>
+                                                        <span class="text-warning" x-show="selectedTahun.kuota.waiting_list > 0">
+                                                            / <span x-text="selectedTahun.kuota.waiting_list"></span>
+                                                        </span>
+                                                    </strong>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row g-3">
+                                            <template x-for="gelombang in gelombangTersedia" :key="gelombang.id">
+                                                <div class="col-md-6">
+                                                    <button type="button"
+                                                            class="w-100 h-100 text-start border rounded-3 p-3 bg-white"
+                                                            :class="{
+                                                                'border-success shadow-sm': gelombangId === gelombang.id,
+                                                                'opacity-75': !gelombang.dibuka
+                                                            }"
+                                                            @click="selectGelombang(gelombang)"
+                                                            :disabled="!gelombang.dibuka">
+                                                        <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                            <div>
+                                                                <div class="fw-semibold" x-text="gelombang.nama"></div>
+                                                                <div class="text-muted small" x-text="gelombang.periode"></div>
+                                                            </div>
+                                                            <span class="badge" :class="'bg-' + gelombang.status_class" x-text="gelombang.status_label"></span>
+                                                        </div>
+                                                        <div class="small text-success" x-show="gelombangId === gelombang.id">
+                                                            <i class="bi bi-check-circle me-1"></i>Dipilih
+                                                        </div>
+                                                        <div class="small text-muted" x-show="!gelombang.dibuka">
+                                                            Gelombang ini belum bisa dipilih.
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </template>
+                                        </div>
+
+                                        <div class="alert alert-warning mt-3 mb-0" x-show="selectedTahun.kuota.penuh">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Kuota tahun ajaran ini sudah penuh. Pendaftaran tetap diterima sebagai <strong>Waiting List</strong>.
+                                        </div>
+                                        <div class="alert alert-secondary mt-3 mb-0" x-show="gelombangTerbuka.length === 0">
+                                            <i class="bi bi-lock me-1"></i>
+                                            Belum ada gelombang yang sedang dibuka pada tahun ajaran ini.
+                                        </div>
+                                    </div>
+                                </template>
+
+                                @error('tahun_ajaran_id')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                                @error('gelombang_pendaftaran_id')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
                             </div>
 
                             <div class="mb-3">
@@ -232,9 +330,9 @@
                                 </div>
                             </div>
                             
-                            <button type="submit" class="btn btn-success w-100 btn-lg" :disabled="loading">
+                            <button type="submit" class="btn btn-success w-100 btn-lg" :disabled="loading || !gelombangId">
                                 <span x-show="!loading">
-                                    <i class="bi bi-person-plus me-2"></i>Daftar Sekarang
+                                    <i class="bi bi-person-plus me-2"></i><span x-text="selectedTahun?.kuota?.penuh ? 'Daftar Waiting List' : 'Daftar Sekarang'"></span>
                                 </span>
                                 <span x-show="loading">
                                     <span class="spinner-border spinner-border-sm me-2"></span>Memproses...
@@ -308,19 +406,38 @@ function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) 
         kelasTujuan: kelasLama,
         showPassword: false,
         loading: false,
+        get selectedTahun() {
+            return this.periode.find(tahun => tahun.id === this.tahunAjaranId) ?? null;
+        },
         get gelombangTersedia() {
-            return this.periode.find(tahun => tahun.id === this.tahunAjaranId)?.gelombang ?? [];
+            return this.selectedTahun?.gelombang ?? [];
+        },
+        get gelombangTerbuka() {
+            return this.gelombangTersedia.filter(gelombang => gelombang.dibuka);
+        },
+        get selectedGelombang() {
+            return this.gelombangTersedia.find(gelombang => gelombang.id === this.gelombangId) ?? null;
         },
         init() {
+            if (!this.tahunAjaranId && this.periode.length > 0) {
+                this.tahunAjaranId = this.periode[0].id;
+            }
             this.pilihTahun(true);
             this.ubahJenis();
         },
         pilihTahun(pertahankanPilihan = false) {
-            const tersedia = this.gelombangTersedia;
+            const tersedia = this.gelombangTerbuka;
             const masihValid = tersedia.some(gelombang => gelombang.id === this.gelombangId);
             if (!pertahankanPilihan || !masihValid) {
                 this.gelombangId = tersedia.length === 1 ? tersedia[0].id : '';
             }
+        },
+        selectGelombang(gelombang) {
+            if (!gelombang.dibuka) {
+                return;
+            }
+
+            this.gelombangId = gelombang.id;
         },
         ubahJenis() {
             if (this.jenisPendaftaran === 'siswa_baru') {

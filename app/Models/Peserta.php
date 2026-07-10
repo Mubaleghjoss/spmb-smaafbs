@@ -21,6 +21,8 @@ class Peserta extends Authenticatable
 
     public const JENIS_SISWA_BARU = 'siswa_baru';
     public const JENIS_PINDAHAN = 'pindahan';
+    public const STATUS_KUOTA_DALAM = 'dalam_kuota';
+    public const STATUS_KUOTA_WAITING = 'waiting_list';
 
     protected $table = 'peserta';
 
@@ -31,6 +33,8 @@ class Peserta extends Authenticatable
         'jenis_pendaftaran',
         'kelas_tujuan',
         'kelas_penempatan',
+        'status_kuota',
+        'urutan_kuota',
         'nama',
         'email',
         'password',
@@ -53,6 +57,7 @@ class Peserta extends Authenticatable
             'tahun_ajaran_id' => 'integer',
             'gelombang_pendaftaran_id' => 'integer',
             'kelas_tujuan' => 'integer',
+            'urutan_kuota' => 'integer',
         ];
     }
 
@@ -72,6 +77,24 @@ class Peserta extends Authenticatable
             self::JENIS_SISWA_BARU => 'Siswa Baru',
             self::JENIS_PINDAHAN => 'Pindahan',
             default => 'Belum ditentukan',
+        };
+    }
+
+    public function getStatusKuotaLabelAttribute(): string
+    {
+        return match ($this->status_kuota) {
+            self::STATUS_KUOTA_WAITING => 'Waiting List',
+            self::STATUS_KUOTA_DALAM => 'Masuk Kuota',
+            default => 'Belum dihitung',
+        };
+    }
+
+    public function getStatusKuotaBadgeAttribute(): string
+    {
+        return match ($this->status_kuota) {
+            self::STATUS_KUOTA_WAITING => 'warning text-dark',
+            self::STATUS_KUOTA_DALAM => 'success',
+            default => 'secondary',
         };
     }
 

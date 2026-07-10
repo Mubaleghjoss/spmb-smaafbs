@@ -32,7 +32,8 @@ class ImporEksporPesertaService
     private const REKAP_EMAIL_DOMAIN = 'import.spmb.local';
 
     public function __construct(
-        private PeriodePendaftaranService $periodePendaftaranService
+        private PeriodePendaftaranService $periodePendaftaranService,
+        private KuotaPendaftaranService $kuotaPendaftaranService
     ) {}
 
     /**
@@ -105,6 +106,7 @@ class ImporEksporPesertaService
     {
         return DB::transaction(function () use ($row) {
             $kategori = $this->kategoriDariBaris($row);
+            $kuota = $this->kuotaPendaftaranService->siapkanAtributPesertaBaru($kategori['tahun_ajaran_id']);
 
             // Password akan otomatis di-hash oleh model cast 'hashed'
             $peserta = Peserta::create([
@@ -116,6 +118,7 @@ class ImporEksporPesertaService
                 'alamat' => $row[3] ?? null,
                 'asal_sekolah' => $row[4] ?? null,
                 ...$kategori,
+                ...$kuota,
             ]);
 
             TahapanSpmb::create([
@@ -796,12 +799,15 @@ class ImporEksporPesertaService
         $telepon = $teleponInput !== '' ? $teleponInput : ($peserta?->telepon ?: $generated['telepon']);
 
         if (! $peserta) {
+            $kuota = $this->kuotaPendaftaranService->siapkanAtributPesertaBaru($kategori['tahun_ajaran_id']);
             $dataPeserta = [
                 'nomor_pendaftaran' => $nomorPendaftaran !== '' ? $nomorPendaftaran : NomorPendaftaranHelper::generate(),
                 'tahun_ajaran_id' => $kategori['tahun_ajaran_id'],
                 'gelombang_pendaftaran_id' => $kategori['gelombang_pendaftaran_id'],
                 'jenis_pendaftaran' => $kategori['jenis_pendaftaran'],
                 'kelas_tujuan' => $kategori['kelas_tujuan'],
+                'status_kuota' => $kuota['status_kuota'],
+                'urutan_kuota' => $kuota['urutan_kuota'],
                 'nama' => $nama,
                 'email' => $email,
                 'telepon' => $telepon,
@@ -820,22 +826,32 @@ class ImporEksporPesertaService
             ];
         }
 
+        $tahunLama = $peserta->tahun_ajaran_id;
+        $tahunBaru = $peserta->tahun_ajaran_id ?: $kategori['tahun_ajaran_id'];
         $dataUpdate = [
             'nama' => $nama,
             'email' => $email,
             'telepon' => $telepon,
             'asal_sekolah' => $asalSmp,
-            'tahun_ajaran_id' => $peserta->tahun_ajaran_id ?: $kategori['tahun_ajaran_id'],
+            'tahun_ajaran_id' => $tahunBaru,
             'gelombang_pendaftaran_id' => $peserta->gelombang_pendaftaran_id ?: $kategori['gelombang_pendaftaran_id'],
             'jenis_pendaftaran' => $peserta->jenis_pendaftaran ?: $kategori['jenis_pendaftaran'],
             'kelas_tujuan' => $peserta->kelas_tujuan ?: $kategori['kelas_tujuan'],
         ];
+
+        if ((int) $tahunLama !== (int) $tahunBaru) {
+            $dataUpdate['urutan_kuota'] = null;
+        }
 
         if ($this->pesertaMendukungKelasPenempatan()) {
             $dataUpdate['kelas_penempatan'] = $kelasPenempatan !== '' ? $kelasPenempatan : $peserta->kelas_penempatan;
         }
 
         $peserta->update($dataUpdate);
+
+        if ((int) $tahunLama !== (int) $tahunBaru) {
+            $this->kuotaPendaftaranService->rekalkulasiTahunBanyak([$tahunLama, $tahunBaru]);
+        }
 
         return [$peserta->fresh(), false];
     }

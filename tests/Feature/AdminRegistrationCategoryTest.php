@@ -53,6 +53,58 @@ class AdminRegistrationCategoryTest extends TestCase
             ->assertDontSee('PESERTA TAHUN BERIKUTNYA');
     }
 
+    public function test_admin_dapat_memfilter_peserta_berdasarkan_status_kuota(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        Peserta::factory()->create([
+            'nama' => 'PESERTA MASUK KUOTA',
+            'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+            ...$kategori,
+        ]);
+        Peserta::factory()->create([
+            'nama' => 'PESERTA WAITING LIST',
+            'status_kuota' => Peserta::STATUS_KUOTA_WAITING,
+            ...$kategori,
+        ]);
+
+        $this->get('/admin/peserta?status_kuota=' . Peserta::STATUS_KUOTA_WAITING)
+            ->assertOk()
+            ->assertSee('PESERTA WAITING LIST')
+            ->assertDontSee('PESERTA MASUK KUOTA');
+    }
+
+    public function test_update_kuota_tahun_ajaran_merekalkulasi_waiting_list(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+        $tahun = TahunAjaran::query()->findOrFail($kategori['tahun_ajaran_id']);
+
+        foreach (range(1, 3) as $index) {
+            Peserta::factory()->create([
+                'nama' => "PESERTA KUOTA {$index}",
+                'urutan_kuota' => $index,
+                'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+                ...$kategori,
+            ]);
+        }
+
+        $this->put(route('admin.pengaturan.spmb.periode.tahun.update', $tahun), [
+            'nama' => $tahun->nama,
+            'kuota_peserta' => 2,
+            'aktif' => '1',
+            'default' => '1',
+        ])->assertRedirect();
+
+        $this->assertSame(2, Peserta::query()
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
+            ->count());
+        $this->assertSame(1, Peserta::query()
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('status_kuota', Peserta::STATUS_KUOTA_WAITING)
+            ->count());
+    }
+
     public function test_bulk_kategori_memaksa_siswa_baru_ke_kelas_10(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();

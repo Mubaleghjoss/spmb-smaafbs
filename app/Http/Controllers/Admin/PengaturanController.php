@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\TahunAjaran;
+use App\Services\KuotaPendaftaranService;
 use App\Services\PengaturanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -17,7 +18,8 @@ use Illuminate\Validation\ValidationException;
 class PengaturanController extends Controller
 {
     public function __construct(
-        private PengaturanService $pengaturanService
+        private PengaturanService $pengaturanService,
+        private KuotaPendaftaranService $kuotaPendaftaranService
     ) {}
 
     /**
@@ -142,13 +144,15 @@ class PengaturanController extends Controller
             ->orderByDesc('default')
             ->orderByDesc('nama')
             ->get();
+        $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($periodePendaftaran);
 
         return view('admin.pengaturan.spmb', compact(
             'spmb',
             'tahapan',
             'statusTahapan',
             'skGelombang',
-            'periodePendaftaran'
+            'periodePendaftaran',
+            'ringkasanKuota'
         ));
     }
 

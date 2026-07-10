@@ -129,6 +129,7 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Tahun</th>
+                                                <th>Kuota</th>
                                                 <th>Gelombang</th>
                                                 <th>Jadwal</th>
                                                 <th>Status</th>
@@ -136,6 +137,14 @@
                                         </thead>
                                         <tbody>
                                             @forelse($periodePendaftaran as $tahun)
+                                                @php
+                                                    $kuotaTahun = $ringkasanKuota[$tahun->id] ?? [
+                                                        'kuota_label' => 'Tidak dibatasi',
+                                                        'total' => $tahun->peserta_count,
+                                                        'waiting_list' => 0,
+                                                        'sisa_label' => 'Tidak dibatasi',
+                                                    ];
+                                                @endphp
                                                 @forelse($tahun->gelombangPendaftaran as $gelombang)
                                                     @php
                                                         $statusGelombang = $gelombang->statusPendaftaran();
@@ -150,6 +159,14 @@
                                                                 <span class="badge bg-secondary ms-1">Nonaktif</span>
                                                             @endunless
                                                         </td>
+                                                        <td class="small">
+                                                            <span class="badge bg-primary">{{ $kuotaTahun['kuota_label'] }}</span>
+                                                            <span class="d-block text-muted mt-1">
+                                                                Total {{ $kuotaTahun['total'] }},
+                                                                sisa {{ $kuotaTahun['sisa_label'] }},
+                                                                waiting {{ $kuotaTahun['waiting_list'] }}
+                                                            </span>
+                                                        </td>
                                                         <td>{{ $gelombang->nama }}</td>
                                                         <td class="small">{{ $gelombang->labelPeriodePendaftaran() }}</td>
                                                         <td><span class="badge bg-{{ $statusGelombang['class'] }}">{{ $statusGelombang['label'] }}</span></td>
@@ -157,12 +174,12 @@
                                                 @empty
                                                     <tr>
                                                         <td>{{ $tahun->nama }}</td>
-                                                        <td colspan="3" class="text-muted">Belum ada gelombang.</td>
+                                                        <td colspan="4" class="text-muted">Belum ada gelombang.</td>
                                                     </tr>
                                                 @endforelse
                                             @empty
                                                 <tr>
-                                                    <td colspan="4" class="text-center text-muted py-4">Belum ada tahun ajaran.</td>
+                                                    <td colspan="5" class="text-center text-muted py-4">Belum ada tahun ajaran.</td>
                                                 </tr>
                                             @endforelse
                                         </tbody>

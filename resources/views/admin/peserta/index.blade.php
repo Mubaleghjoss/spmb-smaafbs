@@ -157,6 +157,14 @@
                         <option value="11" {{ (string) $filter['kelas_tujuan'] === '11' ? 'selected' : '' }}>Kelas 11</option>
                     </select>
                 </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status Kuota</label>
+                    <select name="status_kuota" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="{{ \App\Models\Peserta::STATUS_KUOTA_DALAM }}" {{ $filter['status_kuota'] === \App\Models\Peserta::STATUS_KUOTA_DALAM ? 'selected' : '' }}>Masuk Kuota</option>
+                        <option value="{{ \App\Models\Peserta::STATUS_KUOTA_WAITING }}" {{ $filter['status_kuota'] === \App\Models\Peserta::STATUS_KUOTA_WAITING ? 'selected' : '' }}>Waiting List</option>
+                    </select>
+                </div>
                 <div class="col-md-3">
                     <label class="form-label">Cari</label>
                     <input type="text" name="cari" class="form-control" placeholder="Nama/No. Pendaftaran/Email" value="{{ $filter['cari'] }}">
@@ -347,6 +355,7 @@
                                     <div class="d-flex flex-wrap gap-1">
                                         <span class="badge bg-dark">{{ $p->tahunAjaran?->nama ?? 'Belum ada tahun' }}</span>
                                         <span class="badge bg-secondary">{{ $p->gelombangPendaftaran?->nama ?? 'Belum ada gelombang' }}</span>
+                                        <span class="badge bg-{{ $p->status_kuota_badge }}">{{ $p->status_kuota_label }}</span>
                                     </div>
                                     <small class="text-muted d-block mt-1">
                                         {{ $p->jenis_pendaftaran_label }}

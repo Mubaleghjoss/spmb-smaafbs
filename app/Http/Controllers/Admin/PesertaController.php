@@ -43,6 +43,7 @@ class PesertaController extends Controller
             'gelombang_pendaftaran_id' => $request->get('gelombang_pendaftaran_id'),
             'jenis_pendaftaran' => $request->get('jenis_pendaftaran'),
             'kelas_tujuan' => $request->get('kelas_tujuan'),
+            'status_kuota' => $request->get('status_kuota'),
         ];
 
         $peserta = $this->pesertaService->ambilDenganFilter($filter, 15);
@@ -592,6 +593,7 @@ class PesertaController extends Controller
                 'Jenis Pendaftaran',
                 'Kelas Tujuan',
                 'Kelas Penempatan',
+                'Status Kuota',
                 'Tahap',
                 'Tanggal Daftar',
             ], ';');
@@ -609,6 +611,7 @@ class PesertaController extends Controller
                     $p->jenis_pendaftaran_label,
                     $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
                     $p->kelas_penempatan ?? '-',
+                    $p->status_kuota_label,
                     'Tahap ' . $p->tahap_saat_ini,
                     $p->created_at->format('d/m/Y H:i'),
                 ], ';');
@@ -645,7 +648,7 @@ class PesertaController extends Controller
             // Header
             fputcsv($handle, [
                 'No Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin',
-                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan', 'Kelas Penempatan',
+                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan', 'Kelas Penempatan', 'Status Kuota',
                 'Tempat Lahir', 'Provinsi Lahir', 'Tanggal Lahir',
                 'Asal Sekolah', 'NISN', 'Prestasi',
                 'Tinggi Badan', 'Berat Badan', 'Lingkar Kepala',
@@ -671,6 +674,7 @@ class PesertaController extends Controller
                     $p->jenis_pendaftaran_label,
                     $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
                     $p->kelas_penempatan ?? '-',
+                    $p->status_kuota_label,
                     $f?->tempat_lahir ?? '-',
                     $f?->provinsi_lahir ?? '-',
                     $f?->tanggal_lahir?->format('d/m/Y') ?? '-',

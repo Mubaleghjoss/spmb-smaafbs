@@ -17,6 +17,7 @@ class TahunAjaran extends Model
         'nama',
         'aktif',
         'default',
+        'kuota_peserta',
     ];
 
     protected function casts(): array
@@ -24,6 +25,7 @@ class TahunAjaran extends Model
         return [
             'aktif' => 'boolean',
             'default' => 'boolean',
+            'kuota_peserta' => 'integer',
         ];
     }
 
@@ -40,5 +42,10 @@ class TahunAjaran extends Model
     public function scopeAktif(Builder $query): Builder
     {
         return $query->where('aktif', true);
+    }
+
+    public function kuotaTerbatas(): bool
+    {
+        return (int) ($this->kuota_peserta ?? 0) > 0;
     }
 }
