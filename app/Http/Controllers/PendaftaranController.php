@@ -29,8 +29,6 @@ class PendaftaranController extends Controller
     {
         $spmb = $this->pengaturanService->ambilSpmb();
         $branding = $this->pengaturanService->ambilBranding();
-        
-        [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran($spmb);
         $periodePendaftaran = $this->periodePendaftaranService->pilihanPublikDenganStatus();
         $jadwalBerikutnya = $this->periodePendaftaranService->jadwalPublikBerikutnya();
         $adaGelombangDibuka = $periodePendaftaran->contains(
@@ -38,18 +36,14 @@ class PendaftaranController extends Controller
                 fn(GelombangPendaftaran $gelombang) => $gelombang->sedangDibuka()
             )
         );
-
-        if ($pendaftaranDibuka && ! $adaGelombangDibuka) {
-            $pendaftaranDibuka = false;
-            $pesanTutup = 'Belum ada gelombang pendaftaran yang sedang dibuka.';
-        }
+        $pendaftaranDibuka = $adaGelombangDibuka;
+        $pesanTutup = $adaGelombangDibuka
+            ? null
+            : 'Belum ada gelombang pendaftaran yang sedang dibuka.';
 
         $tahunDefaultId = $periodePendaftaran->firstWhere('default', true)?->id
             ?? $periodePendaftaran->first()?->id;
-        $periodePayload = $this->formatPeriodePublik(
-            $periodePendaftaran,
-            (bool) ($spmb['pendaftaran_buka'] ?? false)
-        );
+        $periodePayload = $this->formatPeriodePublik($periodePendaftaran);
         $syaratKetentuan = $this->pengaturanService->ambilSyaratKetentuan();
         
         return view('public.daftar', compact(
@@ -70,14 +64,6 @@ class PendaftaranController extends Controller
      */
     public function proses(Request $request): RedirectResponse
     {
-        [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran(
-            $this->pengaturanService->ambilSpmb()
-        );
-
-        if (!$pendaftaranDibuka) {
-            return back()->withInput()->with('error', $pesanTutup);
-        }
-
         $validated = $request->validate([
             'nama' => 'required|string|max:255',
             'telepon' => 'required|string|max:20|unique:peserta,telepon',
@@ -153,22 +139,11 @@ class PendaftaranController extends Controller
         }
     }
 
-    private function statusPendaftaran(array $spmb): array
-    {
-        $dibuka = (bool) ($spmb['pendaftaran_buka'] ?? false);
-
-        if (!$dibuka) {
-            return [false, 'Pendaftaran SPMB saat ini ditutup oleh admin.'];
-        }
-
-        return [true, null];
-    }
-
-    private function formatPeriodePublik($periodePendaftaran, bool $pendaftaranAktif): array
+    private function formatPeriodePublik($periodePendaftaran): array
     {
         $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($periodePendaftaran);
 
-        return $periodePendaftaran->map(function ($tahun) use ($ringkasanKuota, $pendaftaranAktif) {
+        return $periodePendaftaran->map(function ($tahun) use ($ringkasanKuota) {
             $ringkasan = $ringkasanKuota[$tahun->id] ?? $this->kuotaPendaftaranService->ringkasanTahun($tahun);
 
             return [
@@ -176,10 +151,9 @@ class PendaftaranController extends Controller
                 'nama' => $tahun->nama,
                 'default' => (bool) $tahun->default,
                 'kuota' => $ringkasan,
-                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan, $pendaftaranAktif) {
+                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan) {
                     $status = $gelombang->statusPendaftaran();
                     $jadwalDibuka = $gelombang->sedangDibuka();
-                    $bisaDaftar = $pendaftaranAktif && $jadwalDibuka;
                     $statusLabel = $jadwalDibuka && $ringkasan['penuh']
                         ? 'Kuota Penuh - Waiting List'
                         : $status['label'];
@@ -187,16 +161,11 @@ class PendaftaranController extends Controller
                         ? 'warning text-dark'
                         : $status['class'];
 
-                    if (! $pendaftaranAktif) {
-                        $statusLabel = 'Ditutup Admin';
-                        $statusClass = 'secondary';
-                    }
-
                     return [
                         'id' => (string) $gelombang->id,
                         'nama' => $gelombang->nama,
                         'periode' => $gelombang->labelPeriodePendaftaran(),
-                        'dibuka' => $bisaDaftar,
+                        'dibuka' => $jadwalDibuka,
                         'jadwal_dibuka' => $jadwalDibuka,
                         'status_label' => $statusLabel,
                         'status_class' => $statusClass,

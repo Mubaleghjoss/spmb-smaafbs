@@ -47,15 +47,16 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('Pindahan');
     }
 
-    public function test_status_gelombang_tidak_ambigu_saat_pendaftaran_ditutup_admin(): void
+    public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void
     {
         app(PengaturanService::class)->simpan('pendaftaran_buka', '0');
 
         $this->get('/daftar')
             ->assertOk()
-            ->assertSee('Pendaftaran SPMB saat ini ditutup oleh admin.')
-            ->assertSee('Ditutup Admin')
-            ->assertDontSee('>Dibuka<', false);
+            ->assertSee('Daftar Sekarang')
+            ->assertSee('Gelombang 1')
+            ->assertSee('Dibuka')
+            ->assertDontSee('Pendaftaran SPMB saat ini ditutup oleh admin.');
     }
 
     public function test_siswa_baru_selalu_disimpan_sebagai_kelas_10(): void

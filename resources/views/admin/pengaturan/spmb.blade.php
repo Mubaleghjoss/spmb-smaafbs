@@ -81,7 +81,7 @@
                 <div class="alert alert-info border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div>
                         <strong><i class="bi bi-calendar3 me-2"></i>Jadwal /daftar memakai Tahun Ajaran & Gelombang</strong>
-                        <div class="small mt-1">Peserta hanya melihat tahun dan gelombang yang aktif serta sedang berada dalam tanggal/jam buka-tutup.</div>
+                        <div class="small mt-1">Form daftar dibuka otomatis jika ada tahun ajaran dan gelombang aktif yang sedang berada dalam tanggal/jam buka-tutup.</div>
                     </div>
                     <a href="{{ route('admin.pengaturan.spmb.periode') }}" class="btn btn-outline-primary">
                         <i class="bi bi-sliders me-1"></i>Kelola Periode
@@ -91,7 +91,7 @@
                     <div class="col-lg-4">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
-                                <h6 class="mb-0"><i class="bi bi-power me-2"></i>Gerbang Pendaftaran</h6>
+                                <h6 class="mb-0"><i class="bi bi-power me-2"></i>Status Umum Pendaftaran</h6>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
@@ -107,7 +107,7 @@
                                             {{ $spmb['pendaftaran_buka'] ? 'DIBUKA' : 'DITUTUP' }}
                                         </span>
                                     </div>
-                                    <small class="text-muted mt-2 d-block">Jika toggle ini ditutup, halaman /daftar ditutup meskipun ada gelombang yang aktif.</small>
+                                    <small class="text-muted mt-2 d-block">Status ini hanya catatan manual. Halaman /daftar sekarang mengikuti Tahun Ajaran & Gelombang yang aktif dan sedang dibuka.</small>
                                 </div>
                                 <div class="alert alert-light border mb-0 small">
                                     Jadwal rinci pendaftaran tidak lagi diatur ganda di sini. Gunakan <strong>Kelola Periode</strong> untuk menentukan tahun ajaran, gelombang, tanggal, dan jam yang tampil di /daftar.
