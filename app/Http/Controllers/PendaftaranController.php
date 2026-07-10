@@ -46,7 +46,10 @@ class PendaftaranController extends Controller
 
         $tahunDefaultId = $periodePendaftaran->firstWhere('default', true)?->id
             ?? $periodePendaftaran->first()?->id;
-        $periodePayload = $this->formatPeriodePublik($periodePendaftaran);
+        $periodePayload = $this->formatPeriodePublik(
+            $periodePendaftaran,
+            (bool) ($spmb['pendaftaran_buka'] ?? false)
+        );
         $syaratKetentuan = $this->pengaturanService->ambilSyaratKetentuan();
         
         return view('public.daftar', compact(
@@ -161,11 +164,11 @@ class PendaftaranController extends Controller
         return [true, null];
     }
 
-    private function formatPeriodePublik($periodePendaftaran): array
+    private function formatPeriodePublik($periodePendaftaran, bool $pendaftaranAktif): array
     {
         $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($periodePendaftaran);
 
-        return $periodePendaftaran->map(function ($tahun) use ($ringkasanKuota) {
+        return $periodePendaftaran->map(function ($tahun) use ($ringkasanKuota, $pendaftaranAktif) {
             $ringkasan = $ringkasanKuota[$tahun->id] ?? $this->kuotaPendaftaranService->ringkasanTahun($tahun);
 
             return [
@@ -173,21 +176,30 @@ class PendaftaranController extends Controller
                 'nama' => $tahun->nama,
                 'default' => (bool) $tahun->default,
                 'kuota' => $ringkasan,
-                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan) {
+                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan, $pendaftaranAktif) {
                     $status = $gelombang->statusPendaftaran();
-                    $dibuka = $gelombang->sedangDibuka();
+                    $jadwalDibuka = $gelombang->sedangDibuka();
+                    $bisaDaftar = $pendaftaranAktif && $jadwalDibuka;
+                    $statusLabel = $jadwalDibuka && $ringkasan['penuh']
+                        ? 'Kuota Penuh - Waiting List'
+                        : $status['label'];
+                    $statusClass = $jadwalDibuka && $ringkasan['penuh']
+                        ? 'warning text-dark'
+                        : $status['class'];
+
+                    if (! $pendaftaranAktif) {
+                        $statusLabel = 'Ditutup Admin';
+                        $statusClass = 'secondary';
+                    }
 
                     return [
                         'id' => (string) $gelombang->id,
                         'nama' => $gelombang->nama,
                         'periode' => $gelombang->labelPeriodePendaftaran(),
-                        'dibuka' => $dibuka,
-                        'status_label' => $dibuka && $ringkasan['penuh']
-                            ? 'Kuota Penuh - Waiting List'
-                            : $status['label'],
-                        'status_class' => $dibuka && $ringkasan['penuh']
-                            ? 'warning text-dark'
-                            : $status['class'],
+                        'dibuka' => $bisaDaftar,
+                        'jadwal_dibuka' => $jadwalDibuka,
+                        'status_label' => $statusLabel,
+                        'status_class' => $statusClass,
                     ];
                 })->values(),
             ];

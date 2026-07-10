@@ -113,14 +113,30 @@
                                     </template>
                                 </div>
 
-                                <div class="d-flex flex-wrap gap-2 mb-3" role="tablist" aria-label="Tahun ajaran">
+                                <div class="row g-2 mb-3" role="tablist" aria-label="Tahun ajaran">
                                     <template x-for="tahun in periode" :key="tahun.id">
-                                        <button type="button"
-                                                class="btn btn-sm"
-                                                :class="tahunAjaranId === tahun.id ? 'btn-success' : 'btn-outline-success'"
-                                                @click="tahunAjaranId = tahun.id; pilihTahun()">
-                                            <span x-text="tahun.nama"></span>
-                                        </button>
+                                        <div class="col-md-6">
+                                            <button type="button"
+                                                    class="w-100 h-100 text-start border rounded-3 p-3 bg-white"
+                                                    :class="tahunAjaranId === tahun.id ? 'border-success shadow-sm' : ''"
+                                                    @click="pilihTahunId(tahun.id)">
+                                                <div class="d-flex justify-content-between gap-2 mb-2">
+                                                    <strong x-text="tahun.nama"></strong>
+                                                    <span class="badge"
+                                                          :class="tahunAjaranId === tahun.id ? 'bg-success' : (tahunTerbuka(tahun) ? 'bg-light text-success border' : 'bg-light text-muted border')"
+                                                          x-text="tahunAjaranId === tahun.id ? 'Dipilih' : (tahunTerbuka(tahun) ? 'Tersedia' : 'Tidak Dibuka')"></span>
+                                                </div>
+                                                <div class="small text-muted">
+                                                    Kuota <span x-text="tahun.kuota.kuota_label"></span>
+                                                    &middot; Total <span x-text="tahun.kuota.total"></span>
+                                                    &middot; Waiting <span x-text="tahun.kuota.waiting_list"></span>
+                                                </div>
+                                                <div class="small mt-2" :class="tahunTerbuka(tahun) ? 'text-success' : 'text-muted'">
+                                                    <i class="bi" :class="tahunTerbuka(tahun) ? 'bi-check-circle' : 'bi-lock'"></i>
+                                                    <span x-text="ringkasanGelombangTahun(tahun)"></span>
+                                                </div>
+                                            </button>
+                                        </div>
                                     </template>
                                 </div>
 
@@ -424,6 +440,21 @@ function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) 
             }
             this.pilihTahun(true);
             this.ubahJenis();
+        },
+        tahunTerbuka(tahun) {
+            return (tahun.gelombang ?? []).some(gelombang => gelombang.dibuka);
+        },
+        ringkasanGelombangTahun(tahun) {
+            const jumlah = (tahun.gelombang ?? []).filter(gelombang => gelombang.dibuka).length;
+            if (jumlah === 0) {
+                return 'Belum ada gelombang terbuka';
+            }
+
+            return jumlah === 1 ? '1 gelombang terbuka' : `${jumlah} gelombang terbuka`;
+        },
+        pilihTahunId(tahunId) {
+            this.tahunAjaranId = tahunId;
+            this.pilihTahun();
         },
         pilihTahun(pertahankanPilihan = false) {
             const tersedia = this.gelombangTerbuka;
