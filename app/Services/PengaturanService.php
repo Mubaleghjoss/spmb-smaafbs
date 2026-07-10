@@ -235,7 +235,9 @@ class PengaturanService
         return [
             'pendaftaran_buka' => $this->ambil('pendaftaran_buka', true),
             'tanggal_buka' => $this->ambil('tanggal_buka', ''),
+            'waktu_buka' => $this->ambil('waktu_buka', ''),
             'tanggal_tutup' => $this->ambil('tanggal_tutup', ''),
+            'waktu_tutup' => $this->ambil('waktu_tutup', ''),
             'biaya_formulir' => $this->ambil('biaya_formulir', 0),
             'biaya_pelunasan' => $this->ambil('biaya_pelunasan', 0),
             'rekening_bank' => $this->ambil('rekening_bank', 'BSI'),
@@ -271,7 +273,7 @@ class PengaturanService
     public function simpanSpmb(array $data): void
     {
         $allowedKeys = [
-            'pendaftaran_buka', 'tanggal_buka', 'tanggal_tutup',
+            'pendaftaran_buka', 'tanggal_buka', 'waktu_buka', 'tanggal_tutup', 'waktu_tutup',
             'biaya_formulir', 'biaya_pelunasan',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
             'whatsapp_spmb', 'kontak_tim_spmb'
@@ -428,16 +430,17 @@ class PengaturanService
     public function ambilPengaturanTahapan(): array
     {
         $spmb = $this->ambilSpmb();
+        $ujian = $this->ambilUjian();
 
         return [
             'tahap_2' => [
-                'dibuka' => $spmb['pendaftaran_buka'] ?? true,
-                'tanggal_buka' => $spmb['tanggal_buka'] ?? '',
-                'waktu_mulai' => $this->ambil('tahap_2_waktu_mulai', ''),
-                'tanggal_tutup' => $spmb['tanggal_tutup'] ?? '',
-                'waktu_selesai' => $this->ambil('tahap_2_waktu_selesai', ''),
-                'keterangan' => $this->ambil('tahap_2_keterangan', 'Isi Formulir SPMB mengikuti jadwal pendaftaran.'),
-                'otomatis' => true,
+                'dibuka' => $this->ambil('tahap_2_dibuka', $spmb['pendaftaran_buka'] ?? true),
+                'tanggal_buka' => $this->ambil('tahap_2_tanggal_buka', $spmb['tanggal_buka'] ?? ''),
+                'waktu_mulai' => $this->ambil('tahap_2_waktu_mulai', $spmb['waktu_buka'] ?? ''),
+                'tanggal_tutup' => $this->ambil('tahap_2_tanggal_tutup', $spmb['tanggal_tutup'] ?? ''),
+                'waktu_selesai' => $this->ambil('tahap_2_waktu_selesai', $spmb['waktu_tutup'] ?? ''),
+                'keterangan' => $this->ambil('tahap_2_keterangan', 'Lengkapi formulir pendaftaran peserta didik baru.'),
+                'otomatis' => false,
             ],
             'tahap_3' => [
                 'dibuka' => $this->ambil('tahap_3_dibuka', true),
@@ -448,11 +451,15 @@ class PengaturanService
                 'keterangan' => $this->ambil('tahap_3_keterangan', ''),
             ],
             'tahap_4' => [
-                'tanggal_buka' => $this->ambil('tahap_4_tanggal_buka', ''),
-                'tanggal_tutup' => $this->ambil('tahap_4_tanggal_tutup', ''),
+                'dibuka' => $ujian['ujian_dibuka'] ?? true,
+                'tanggal_buka' => $ujian['ujian_tanggal_buka'] ?? '',
+                'waktu_mulai' => $ujian['ujian_waktu_buka'] ?? '',
+                'tanggal_tutup' => $ujian['ujian_tanggal_tutup'] ?? '',
+                'waktu_selesai' => $ujian['ujian_waktu_tutup'] ?? '',
                 'keterangan' => $this->ambil('tahap_4_keterangan', ''),
             ],
             'tahap_5' => [
+                'dibuka' => $this->ambil('tahap_5_dibuka', true),
                 'tanggal_buka' => $this->ambil('tahap_5_tanggal_buka', ''),
                 'tanggal_tutup' => $this->ambil('tahap_5_tanggal_tutup', ''),
                 'waktu_mulai' => $this->ambil('tahap_5_waktu_mulai', ''),
@@ -461,13 +468,19 @@ class PengaturanService
                 'keterangan' => $this->ambil('tahap_5_keterangan', ''),
             ],
             'tahap_6' => [
+                'dibuka' => $this->ambil('tahap_6_dibuka', true),
                 'tanggal_buka' => $this->ambil('tahap_6_tanggal_buka', ''),
+                'waktu_mulai' => $this->ambil('tahap_6_waktu_mulai', ''),
                 'tanggal_tutup' => $this->ambil('tahap_6_tanggal_tutup', ''),
+                'waktu_selesai' => $this->ambil('tahap_6_waktu_selesai', ''),
                 'keterangan' => $this->ambil('tahap_6_keterangan', ''),
             ],
             'tahap_7' => [
+                'dibuka' => $this->ambil('tahap_7_dibuka', true),
                 'tanggal_buka' => $this->ambil('tahap_7_tanggal_buka', ''),
+                'waktu_mulai' => $this->ambil('tahap_7_waktu_mulai', ''),
                 'tanggal_tutup' => $this->ambil('tahap_7_tanggal_tutup', ''),
+                'waktu_selesai' => $this->ambil('tahap_7_waktu_selesai', ''),
                 'keterangan' => $this->ambil('tahap_7_keterangan', ''),
                 'keterangan_lulus' => $this->ambil('tahap_7_keterangan_lulus', ''),
                 'keterangan_tidak_lulus' => $this->ambil('tahap_7_keterangan_tidak_lulus', ''),
@@ -563,6 +576,125 @@ class PengaturanService
         if (!empty($normalized[0]['file'])) {
             $this->simpan('surat_kelulusan', $normalized[0]['file']);
         }
+    }
+
+    /**
+     * Simpan hanya field jadwal yang diizinkan untuk satu tahap.
+     */
+    public function simpanJadwalTahap(int $tahap, array $config): void
+    {
+        if (!in_array($tahap, [2, 3, 5, 6, 7], true)) {
+            throw new \InvalidArgumentException('Tahap tidak mendukung jadwal manual.');
+        }
+
+        $allowedKeys = [
+            'dibuka', 'tanggal_buka', 'waktu_mulai', 'tanggal_tutup',
+            'waktu_selesai', 'lokasi', 'keterangan',
+        ];
+        $data = [];
+
+        foreach (array_intersect_key($config, array_flip($allowedKeys)) as $key => $value) {
+            $data["tahap_{$tahap}_{$key}"] = $value;
+        }
+
+        if ($data !== []) {
+            $this->simpanBanyak($data);
+        }
+    }
+
+    /**
+     * Status jadwal tahap tanpa memeriksa progres peserta.
+     */
+    public function statusAksesTahap(int $tahap, ?array $config = null): array
+    {
+        if ($tahap === 4) {
+            $aksesUjian = $this->statusAksesUjian();
+            $mulaiLabel = $aksesUjian['mulai_label'] ?? null;
+            $selesaiLabel = $aksesUjian['selesai_label'] ?? null;
+
+            return [
+                'dibuka' => $aksesUjian['dibuka'] ?? true,
+                'alasan' => $aksesUjian['alasan'] ?? null,
+                'tanggal_buka' => $mulaiLabel,
+                'jadwal_label' => $this->buatLabelJadwal('tes', $mulaiLabel, $selesaiLabel),
+            ];
+        }
+
+        $config ??= $this->ambilPengaturanTahapan()["tahap_{$tahap}"] ?? [];
+        $mulai = $this->gabungkanTanggalWaktuTahap(
+            $config['tanggal_buka'] ?? '',
+            $config['waktu_mulai'] ?? '',
+            false
+        );
+        $selesai = $this->gabungkanTanggalWaktuTahap(
+            $config['tanggal_tutup'] ?? '',
+            $config['waktu_selesai'] ?? '',
+            true
+        );
+        $mulaiLabel = $mulai ? $this->formatTanggalWaktuTahap($mulai, !empty($config['waktu_mulai'])) : null;
+        $selesaiLabel = $selesai ? $this->formatTanggalWaktuTahap($selesai, !empty($config['waktu_selesai'])) : null;
+        $label = match ($tahap) {
+            2 => 'isi formulir',
+            3 => 'pembayaran formulir',
+            5 => 'wawancara',
+            6 => 'pelunasan',
+            7 => 'pengumuman kelulusan',
+            default => 'tahap',
+        };
+        $dibuka = filter_var($config['dibuka'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true;
+        $result = [
+            'dibuka' => true,
+            'alasan' => null,
+            'tanggal_buka' => $mulaiLabel,
+            'jadwal_label' => $this->buatLabelJadwal($label, $mulaiLabel, $selesaiLabel),
+        ];
+
+        if (!$dibuka) {
+            $result['dibuka'] = false;
+            $result['alasan'] = 'Tahap ini sedang ditutup oleh admin.';
+            return $result;
+        }
+
+        if ($mulai && now()->lt($mulai)) {
+            $result['dibuka'] = false;
+            $result['alasan'] = 'Dibuka pada ' . $mulaiLabel;
+            return $result;
+        }
+
+        if ($selesai && now()->gt($selesai)) {
+            $result['dibuka'] = false;
+            $result['alasan'] = 'Sudah ditutup pada ' . $selesaiLabel;
+        }
+
+        return $result;
+    }
+
+    private function buatLabelJadwal(string $label, ?string $mulai, ?string $selesai): ?string
+    {
+        if ($mulai && $selesai) {
+            return 'Jadwal ' . $label . ': ' . $mulai . ' sampai ' . $selesai;
+        }
+
+        if ($mulai) {
+            return ucfirst($label) . ' dibuka pada ' . $mulai;
+        }
+
+        return $selesai ? ucfirst($label) . ' ditutup pada ' . $selesai : null;
+    }
+
+    private function gabungkanTanggalWaktuTahap(?string $tanggal, ?string $waktu, bool $akhirHari): ?Carbon
+    {
+        if (empty($tanggal)) {
+            return null;
+        }
+
+        return Carbon::parse(trim($tanggal . ' ' . ($waktu ?: ($akhirHari ? '23:59:59' : '00:00:00'))));
+    }
+
+    private function formatTanggalWaktuTahap(Carbon $tanggal, bool $pakaiJam): string
+    {
+        return $tanggal->locale('id')->translatedFormat($pakaiJam ? 'd F Y H:i' : 'd F Y')
+            . ($pakaiJam ? ' WIB' : '');
     }
 
     /**

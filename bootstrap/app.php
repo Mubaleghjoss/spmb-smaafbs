@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'cek.peserta' => \App\Http\Middleware\CekPeserta::class,
             'cek.sesi.tes' => \App\Http\Middleware\CekSesiTes::class,
             'cek.akses.menu' => \App\Http\Middleware\CekAksesMenu::class,
+            'cek.tahap.spmb' => \App\Http\Middleware\PastikanTahapSpmbDibuka::class,
             'akses.sync' => \App\Http\Middleware\AuthenticateAksesSync::class,
         ]);
     })

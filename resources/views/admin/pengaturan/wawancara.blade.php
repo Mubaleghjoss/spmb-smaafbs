@@ -18,8 +18,28 @@
     </div>
     @endif
 
+    @if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="fw-bold mb-1">Pengaturan belum dapat disimpan:</div>
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
     <form method="POST" action="{{ route('admin.pengaturan.wawancara.simpan') }}">
         @csrf
+
+        @include('admin.pengaturan.partials.jadwal-tahap', [
+            'fieldPrefix' => 'jadwal',
+            'judulJadwal' => 'Jadwal Wawancara & Verifikasi Berkas',
+            'deskripsiJadwal' => 'Jadwal ini langsung menentukan status Tahap 5 pada dashboard peserta.',
+            'warnaJadwal' => 'primary',
+            'pakaiLokasi' => true,
+        ])
 
         {{-- Pertanyaan Orang Tua --}}
         <div class="card border-0 shadow-sm mb-4">

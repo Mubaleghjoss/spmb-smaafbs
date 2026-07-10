@@ -39,6 +39,13 @@
         <div class="col-lg-6">
             <form action="{{ route('admin.pengaturan.template-kwitansi.simpan') }}" method="POST" enctype="multipart/form-data">
                 @csrf
+
+                @include('admin.pengaturan.partials.jadwal-tahap', [
+                    'fieldPrefix' => 'jadwal',
+                    'judulJadwal' => 'Jadwal Pembayaran Pelunasan',
+                    'deskripsiJadwal' => 'Jadwal ini langsung menentukan status Tahap 6 pada dashboard peserta.',
+                    'warnaJadwal' => 'info',
+                ])
                 
                 {{-- Informasi Institusi --}}
                 <div class="card border-0 shadow-sm mb-4">

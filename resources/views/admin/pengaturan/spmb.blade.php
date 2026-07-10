@@ -18,11 +18,28 @@
     </div>
     @endif
 
+    @if($errors->any())
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <div class="fw-bold mb-1">Pengaturan belum dapat disimpan:</div>
+        <ul class="mb-0">
+            @foreach($errors->all() as $error)
+                <li>{{ $error }}</li>
+            @endforeach
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    @endif
+
     {{-- Tab Navigation --}}
     <ul class="nav nav-pills nav-fill mb-4 bg-white rounded shadow-sm p-2" id="spmbTabs" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="tab-tahap1" data-bs-toggle="pill" data-bs-target="#pane-tahap1" type="button">
                 <span class="badge bg-success rounded-circle me-1">1</span> Pendaftaran
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="tab-tahap2" data-bs-toggle="pill" data-bs-target="#pane-tahap2" type="button">
+                <span class="badge bg-primary rounded-circle me-1">2</span> Formulir
             </button>
         </li>
         <li class="nav-item" role="presentation">
@@ -93,15 +110,25 @@
                                     <small class="text-muted mt-1 d-block">Klik toggle untuk langsung mengubah status pendaftaran</small>
                                 </div>
                                 <div class="row">
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-3 mb-3">
                                         <label class="form-label">Tanggal Buka</label>
                                         <input type="date" name="tanggal_buka" class="form-control" 
                                                value="{{ old('tanggal_buka', $spmb['tanggal_buka']) }}">
                                     </div>
-                                    <div class="col-md-6 mb-3">
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Jam Buka</label>
+                                        <input type="time" name="waktu_buka" class="form-control"
+                                               value="{{ old('waktu_buka', $spmb['waktu_buka'] ?? '') }}">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
                                         <label class="form-label">Tanggal Tutup</label>
                                         <input type="date" name="tanggal_tutup" class="form-control" 
                                                value="{{ old('tanggal_tutup', $spmb['tanggal_tutup']) }}">
+                                    </div>
+                                    <div class="col-md-3 mb-3">
+                                        <label class="form-label">Jam Tutup</label>
+                                        <input type="time" name="waktu_tutup" class="form-control"
+                                               value="{{ old('waktu_tutup', $spmb['waktu_tutup'] ?? '') }}">
                                     </div>
                                 </div>
                             </div>
@@ -129,9 +156,31 @@
             </div>
 
             {{-- ======================================== --}}
+            {{-- TAB: TAHAP 2 - ISI FORMULIR --}}
+            {{-- ======================================== --}}
+            <div class="tab-pane fade" id="pane-tahap2" role="tabpanel">
+                @include('admin.pengaturan.partials.jadwal-tahap', [
+                    'fieldPrefix' => 'tahap_2',
+                    'jadwalTahap' => $tahapan['tahap_2'],
+                    'statusJadwal' => $statusTahapan[2],
+                    'judulJadwal' => 'Jadwal Isi Formulir SPMB',
+                    'deskripsiJadwal' => 'Tahap 2 dapat diatur terpisah dari periode pendaftaran akun baru.',
+                    'warnaJadwal' => 'primary',
+                ])
+            </div>
+
+            {{-- ======================================== --}}
             {{-- TAB: TAHAP 3 - PEMBAYARAN FORMULIR --}}
             {{-- ======================================== --}}
             <div class="tab-pane fade" id="pane-tahap3" role="tabpanel">
+                @include('admin.pengaturan.partials.jadwal-tahap', [
+                    'fieldPrefix' => 'tahap_3',
+                    'jadwalTahap' => $tahapan['tahap_3'],
+                    'statusJadwal' => $statusTahapan[3],
+                    'judulJadwal' => 'Jadwal Pembayaran Formulir',
+                    'deskripsiJadwal' => 'Atur kapan peserta dapat mengunggah bukti pembayaran formulir.',
+                    'warnaJadwal' => 'warning',
+                ])
                 <div class="row">
                     <div class="col-md-6 mx-auto">
                         <div class="card mb-4 border-0 shadow-sm">
@@ -165,6 +214,14 @@
             {{-- TAB: TAHAP 6 - PELUNASAN --}}
             {{-- ======================================== --}}
             <div class="tab-pane fade" id="pane-tahap6" role="tabpanel">
+                @include('admin.pengaturan.partials.jadwal-tahap', [
+                    'fieldPrefix' => 'tahap_6',
+                    'jadwalTahap' => $tahapan['tahap_6'],
+                    'statusJadwal' => $statusTahapan[6],
+                    'judulJadwal' => 'Jadwal Pembayaran Pelunasan',
+                    'deskripsiJadwal' => 'Atur kapan peserta yang lolos wawancara dapat mengunggah bukti pelunasan.',
+                    'warnaJadwal' => 'info',
+                ])
                 <div class="row">
                     <div class="col-md-6">
                         <div class="card mb-4 border-0 shadow-sm">
@@ -206,32 +263,14 @@
             <div class="tab-pane fade" id="pane-tahap7" role="tabpanel">
                 <div class="row">
                     <div class="col-12">
-                        <div class="card mb-4 border-0 shadow-sm">
-                            <div class="card-header bg-primary text-white">
-                                <h6 class="mb-0"><i class="bi bi-megaphone me-2"></i>Jadwal Pengumuman</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
-                                        <label class="form-label">Tanggal Pengumuman</label>
-                                        <input type="date" name="tahap_7[tanggal_buka]" class="form-control"
-                                               value="{{ old('tahap_7.tanggal_buka', $tahapan['tahap_7']['tanggal_buka'] ?? '') }}">
-                                        <div class="form-text">Tanggal ini dipakai otomatis di halaman peserta saat status masih menunggu pengumuman.</div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="form-label">Tanggal Tutup Info</label>
-                                        <input type="date" name="tahap_7[tanggal_tutup]" class="form-control"
-                                               value="{{ old('tahap_7.tanggal_tutup', $tahapan['tahap_7']['tanggal_tutup'] ?? '') }}">
-                                        <div class="form-text">Opsional. Kosongkan jika pengumuman tetap dapat dilihat tanpa batas tanggal.</div>
-                                    </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Catatan Saat Menunggu Pengumuman</label>
-                                        <textarea name="tahap_7[keterangan]" class="form-control" rows="2" placeholder="Contoh: Silakan pantau dashboard peserta secara berkala.">{{ old('tahap_7.keterangan', $tahapan['tahap_7']['keterangan'] ?? '') }}</textarea>
-                                        <div class="form-text">Tidak perlu menulis tanggal di sini karena tanggal pengumuman sudah dibuat otomatis dari field di atas.</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        @include('admin.pengaturan.partials.jadwal-tahap', [
+                            'fieldPrefix' => 'tahap_7',
+                            'jadwalTahap' => $tahapan['tahap_7'],
+                            'statusJadwal' => $statusTahapan[7],
+                            'judulJadwal' => 'Jadwal Pengumuman Kelulusan',
+                            'deskripsiJadwal' => 'Atur tanggal dan jam hasil kelulusan dapat dilihat peserta.',
+                            'warnaJadwal' => 'danger',
+                        ])
                     </div>
                     <div class="col-md-6">
                         <div class="card mb-4 border-0 shadow-sm border-success">
@@ -435,14 +474,12 @@
                                         $isLewat = $selesaiTahap && $now->gt($selesaiTahap);
                                         $dibukaTahap = filter_var($tahapan['tahap_'.$num]['dibuka'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
                                         $dibukaTahap = $dibukaTahap ?? true;
-                                        $hasExtra = in_array($num, [2, 3, 5, 7]);
+                                        $hasExtra = in_array($num, [2, 3, 4, 5, 6, 7]);
                                     @endphp
                                     <tr class="{{ $isAktif ? 'table-success' : '' }}">
                                         <td class="ps-3">
-                                            @if($num == 2)
-                                                <input type="checkbox" class="form-check-input" disabled title="Mengikuti jadwal pendaftaran">
-                                            @elseif($num == 7)
-                                                <input type="checkbox" class="form-check-input" disabled title="Atur di tab Kelulusan">
+                                            @if(in_array($num, [2, 3, 4, 6, 7]))
+                                                <input type="checkbox" class="form-check-input" disabled title="Jadwal diatur dari menu khusus tahap">
                                             @else
                                             <input type="checkbox" class="form-check-input tahap-check" data-tahap="{{ $num }}">
                                             @endif
@@ -456,8 +493,10 @@
                                             </div>
                                         </td>
                                         <td>
-                                            @if($num == 2)
-                                                <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Mengikuti jadwal pendaftaran' }}</span>
+                                            @if(in_array($num, [2, 3, 6]))
+                                                <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Atur di tab tahap' }}</span>
+                                            @elseif($num == 4)
+                                                <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Atur di menu Ujian' }}</span>
                                             @elseif($num == 7)
                                                 <span class="text-muted small">{{ $buka ? \Carbon\Carbon::parse($buka)->translatedFormat('d M Y') : 'Atur di tab Kelulusan' }}</span>
                                             @else
@@ -466,8 +505,10 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($num == 2)
-                                                <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : 'Mengikuti jadwal pendaftaran' }}</span>
+                                            @if(in_array($num, [2, 3, 6]))
+                                                <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : 'Atur di tab tahap' }}</span>
+                                            @elseif($num == 4)
+                                                <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : 'Atur di menu Ujian' }}</span>
                                             @elseif($num == 7)
                                                 <span class="text-muted small">{{ $tutup ? \Carbon\Carbon::parse($tutup)->translatedFormat('d M Y') : '-' }}</span>
                                             @else
@@ -476,7 +517,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if(!$dibukaTahap && in_array($num, [2, 3]))
+                                            @if(!$dibukaTahap)
                                                 <span class="badge bg-danger"><i class="bi bi-lock me-1"></i>Ditutup</span>
                                             @elseif($num == 2 && $dibukaTahap && !$mulaiTahap && !$selesaiTahap)
                                                 <span class="badge bg-success"><i class="bi bi-broadcast me-1"></i>Aktif</span>
@@ -505,45 +546,31 @@
                                         <td colspan="5">
                                             @if($num == 2)
                                             <div class="p-3 bg-light rounded">
-                                                <p class="text-muted small mb-0">
-                                                    <i class="bi bi-info-circle me-1"></i>
-                                                    Tahap 2 otomatis mengikuti toggle dan tanggal pendaftaran di tab Pendaftaran.
-                                                    Field formulir peserta tidak perlu konfigurasi khusus.
-                                                </p>
+                                                <p class="text-muted small mb-2">Jadwal isi formulir sekarang berdiri sendiri dan tidak mengikuti jadwal pendaftaran akun.</p>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="new bootstrap.Tab(document.getElementById('tab-tahap2')).show()">
+                                                    <i class="bi bi-arrow-right-circle me-1"></i>Buka Tab Formulir
+                                                </button>
                                             </div>
                                             @else
                                             <div class="p-3 bg-light rounded">
-                                                <div class="row g-3 align-items-end">
-                                                    <div class="col-md-3">
-                                                        <label class="form-label small fw-bold d-block">Status Akses</label>
-                                                        <input type="hidden" name="tahap_{{ $num }}[dibuka]" value="0">
-                                                        <div class="form-check form-switch">
-                                                            <input type="checkbox" name="tahap_{{ $num }}[dibuka]" value="1"
-                                                                   class="form-check-input" id="tahap{{ $num }}Dibuka"
-                                                                   {{ $dibukaTahap ? 'checked' : '' }}>
-                                                            <label class="form-check-label" for="tahap{{ $num }}Dibuka">Dibuka</label>
-                                                        </div>
-                                                        <small class="text-muted">Tetap harus menyelesaikan tahap sebelumnya.</small>
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label small">Waktu Mulai</label>
-                                                        <input type="time" name="tahap_{{ $num }}[waktu_mulai]" class="form-control form-control-sm"
-                                                               value="{{ $tahapan['tahap_'.$num]['waktu_mulai'] ?? '' }}">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label small">Waktu Selesai</label>
-                                                        <input type="time" name="tahap_{{ $num }}[waktu_selesai]" class="form-control form-control-sm"
-                                                               value="{{ $tahapan['tahap_'.$num]['waktu_selesai'] ?? '' }}">
-                                                    </div>
-                                                    <div class="col-md-3">
-                                                        <label class="form-label small">Keterangan Singkat</label>
-                                                        <input type="text" name="tahap_{{ $num }}[keterangan]" class="form-control form-control-sm"
-                                                               value="{{ $tahapan['tahap_'.$num]['keterangan'] ?? '' }}"
-                                                               placeholder="Info tambahan untuk tahap {{ $num }}">
-                                                    </div>
-                                                </div>
+                                                <p class="text-muted small mb-2">Jadwal pembayaran formulir diatur bersama rekening pada tab Pembayaran.</p>
+                                                <button type="button" class="btn btn-sm btn-outline-warning" onclick="new bootstrap.Tab(document.getElementById('tab-tahap3')).show()">
+                                                    <i class="bi bi-arrow-right-circle me-1"></i>Buka Tab Pembayaran
+                                                </button>
                                             </div>
                                             @endif
+                                        </td>
+                                    </tr>
+                                    @elseif($num == 4)
+                                    <tr class="collapse" id="extraTahap4">
+                                        <td></td>
+                                        <td colspan="5">
+                                            <div class="p-3 bg-light rounded d-flex justify-content-between align-items-center gap-3">
+                                                <span class="text-muted small">Tahap 4 menggunakan jadwal global Tes Online.</span>
+                                                <a href="{{ route('admin.pengaturan.ujian') }}" class="btn btn-sm btn-outline-danger">
+                                                    <i class="bi bi-box-arrow-up-right me-1"></i>Buka Pengaturan Ujian
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                     @elseif($num == 5)
@@ -575,6 +602,18 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    @elseif($num == 6)
+                                    <tr class="collapse" id="extraTahap6">
+                                        <td></td>
+                                        <td colspan="5">
+                                            <div class="p-3 bg-light rounded d-flex justify-content-between align-items-center gap-3">
+                                                <span class="text-muted small">Jadwal pelunasan diatur bersama nominal pembayaran pada tab Pelunasan.</span>
+                                                <button type="button" class="btn btn-sm btn-outline-info" onclick="new bootstrap.Tab(document.getElementById('tab-tahap6')).show()">
+                                                    <i class="bi bi-arrow-right-circle me-1"></i>Buka Tab Pelunasan
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                     @elseif($num == 7)
                                     <tr class="collapse" id="extraTahap7">
                                         <td></td>
@@ -587,9 +626,6 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @else
-                                    {{-- Hidden keterangan for tahap without extra --}}
-                                    <input type="hidden" name="tahap_{{ $num }}[keterangan]" value="{{ $tahapan['tahap_'.$num]['keterangan'] ?? '' }}">
                                     @endif
                                     @endforeach
                                 </tbody>

@@ -138,27 +138,38 @@ class PendaftaranController extends Controller
     {
         $dibuka = (bool) ($spmb['pendaftaran_buka'] ?? false);
         $tanggalBuka = $spmb['tanggal_buka'] ?? null;
+        $waktuBuka = $spmb['waktu_buka'] ?? null;
         $tanggalTutup = $spmb['tanggal_tutup'] ?? null;
+        $waktuTutup = $spmb['waktu_tutup'] ?? null;
         $now = Carbon::now();
 
         if (!$dibuka) {
             return [false, 'Pendaftaran SPMB saat ini sedang ditutup.'];
         }
 
-        if ($tanggalBuka && $now < Carbon::parse($tanggalBuka)->startOfDay()) {
+        $mulai = $tanggalBuka
+            ? Carbon::parse($tanggalBuka . ' ' . ($waktuBuka ?: '00:00:00'))
+            : null;
+        $selesai = $tanggalTutup
+            ? Carbon::parse($tanggalTutup . ' ' . ($waktuTutup ?: '23:59:59'))
+            : null;
+
+        if ($mulai && $now < $mulai) {
             return [
                 false,
-                'Pendaftaran SPMB akan dibuka pada tanggal '
-                    . Carbon::parse($tanggalBuka)->translatedFormat('d F Y')
+                'Pendaftaran SPMB akan dibuka pada '
+                    . $mulai->translatedFormat($waktuBuka ? 'd F Y H:i' : 'd F Y')
+                    . ($waktuBuka ? ' WIB' : '')
                     . '.',
             ];
         }
 
-        if ($tanggalTutup && $now > Carbon::parse($tanggalTutup)->endOfDay()) {
+        if ($selesai && $now > $selesai) {
             return [
                 false,
-                'Pendaftaran SPMB telah ditutup pada tanggal '
-                    . Carbon::parse($tanggalTutup)->translatedFormat('d F Y')
+                'Pendaftaran SPMB telah ditutup pada '
+                    . $selesai->translatedFormat($waktuTutup ? 'd F Y H:i' : 'd F Y')
+                    . ($waktuTutup ? ' WIB' : '')
                     . '.',
             ];
         }

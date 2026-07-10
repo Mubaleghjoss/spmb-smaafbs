@@ -103,7 +103,7 @@
                 <div class="card-body p-3">
                     <span class="badge bg-success mb-2">Tahap 1</span>
                     <h6 class="mb-1"><i class="bi bi-person-plus me-1 text-success"></i>Pendaftaran</h6>
-                    <p class="text-muted small mb-2">Jadwal buka/tutup, biaya formulir, status pendaftaran.</p>
+                    <p class="text-muted small mb-2">Tanggal dan jam pendaftaran akun, biaya formulir, status akses.</p>
                     <a href="{{ route('admin.pengaturan.spmb') }}" class="btn btn-sm btn-outline-success">
                         <i class="bi bi-gear me-1"></i>Kelola
                     </a>
@@ -117,8 +117,10 @@
                 <div class="card-body p-3">
                     <span class="badge bg-primary mb-2">Tahap 2</span>
                     <h6 class="mb-1"><i class="bi bi-file-earmark-text me-1 text-primary"></i>Isi Formulir</h6>
-                    <p class="text-muted small mb-2">Field formulir peserta otomatis, tidak perlu konfigurasi khusus.</p>
-                    <span class="badge bg-light text-muted"><i class="bi bi-check-circle me-1"></i>Otomatis</span>
+                    <p class="text-muted small mb-2">Tanggal, jam, dan status akses pengisian formulir peserta.</p>
+                    <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap2" class="btn btn-sm btn-outline-primary">
+                        <i class="bi bi-gear me-1"></i>Kelola
+                    </a>
                 </div>
             </div>
         </div>
@@ -129,7 +131,7 @@
                 <div class="card-body p-3">
                     <span class="badge mb-2" style="background:#fd7e14">Tahap 3</span>
                     <h6 class="mb-1"><i class="bi bi-credit-card me-1" style="color:#fd7e14"></i>Bayar Formulir</h6>
-                    <p class="text-muted small mb-2">Rekening bank, nominal pembayaran formulir.</p>
+                    <p class="text-muted small mb-2">Jadwal akses, rekening bank, dan pembayaran formulir.</p>
                     <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap3" class="btn btn-sm btn-outline-secondary" style="border-color:#fd7e14;color:#fd7e14">
                         <i class="bi bi-gear me-1"></i>Kelola
                     </a>
@@ -157,7 +159,7 @@
                 <div class="card-body p-3">
                     <span class="badge mb-2" style="background:#6610f2">Tahap 5</span>
                     <h6 class="mb-1"><i class="bi bi-people me-1" style="color:#6610f2"></i>Wawancara & Berkas</h6>
-                    <p class="text-muted small mb-2">Pertanyaan wawancara, surat pernyataan, soal pegon.</p>
+                    <p class="text-muted small mb-2">Jadwal akses, pertanyaan, surat pernyataan, dan soal pegon.</p>
                     <a href="{{ route('admin.pengaturan.wawancara') }}" class="btn btn-sm btn-outline-secondary" style="border-color:#6610f2;color:#6610f2">
                         <i class="bi bi-gear me-1"></i>Kelola
                     </a>
@@ -171,7 +173,7 @@
                 <div class="card-body p-3">
                     <span class="badge bg-info mb-2">Tahap 6</span>
                     <h6 class="mb-1"><i class="bi bi-receipt me-1 text-info"></i>Bayar Pelunasan</h6>
-                    <p class="text-muted small mb-2">Template kwitansi, logo, stempel, penandatangan.</p>
+                    <p class="text-muted small mb-2">Jadwal akses, template kwitansi, stempel, dan penandatangan.</p>
                     <a href="{{ route('admin.pengaturan.template-kwitansi') }}" class="btn btn-sm btn-outline-info">
                         <i class="bi bi-gear me-1"></i>Kelola
                     </a>
@@ -185,7 +187,7 @@
                 <div class="card-body p-3">
                     <span class="badge bg-danger mb-2">Tahap 7</span>
                     <h6 class="mb-1"><i class="bi bi-mortarboard me-1 text-danger"></i>Kelulusan</h6>
-                    <p class="text-muted small mb-2">Tampilan surat kelulusan, judul, warna, teks.</p>
+                    <p class="text-muted small mb-2">Tanggal dan jam pengumuman, SK, serta tampilan hasil.</p>
                     <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn btn-sm btn-outline-danger">
                         <i class="bi bi-gear me-1"></i>Kelola
                     </a>

@@ -294,7 +294,6 @@ class DashboardSpmbController extends Controller
         $tahapan = $peserta->tahapanSpmb;
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $pengaturanTahapan = $pengaturanService->ambilPengaturanTahapan();
-        $aksesUjian = $pengaturanService->statusAksesUjian();
         
         $tahapanConfig = [
             1 => ['enum' => TahapanSpmbEnum::BUAT_AKUN, 'icon' => 'person-plus', 'route' => null, 'route_selesai' => null, 'aksi' => null],
@@ -309,7 +308,7 @@ class DashboardSpmbController extends Controller
         $result = [];
         foreach ($tahapanConfig as $num => $config) {
             $kolomSelesai = "tahap_{$num}_selesai";
-            $statusInfo = $this->cekTahapanDibukaDetail($pengaturanTahapan, $num, $tahapan, $aksesUjian);
+            $statusInfo = $this->cekTahapanDibukaDetail($pengaturanTahapan, $num, $tahapan);
             
             $selesai = $num === 1 ? ($tahapan?->$kolomSelesai ?? true) : ($tahapan?->$kolomSelesai ?? false);
             
@@ -333,7 +332,7 @@ class DashboardSpmbController extends Controller
     /**
      * Cek apakah tahapan dibuka berdasarkan pengaturan waktu dengan detail alasan
      */
-    private function cekTahapanDibukaDetail(array $pengaturan, int $tahap, $tahapanPeserta, ?array $aksesUjian = null): array
+    private function cekTahapanDibukaDetail(array $pengaturan, int $tahap, $tahapanPeserta): array
     {
         $result = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null];
         
@@ -351,100 +350,11 @@ class DashboardSpmbController extends Controller
             return $result;
         }
 
-        // Tahap 4 (Tes Online) dikendalikan dari Pengaturan Ujian.
-        if ($tahap === 4) {
-            $aksesUjian ??= app(\App\Services\PengaturanService::class)->statusAksesUjian();
-            $result['tanggal_buka'] = $aksesUjian['mulai_label'] ?? null;
-            $mulaiLabel = $aksesUjian['mulai_label'] ?? null;
-            $selesaiLabel = $aksesUjian['selesai_label'] ?? null;
-
-            if ($mulaiLabel && $selesaiLabel) {
-                $result['jadwal_label'] = 'Jadwal tes: ' . $mulaiLabel . ' sampai ' . $selesaiLabel;
-            } elseif ($mulaiLabel) {
-                $result['jadwal_label'] = 'Tes online mulai dibuka pada ' . $mulaiLabel;
-            } elseif ($selesaiLabel) {
-                $result['jadwal_label'] = 'Tes online ditutup pada ' . $selesaiLabel;
-            }
-
-            if (!($aksesUjian['dibuka'] ?? true)) {
-                $result['dibuka'] = false;
-                $result['alasan'] = $aksesUjian['alasan'] ?? 'Tes online belum dibuka.';
-            }
-
-            return $result;
-        }
-
-        // Cek pengaturan waktu
         $key = "tahap_{$tahap}";
-        if (isset($pengaturan[$key])) {
-            $config = $pengaturan[$key];
-            $now = now();
-            $dibukaManual = filter_var($config['dibuka'] ?? true, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
-            $dibukaManual = $dibukaManual ?? true;
-            $tanggalBuka = $this->gabungkanTanggalWaktuTahapan($config['tanggal_buka'] ?? '', $config['waktu_mulai'] ?? '', false);
-            $tanggalTutup = $this->gabungkanTanggalWaktuTahapan($config['tanggal_tutup'] ?? '', $config['waktu_selesai'] ?? '', true);
-            $mulaiLabel = $tanggalBuka ? $this->formatTanggalWaktuTahapan($tanggalBuka, !empty($config['waktu_mulai'])) : null;
-            $selesaiLabel = $tanggalTutup ? $this->formatTanggalWaktuTahapan($tanggalTutup, !empty($config['waktu_selesai'])) : null;
-            $labelJadwal = match ($tahap) {
-                2 => 'isi formulir',
-                3 => 'pembayaran formulir',
-                5 => 'wawancara',
-                6 => 'pembayaran pertama',
-                7 => 'kelulusan',
-                default => 'tahap',
-            };
-
-            if ($mulaiLabel && $selesaiLabel) {
-                $result['jadwal_label'] = 'Jadwal ' . $labelJadwal . ': ' . $mulaiLabel . ' sampai ' . $selesaiLabel;
-            } elseif ($mulaiLabel) {
-                $result['jadwal_label'] = 'Dibuka pada ' . $mulaiLabel;
-            } elseif ($selesaiLabel) {
-                $result['jadwal_label'] = 'Ditutup pada ' . $selesaiLabel;
-            }
-
-            if (!$dibukaManual) {
-                $result['dibuka'] = false;
-                $result['alasan'] = 'Tahap ini sedang ditutup oleh admin.';
-                return $result;
-            }
-            
-            if ($tanggalBuka) {
-                $result['tanggal_buka'] = $mulaiLabel;
-                
-                if ($now < $tanggalBuka) {
-                    $result['dibuka'] = false;
-                    $result['alasan'] = 'Dibuka pada ' . $mulaiLabel;
-                    return $result;
-                }
-            }
-            
-            if ($tanggalTutup) {
-                if ($now > $tanggalTutup) {
-                    $result['dibuka'] = false;
-                    $result['alasan'] = 'Sudah ditutup pada ' . $selesaiLabel;
-                    return $result;
-                }
-            }
-        }
-        // Jika tidak ada pengaturan waktu, tahap tetap dibuka (default behavior)
-
-        return $result;
-    }
-
-    private function gabungkanTanggalWaktuTahapan(?string $tanggal, ?string $waktu, bool $akhirHari): ?\Carbon\Carbon
-    {
-        if (empty($tanggal)) {
-            return null;
-        }
-
-        $jam = $waktu ?: ($akhirHari ? '23:59:59' : '00:00:00');
-
-        return \Carbon\Carbon::parse(trim($tanggal . ' ' . $jam));
-    }
-
-    private function formatTanggalWaktuTahapan(\Carbon\Carbon $tanggal, bool $pakaiJam): string
-    {
-        return $tanggal->locale('id')->translatedFormat($pakaiJam ? 'd F Y H:i' : 'd F Y') . ($pakaiJam ? ' WIB' : '');
+        return app(\App\Services\PengaturanService::class)->statusAksesTahap(
+            $tahap,
+            $pengaturan[$key] ?? []
+        );
     }
 
     /**

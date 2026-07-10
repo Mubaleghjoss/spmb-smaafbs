@@ -222,7 +222,15 @@
                                             @endif
                                         @endif
                                     @elseif(!$item['dibuka'])
-                                        <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>Belum Dibuka</span>
+                                        @php
+                                            $alasanTahap = strtolower($item['alasan'] ?? '');
+                                            $labelTerkunci = str_contains($alasanTahap, 'sudah ditutup')
+                                                ? 'Sudah Ditutup'
+                                                : (str_contains($alasanTahap, 'ditutup oleh admin')
+                                                    ? 'Ditutup Admin'
+                                                    : (str_contains($alasanTahap, 'selesaikan tahap') ? 'Terkunci' : 'Belum Dibuka'));
+                                        @endphp
+                                        <span class="badge bg-secondary"><i class="bi bi-lock me-1"></i>{{ $labelTerkunci }}</span>
                                         @if(!empty($item['alasan']))
                                         <br><small class="text-muted mt-1 d-inline-block">
                                             <i class="bi bi-info-circle me-1"></i>{{ $item['alasan'] }}

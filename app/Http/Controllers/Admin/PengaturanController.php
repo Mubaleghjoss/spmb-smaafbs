@@ -7,6 +7,7 @@ use App\Services\PengaturanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Controller untuk pengaturan sistem
@@ -121,8 +122,15 @@ class PengaturanController extends Controller
     {
         $spmb = $this->pengaturanService->ambilSpmb();
         $tahapan = $this->pengaturanService->ambilPengaturanTahapan();
+        $statusTahapan = [];
+        foreach (range(2, 7) as $tahap) {
+            $statusTahapan[$tahap] = $this->pengaturanService->statusAksesTahap(
+                $tahap,
+                $tahapan["tahap_{$tahap}"] ?? []
+            );
+        }
         $skGelombang = $this->pengaturanService->ambilSuratKelulusanGelombang();
-        return view('admin.pengaturan.spmb', compact('spmb', 'tahapan', 'skGelombang'));
+        return view('admin.pengaturan.spmb', compact('spmb', 'tahapan', 'statusTahapan', 'skGelombang'));
     }
 
     /**
@@ -130,9 +138,11 @@ class PengaturanController extends Controller
      */
     public function simpanSpmb(Request $request)
     {
-        $request->validate([
+        $rules = [
             'tanggal_buka' => 'nullable|date',
+            'waktu_buka' => 'nullable|date_format:H:i',
             'tanggal_tutup' => 'nullable|date|after_or_equal:tanggal_buka',
+            'waktu_tutup' => 'nullable|date_format:H:i',
             'biaya_formulir' => 'nullable|numeric|min:0',
             'biaya_pelunasan' => 'nullable|numeric|min:0',
             'rekening_bank' => 'nullable|string|max:100',
@@ -148,17 +158,37 @@ class PengaturanController extends Controller
             'sk_gelombang_baru' => 'nullable|array',
             'sk_gelombang_baru.*.nama' => 'nullable|string|max:100',
             'sk_gelombang_baru.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
-            'tahap_2.dibuka' => 'nullable|boolean',
-            'tahap_2.tanggal_buka' => 'nullable|date',
-            'tahap_2.waktu_mulai' => 'nullable|date_format:H:i',
-            'tahap_2.tanggal_tutup' => 'nullable|date',
-            'tahap_2.waktu_selesai' => 'nullable|date_format:H:i',
-            'tahap_3.dibuka' => 'nullable|boolean',
-            'tahap_3.tanggal_buka' => 'nullable|date',
-            'tahap_3.waktu_mulai' => 'nullable|date_format:H:i',
-            'tahap_3.tanggal_tutup' => 'nullable|date',
-            'tahap_3.waktu_selesai' => 'nullable|date_format:H:i',
-        ]);
+        ];
+
+        foreach ([2, 3, 5, 6, 7] as $tahap) {
+            $rules["tahap_{$tahap}.dibuka"] = 'nullable|boolean';
+            $rules["tahap_{$tahap}.tanggal_buka"] = 'nullable|date';
+            $rules["tahap_{$tahap}.waktu_mulai"] = 'nullable|date_format:H:i';
+            $rules["tahap_{$tahap}.tanggal_tutup"] = 'nullable|date';
+            $rules["tahap_{$tahap}.waktu_selesai"] = 'nullable|date_format:H:i';
+            $rules["tahap_{$tahap}.keterangan"] = 'nullable|string|max:1000';
+        }
+
+        $request->validate($rules);
+        $this->pastikanRentangJadwal(
+            $request,
+            'tanggal_buka',
+            'waktu_buka',
+            'tanggal_tutup',
+            'waktu_tutup',
+            'pendaftaran'
+        );
+
+        foreach ([2, 3, 5, 6, 7] as $tahap) {
+            $this->pastikanRentangJadwal(
+                $request,
+                "tahap_{$tahap}.tanggal_buka",
+                "tahap_{$tahap}.waktu_mulai",
+                "tahap_{$tahap}.tanggal_tutup",
+                "tahap_{$tahap}.waktu_selesai",
+                "tahap {$tahap}"
+            );
+        }
 
         // Upload surat kelulusan jika ada
         if ($request->hasFile('surat_kelulusan')) {
@@ -234,7 +264,10 @@ class PengaturanController extends Controller
 
         // Simpan pengaturan tahapan manual (jika ada input dari form)
         $tahapanManual = [];
-        for ($i = 3; $i <= 7; $i++) {
+        for ($i = 2; $i <= 7; $i++) {
+            if ($i === 4) {
+                continue;
+            }
             if ($request->has("tahap_{$i}")) {
                 $inputTahap = $request->input("tahap_{$i}");
                 if (is_array($inputTahap)) {
@@ -510,8 +543,12 @@ class PengaturanController extends Controller
         $template = $this->pengaturanService->ambilTemplateKwitansi();
         $branding = $this->pengaturanService->ambilBranding();
         $spmb = $this->pengaturanService->ambilSpmb();
+        $jadwalTahap = $this->pengaturanService->ambilPengaturanTahapan()['tahap_6'];
+        $statusJadwal = $this->pengaturanService->statusAksesTahap(6, $jadwalTahap);
         
-        return view('admin.pengaturan.template-kwitansi', compact('template', 'branding', 'spmb'));
+        return view('admin.pengaturan.template-kwitansi', compact(
+            'template', 'branding', 'spmb', 'jadwalTahap', 'statusJadwal'
+        ));
     }
 
     /**
@@ -533,6 +570,12 @@ class PengaturanController extends Controller
             'logo' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'watermark' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'stempel' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'jadwal.dibuka' => 'nullable|boolean',
+            'jadwal.tanggal_buka' => 'nullable|date',
+            'jadwal.waktu_mulai' => 'nullable|date_format:H:i',
+            'jadwal.tanggal_tutup' => 'nullable|date',
+            'jadwal.waktu_selesai' => 'nullable|date_format:H:i',
+            'jadwal.keterangan' => 'nullable|string|max:1000',
         ], [
             'nama_institusi.required' => 'Nama institusi wajib diisi',
             'judul_kwitansi.required' => 'Judul kwitansi wajib diisi',
@@ -547,6 +590,15 @@ class PengaturanController extends Controller
             'stempel.mimes' => 'Format stempel harus PNG, JPG, atau JPEG',
             'stempel.max' => 'Ukuran stempel maksimal 2MB',
         ]);
+
+        $this->pastikanRentangJadwal(
+            $request,
+            'jadwal.tanggal_buka',
+            'jadwal.waktu_mulai',
+            'jadwal.tanggal_tutup',
+            'jadwal.waktu_selesai',
+            'pelunasan'
+        );
 
         // Ambil template saat ini
         $template = $this->pengaturanService->ambilTemplateKwitansi();
@@ -585,6 +637,9 @@ class PengaturanController extends Controller
 
         // Simpan template
         $this->pengaturanService->simpanTemplateKwitansi($template);
+        $jadwal = $request->input('jadwal', []);
+        $jadwal['dibuka'] = $request->boolean('jadwal.dibuka');
+        $this->pengaturanService->simpanJadwalTahap(6, $jadwal);
 
         return back()->with('success', 'Template kwitansi berhasil disimpan.');
     }
@@ -632,9 +687,12 @@ class PengaturanController extends Controller
         $spSiswaPoin = \App\Models\Wawancara::suratPernyataanSiswaPoin();
         $spOrtuPoin = \App\Models\Wawancara::suratPernyataanOrtuPoin();
         $teksPegon = \App\Models\Wawancara::teksPegon();
+        $jadwalTahap = $this->pengaturanService->ambilPengaturanTahapan()['tahap_5'];
+        $statusJadwal = $this->pengaturanService->statusAksesTahap(5, $jadwalTahap);
 
         return view('admin.pengaturan.wawancara', compact(
-            'pertanyaanOrtu', 'pertanyaanSiswa', 'spSiswaPoin', 'spOrtuPoin', 'teksPegon'
+            'pertanyaanOrtu', 'pertanyaanSiswa', 'spSiswaPoin', 'spOrtuPoin', 'teksPegon',
+            'jadwalTahap', 'statusJadwal'
         ));
     }
 
@@ -643,6 +701,24 @@ class PengaturanController extends Controller
      */
     public function simpanWawancara(Request $request)
     {
+        $request->validate([
+            'jadwal.dibuka' => 'nullable|boolean',
+            'jadwal.tanggal_buka' => 'nullable|date',
+            'jadwal.waktu_mulai' => 'nullable|date_format:H:i',
+            'jadwal.tanggal_tutup' => 'nullable|date',
+            'jadwal.waktu_selesai' => 'nullable|date_format:H:i',
+            'jadwal.lokasi' => 'nullable|string|max:255',
+            'jadwal.keterangan' => 'nullable|string|max:1000',
+        ]);
+        $this->pastikanRentangJadwal(
+            $request,
+            'jadwal.tanggal_buka',
+            'jadwal.waktu_mulai',
+            'jadwal.tanggal_tutup',
+            'jadwal.waktu_selesai',
+            'wawancara'
+        );
+
         $pertanyaanOrtu = [];
         if ($request->has('pertanyaan_ortu')) {
             foreach (array_filter($request->input('pertanyaan_ortu')) as $i => $p) {
@@ -683,9 +759,51 @@ class PengaturanController extends Controller
         $this->pengaturanService->simpan('surat_pernyataan_siswa_poin', json_encode($spSiswaPoin));
         $this->pengaturanService->simpan('surat_pernyataan_ortu_poin', json_encode($spOrtuPoin));
         $this->pengaturanService->simpan('teks_ujian_pegon', json_encode($teksPegon));
+        $jadwal = $request->input('jadwal', []);
+        $jadwal['dibuka'] = $request->boolean('jadwal.dibuka');
+        $this->pengaturanService->simpanJadwalTahap(5, $jadwal);
 
         return redirect()->route('admin.pengaturan.wawancara')
             ->with('sukses', 'Pengaturan wawancara berhasil disimpan.');
+    }
+
+    private function pastikanRentangJadwal(
+        Request $request,
+        string $tanggalBukaKey,
+        string $waktuBukaKey,
+        string $tanggalTutupKey,
+        string $waktuTutupKey,
+        string $label
+    ): void {
+        $tanggalBuka = $request->input($tanggalBukaKey);
+        $waktuBuka = $request->input($waktuBukaKey);
+        $tanggalTutup = $request->input($tanggalTutupKey);
+        $waktuTutup = $request->input($waktuTutupKey);
+
+        if ($waktuBuka && !$tanggalBuka) {
+            throw ValidationException::withMessages([
+                $tanggalBukaKey => 'Tanggal buka ' . $label . ' wajib diisi jika jam buka diisi.',
+            ]);
+        }
+
+        if ($waktuTutup && !$tanggalTutup) {
+            throw ValidationException::withMessages([
+                $tanggalTutupKey => 'Tanggal tutup ' . $label . ' wajib diisi jika jam tutup diisi.',
+            ]);
+        }
+
+        if (!$tanggalBuka || !$tanggalTutup) {
+            return;
+        }
+
+        $mulai = \Carbon\Carbon::parse($tanggalBuka . ' ' . ($waktuBuka ?: '00:00'));
+        $selesai = \Carbon\Carbon::parse($tanggalTutup . ' ' . ($waktuTutup ?: '23:59'));
+
+        if ($selesai->lt($mulai)) {
+            throw ValidationException::withMessages([
+                $tanggalTutupKey => 'Jadwal tutup ' . $label . ' tidak boleh sebelum jadwal buka.',
+            ]);
+        }
     }
 
     /**
