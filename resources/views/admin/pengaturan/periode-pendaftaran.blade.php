@@ -144,7 +144,9 @@
                         </thead>
                         <tbody>
                             @forelse($tahun->gelombangPendaftaran as $gelombang)
-                                @php($statusGelombang = $gelombang->statusPendaftaran())
+                                @php
+                                    $statusGelombang = $gelombang->statusPendaftaran();
+                                @endphp
                                 <tr>
                                     <td colspan="9">
                                         <form method="POST"

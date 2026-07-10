@@ -137,7 +137,9 @@
                                         <tbody>
                                             @forelse($periodePendaftaran as $tahun)
                                                 @forelse($tahun->gelombangPendaftaran as $gelombang)
-                                                    @php($statusGelombang = $gelombang->statusPendaftaran())
+                                                    @php
+                                                        $statusGelombang = $gelombang->statusPendaftaran();
+                                                    @endphp
                                                     <tr>
                                                         <td>
                                                             <span class="fw-semibold">{{ $tahun->nama }}</span>
