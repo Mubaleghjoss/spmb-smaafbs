@@ -41,6 +41,7 @@ class PesertaPropertyTest extends PropertyTestCase
                     'nomor_pendaftaran' => $nomor,
                     'nama' => 'Peserta ' . ($i + 1),
                     'email' => 'peserta' . ($i + 1) . '_' . Str::random(8) . '@test.com',
+                    'telepon' => '081' . str_pad((string) ($i + 1), 9, '0', STR_PAD_LEFT),
                     'password' => bcrypt('password'),
                 ]);
             }
@@ -94,6 +95,7 @@ class PesertaPropertyTest extends PropertyTestCase
                     'nomor_pendaftaran' => $this->generateNomorPendaftaran($i),
                     'nama' => 'Peserta ' . ($i + 1),
                     'email' => 'peserta' . ($i + 1) . '_' . Str::random(8) . '@test.com',
+                    'telepon' => '082' . str_pad((string) ($i + 1), 9, '0', STR_PAD_LEFT),
                     'password' => bcrypt('password'),
                 ]);
                 $pesertaIds[] = $peserta->id;

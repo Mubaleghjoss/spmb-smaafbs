@@ -78,63 +78,100 @@
             {{-- TAB: TAHAP 1 - PENDAFTARAN --}}
             {{-- ======================================== --}}
             <div class="tab-pane fade show active" id="pane-tahap1" role="tabpanel">
-                <div class="alert alert-light border d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+                <div class="alert alert-info border-0 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
                     <div>
-                        <strong><i class="bi bi-calendar3 me-2"></i>Tahun Ajaran & Gelombang Pendaftaran</strong>
-                        <div class="text-muted small mt-1">Kelola pilihan periode yang tampil pada formulir pendaftaran peserta.</div>
+                        <strong><i class="bi bi-calendar3 me-2"></i>Jadwal /daftar memakai Tahun Ajaran & Gelombang</strong>
+                        <div class="small mt-1">Peserta hanya melihat tahun dan gelombang yang aktif serta sedang berada dalam tanggal/jam buka-tutup.</div>
                     </div>
                     <a href="{{ route('admin.pengaturan.spmb.periode') }}" class="btn btn-outline-primary">
                         <i class="bi bi-sliders me-1"></i>Kelola Periode
                     </a>
                 </div>
                 <div class="row">
-                    <div class="col-md-6">
+                    <div class="col-lg-4">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
-                                <h6 class="mb-0"><i class="bi bi-calendar-check me-2"></i>Jadwal Pendaftaran</h6>
+                                <h6 class="mb-0"><i class="bi bi-power me-2"></i>Gerbang Pendaftaran</h6>
                             </div>
                             <div class="card-body">
                                 <div class="mb-3">
-                                    <div class="d-flex align-items-center">
-                                        <div class="form-check form-switch me-3">
+                                    <div class="d-flex flex-wrap align-items-center gap-2">
+                                        <div class="form-check form-switch me-2">
                                             <input type="checkbox" name="pendaftaran_buka" class="form-check-input" id="pendaftaranBuka"
                                                    {{ $spmb['pendaftaran_buka'] ? 'checked' : '' }}
                                                    onchange="togglePendaftaran(this)">
-                                            <label class="form-check-label" for="pendaftaranBuka">Pendaftaran Dibuka</label>
+                                            <label class="form-check-label fw-semibold" for="pendaftaranBuka">Pendaftaran Dibuka</label>
                                         </div>
                                         <span id="statusPendaftaran" class="badge {{ $spmb['pendaftaran_buka'] ? 'bg-success' : 'bg-danger' }}">
                                             <i class="bi bi-{{ $spmb['pendaftaran_buka'] ? 'check-circle' : 'x-circle' }} me-1"></i>
                                             {{ $spmb['pendaftaran_buka'] ? 'DIBUKA' : 'DITUTUP' }}
                                         </span>
                                     </div>
-                                    <small class="text-muted mt-1 d-block">Klik toggle untuk langsung mengubah status pendaftaran</small>
+                                    <small class="text-muted mt-2 d-block">Jika toggle ini ditutup, halaman /daftar ditutup meskipun ada gelombang yang aktif.</small>
                                 </div>
-                                <div class="row">
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">Tanggal Buka</label>
-                                        <input type="date" name="tanggal_buka" class="form-control" 
-                                               value="{{ old('tanggal_buka', $spmb['tanggal_buka']) }}">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">Jam Buka</label>
-                                        <input type="time" name="waktu_buka" class="form-control"
-                                               value="{{ old('waktu_buka', $spmb['waktu_buka'] ?? '') }}">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">Tanggal Tutup</label>
-                                        <input type="date" name="tanggal_tutup" class="form-control" 
-                                               value="{{ old('tanggal_tutup', $spmb['tanggal_tutup']) }}">
-                                    </div>
-                                    <div class="col-md-3 mb-3">
-                                        <label class="form-label">Jam Tutup</label>
-                                        <input type="time" name="waktu_tutup" class="form-control"
-                                               value="{{ old('waktu_tutup', $spmb['waktu_tutup'] ?? '') }}">
-                                    </div>
+                                <div class="alert alert-light border mb-0 small">
+                                    Jadwal rinci pendaftaran tidak lagi diatur ganda di sini. Gunakan <strong>Kelola Periode</strong> untuk menentukan tahun ajaran, gelombang, tanggal, dan jam yang tampil di /daftar.
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-lg-8">
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between gap-2 align-items-md-center">
+                                <h6 class="mb-0"><i class="bi bi-calendar-range me-2 text-success"></i>Periode yang Dipakai /daftar</h6>
+                                <a href="{{ route('admin.pengaturan.spmb.periode') }}" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-pencil-square me-1"></i>Atur Jadwal
+                                </a>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-sm align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Tahun</th>
+                                                <th>Gelombang</th>
+                                                <th>Jadwal</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($periodePendaftaran as $tahun)
+                                                @forelse($tahun->gelombangPendaftaran as $gelombang)
+                                                    @php($statusGelombang = $gelombang->statusPendaftaran())
+                                                    <tr>
+                                                        <td>
+                                                            <span class="fw-semibold">{{ $tahun->nama }}</span>
+                                                            @if($tahun->default)
+                                                                <span class="badge bg-primary ms-1">Default</span>
+                                                            @endif
+                                                            @unless($tahun->aktif)
+                                                                <span class="badge bg-secondary ms-1">Nonaktif</span>
+                                                            @endunless
+                                                        </td>
+                                                        <td>{{ $gelombang->nama }}</td>
+                                                        <td class="small">{{ $gelombang->labelPeriodePendaftaran() }}</td>
+                                                        <td><span class="badge bg-{{ $statusGelombang['class'] }}">{{ $statusGelombang['label'] }}</span></td>
+                                                    </tr>
+                                                @empty
+                                                    <tr>
+                                                        <td>{{ $tahun->nama }}</td>
+                                                        <td colspan="3" class="text-muted">Belum ada gelombang.</td>
+                                                    </tr>
+                                                @endforelse
+                                            @empty
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">Belum ada tahun ajaran.</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-lg-6">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success bg-opacity-75 text-white">
                                 <h6 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Biaya Formulir</h6>
@@ -144,7 +181,7 @@
                                     <label class="form-label">Biaya Formulir Pendaftaran</label>
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
-                                        <input type="number" name="biaya_formulir" class="form-control" 
+                                        <input type="number" name="biaya_formulir" class="form-control"
                                                value="{{ old('biaya_formulir', $spmb['biaya_formulir']) }}" min="0">
                                     </div>
                                     <small class="text-muted">Biaya yang dibayar peserta saat mendaftar (Tahap 3)</small>

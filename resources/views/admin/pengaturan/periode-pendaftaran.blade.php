@@ -7,7 +7,7 @@
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
         <div>
             <h1 class="h3 mb-1">Tahun Ajaran & Gelombang</h1>
-            <p class="text-muted mb-0">Atur pilihan periode yang tersedia pada formulir pendaftaran peserta.</p>
+            <p class="text-muted mb-0">Atur pilihan periode yang tampil dan berlaku pada halaman pendaftaran publik.</p>
         </div>
         <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap1" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left me-1"></i>Kembali
@@ -36,6 +36,16 @@
             </ul>
         </div>
     @endif
+
+    <div class="alert alert-info border-0 shadow-sm">
+        <div class="d-flex gap-3">
+            <i class="bi bi-info-circle fs-4"></i>
+            <div>
+                <div class="fw-semibold">Halaman /daftar mengikuti jadwal di halaman ini.</div>
+                <div class="small mb-0">Tahun harus aktif, gelombang harus aktif, dan tanggal/jam saat ini harus berada di rentang buka sampai tutup. Toggle utama pendaftaran tetap diatur dari Pengaturan SPMB.</div>
+            </div>
+        </div>
+    </div>
 
     <div class="card mb-4">
         <div class="card-header bg-white">
@@ -123,7 +133,10 @@
                             <tr>
                                 <th>Nama Gelombang</th>
                                 <th>Tanggal Buka</th>
+                                <th>Jam Buka</th>
                                 <th>Tanggal Tutup</th>
+                                <th>Jam Tutup</th>
+                                <th>Status</th>
                                 <th>Aktif</th>
                                 <th>Peserta</th>
                                 <th class="text-end">Aksi</th>
@@ -131,36 +144,48 @@
                         </thead>
                         <tbody>
                             @forelse($tahun->gelombangPendaftaran as $gelombang)
+                                @php($statusGelombang = $gelombang->statusPendaftaran())
                                 <tr>
-                                    <td colspan="6">
+                                    <td colspan="9">
                                         <form method="POST"
                                               action="{{ route('admin.pengaturan.spmb.periode.gelombang.update', [$tahun, $gelombang]) }}"
                                               class="row g-2 align-items-center">
                                             @csrf
                                             @method('PUT')
-                                            <div class="col-md-3">
+                                            <div class="col-lg-2 col-md-4">
                                                 <input type="text" name="nama" class="form-control form-control-sm"
                                                        value="{{ $gelombang->nama }}" required aria-label="Nama gelombang">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-lg-2 col-md-4">
                                                 <input type="date" name="tanggal_buka" class="form-control form-control-sm"
                                                        value="{{ $gelombang->tanggal_buka?->format('Y-m-d') }}" aria-label="Tanggal buka">
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-lg-1 col-md-4">
+                                                <input type="time" name="waktu_buka" class="form-control form-control-sm"
+                                                       value="{{ $gelombang->waktu_buka ? substr((string) $gelombang->waktu_buka, 0, 5) : '' }}" aria-label="Jam buka">
+                                            </div>
+                                            <div class="col-lg-2 col-md-4">
                                                 <input type="date" name="tanggal_tutup" class="form-control form-control-sm"
                                                        value="{{ $gelombang->tanggal_tutup?->format('Y-m-d') }}" aria-label="Tanggal tutup">
                                             </div>
-                                            <div class="col-md-1">
+                                            <div class="col-lg-1 col-md-4">
+                                                <input type="time" name="waktu_tutup" class="form-control form-control-sm"
+                                                       value="{{ $gelombang->waktu_tutup ? substr((string) $gelombang->waktu_tutup, 0, 5) : '' }}" aria-label="Jam tutup">
+                                            </div>
+                                            <div class="col-lg-1 col-md-4">
+                                                <span class="badge bg-{{ $statusGelombang['class'] }}">{{ $statusGelombang['label'] }}</span>
+                                            </div>
+                                            <div class="col-lg-1 col-md-4">
                                                 <input type="hidden" name="aktif" value="0">
                                                 <div class="form-check form-switch">
                                                     <input class="form-check-input" type="checkbox" name="aktif" value="1"
                                                            title="Gelombang aktif" {{ $gelombang->aktif ? 'checked' : '' }}>
                                                 </div>
                                             </div>
-                                            <div class="col-md-1">
+                                            <div class="col-lg-1 col-md-4">
                                                 <span class="badge bg-light text-dark">{{ $gelombang->peserta_count }}</span>
                                             </div>
-                                            <div class="col-md-3 text-md-end">
+                                            <div class="col-lg-1 col-md-4 text-md-end">
                                                 <button class="btn btn-sm btn-outline-primary" type="submit" title="Simpan gelombang">
                                                     <i class="bi bi-check-lg"></i>
                                                 </button>
@@ -182,7 +207,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center text-muted py-3">Belum ada gelombang.</td>
+                                    <td colspan="9" class="text-center text-muted py-3">Belum ada gelombang.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -193,19 +218,27 @@
                       action="{{ route('admin.pengaturan.spmb.periode.gelombang.store', $tahun) }}"
                       class="row g-2 align-items-end bg-light p-3 rounded">
                     @csrf
-                    <div class="col-md-3">
+                    <div class="col-lg-2 col-md-4">
                         <label class="form-label small">Gelombang Baru</label>
                         <input type="text" name="nama" class="form-control form-control-sm" placeholder="Gelombang 1" required>
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-2 col-md-4">
                         <label class="form-label small">Tanggal Buka</label>
                         <input type="date" name="tanggal_buka" class="form-control form-control-sm">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-lg-1 col-md-4">
+                        <label class="form-label small">Jam Buka</label>
+                        <input type="time" name="waktu_buka" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-lg-2 col-md-4">
                         <label class="form-label small">Tanggal Tutup</label>
                         <input type="date" name="tanggal_tutup" class="form-control form-control-sm">
                     </div>
-                    <div class="col-md-1">
+                    <div class="col-lg-1 col-md-4">
+                        <label class="form-label small">Jam Tutup</label>
+                        <input type="time" name="waktu_tutup" class="form-control form-control-sm">
+                    </div>
+                    <div class="col-lg-2 col-md-4">
                         <input type="hidden" name="aktif" value="0">
                         <div class="form-check form-switch mb-1">
                             <input class="form-check-input" type="checkbox" name="aktif" value="1"
@@ -213,7 +246,7 @@
                             <label class="form-check-label small" for="gelombangAktif{{ $tahun->id }}">Aktif</label>
                         </div>
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-4">
                         <button class="btn btn-sm btn-success w-100" type="submit">
                             <i class="bi bi-plus-lg me-1"></i>Tambah
                         </button>

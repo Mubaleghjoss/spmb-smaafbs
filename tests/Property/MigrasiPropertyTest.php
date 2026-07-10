@@ -84,6 +84,7 @@ class MigrasiPropertyTest extends TestCase
                 'user_password' => 'password123',
                 'user_firstname' => $nama,
                 'user_email' => 'test' . rand(1, 99999) . '@test.com',
+                'user_phone' => '08' . substr(str_replace('.', '', uniqid('', true)), 0, 12),
             ];
 
             // Simulasi migrasi peserta
@@ -94,6 +95,7 @@ class MigrasiPropertyTest extends TestCase
                 'nama' => $pesertaLama['user_firstname'],
                 'password' => Hash::make($pesertaLama['user_password']),
                 'email' => $pesertaLama['user_email'],
+                'telepon' => $pesertaLama['user_phone'],
             ]);
 
             // Verifikasi integritas data
@@ -131,6 +133,7 @@ class MigrasiPropertyTest extends TestCase
                 'nama' => 'Test Peserta',
                 'password' => Hash::make('password'),
                 'email' => 'test' . rand(1, 99999) . '@test.com',
+                'telepon' => '08' . substr(str_replace('.', '', uniqid('', true)), 0, 12),
             ]);
 
             // Buat pengguna untuk foreign key

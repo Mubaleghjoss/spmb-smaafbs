@@ -10,9 +10,7 @@ use App\Services\PeriodePendaftaranService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
 
 class PendaftaranController extends Controller
 {
@@ -31,10 +29,11 @@ class PendaftaranController extends Controller
         
         [$pendaftaranDibuka, $pesanTutup] = $this->statusPendaftaran($spmb);
         $periodePendaftaran = $this->periodePendaftaranService->pilihanPublik();
+        $jadwalBerikutnya = $this->periodePendaftaranService->jadwalPublikBerikutnya();
 
         if ($pendaftaranDibuka && $periodePendaftaran->isEmpty()) {
             $pendaftaranDibuka = false;
-            $pesanTutup = 'Belum ada tahun ajaran dan gelombang pendaftaran yang sedang dibuka.';
+            $pesanTutup = 'Belum ada gelombang pendaftaran yang sedang dibuka.';
         }
 
         $tahunDefaultId = $periodePendaftaran->firstWhere('default', true)?->id
@@ -48,7 +47,8 @@ class PendaftaranController extends Controller
             'branding',
             'syaratKetentuan',
             'periodePendaftaran',
-            'tahunDefaultId'
+            'tahunDefaultId',
+            'jadwalBerikutnya'
         ));
     }
 
@@ -137,41 +137,9 @@ class PendaftaranController extends Controller
     private function statusPendaftaran(array $spmb): array
     {
         $dibuka = (bool) ($spmb['pendaftaran_buka'] ?? false);
-        $tanggalBuka = $spmb['tanggal_buka'] ?? null;
-        $waktuBuka = $spmb['waktu_buka'] ?? null;
-        $tanggalTutup = $spmb['tanggal_tutup'] ?? null;
-        $waktuTutup = $spmb['waktu_tutup'] ?? null;
-        $now = Carbon::now();
 
         if (!$dibuka) {
-            return [false, 'Pendaftaran SPMB saat ini sedang ditutup.'];
-        }
-
-        $mulai = $tanggalBuka
-            ? Carbon::parse($tanggalBuka . ' ' . ($waktuBuka ?: '00:00:00'))
-            : null;
-        $selesai = $tanggalTutup
-            ? Carbon::parse($tanggalTutup . ' ' . ($waktuTutup ?: '23:59:59'))
-            : null;
-
-        if ($mulai && $now < $mulai) {
-            return [
-                false,
-                'Pendaftaran SPMB akan dibuka pada '
-                    . $mulai->translatedFormat($waktuBuka ? 'd F Y H:i' : 'd F Y')
-                    . ($waktuBuka ? ' WIB' : '')
-                    . '.',
-            ];
-        }
-
-        if ($selesai && $now > $selesai) {
-            return [
-                false,
-                'Pendaftaran SPMB telah ditutup pada '
-                    . $selesai->translatedFormat($waktuTutup ? 'd F Y H:i' : 'd F Y')
-                    . ($waktuTutup ? ' WIB' : '')
-                    . '.',
-            ];
+            return [false, 'Pendaftaran SPMB saat ini ditutup oleh admin.'];
         }
 
         return [true, null];

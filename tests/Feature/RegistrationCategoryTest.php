@@ -6,6 +6,7 @@ use App\Models\GelombangPendaftaran;
 use App\Models\Peserta;
 use App\Models\TahunAjaran;
 use App\Services\PengaturanService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -28,6 +29,12 @@ class RegistrationCategoryTest extends TestCase
             'tanggal_tutup' => now()->addDay(),
             'aktif' => true,
         ]);
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_form_menampilkan_periode_yang_sedang_dibuka(): void
@@ -124,5 +131,30 @@ class RegistrationCategoryTest extends TestCase
         ])->assertSessionHasErrors('gelombang_pendaftaran_id');
 
         $this->assertDatabaseMissing('peserta', ['telepon' => '081234567892']);
+    }
+
+    public function test_form_publik_mengikuti_jam_buka_gelombang(): void
+    {
+        Carbon::setTestNow('2026-07-10 08:30:00');
+
+        GelombangPendaftaran::query()->update([
+            'tanggal_buka' => '2026-07-10',
+            'waktu_buka' => '09:00:00',
+            'tanggal_tutup' => '2026-07-10',
+            'waktu_tutup' => '17:00:00',
+            'aktif' => true,
+        ]);
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('Belum ada gelombang pendaftaran yang sedang dibuka.')
+            ->assertDontSee('Daftar Sekarang');
+
+        Carbon::setTestNow('2026-07-10 09:01:00');
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('Gelombang 1')
+            ->assertSee('Daftar Sekarang');
     }
 }

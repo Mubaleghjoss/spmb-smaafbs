@@ -6,10 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Models\GelombangPendaftaran;
 use App\Models\TahunAjaran;
 use App\Services\PeriodePendaftaranService;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class PeriodePendaftaranController extends Controller
@@ -166,7 +168,7 @@ class PeriodePendaftaranController extends Controller
         TahunAjaran $tahunAjaran,
         ?GelombangPendaftaran $gelombang = null
     ): array {
-        return $request->validate([
+        $validated = $request->validate([
             'nama' => [
                 'required',
                 'string',
@@ -176,9 +178,36 @@ class PeriodePendaftaranController extends Controller
                     ->ignore($gelombang?->id),
             ],
             'tanggal_buka' => ['nullable', 'date'],
+            'waktu_buka' => ['nullable', 'date_format:H:i'],
             'tanggal_tutup' => ['nullable', 'date', 'after_or_equal:tanggal_buka'],
+            'waktu_tutup' => ['nullable', 'date_format:H:i'],
             'aktif' => ['nullable', 'boolean'],
         ]);
+
+        $errors = [];
+
+        if ($request->filled('waktu_buka') && !$request->filled('tanggal_buka')) {
+            $errors['tanggal_buka'] = 'Tanggal buka wajib diisi jika jam buka diisi.';
+        }
+
+        if ($request->filled('waktu_tutup') && !$request->filled('tanggal_tutup')) {
+            $errors['tanggal_tutup'] = 'Tanggal tutup wajib diisi jika jam tutup diisi.';
+        }
+
+        if ($request->filled('tanggal_buka') && $request->filled('tanggal_tutup')) {
+            $mulai = Carbon::parse($request->input('tanggal_buka') . ' ' . ($request->input('waktu_buka') ?: '00:00'));
+            $selesai = Carbon::parse($request->input('tanggal_tutup') . ' ' . ($request->input('waktu_tutup') ?: '23:59'));
+
+            if ($selesai->lt($mulai)) {
+                $errors['tanggal_tutup'] = 'Jadwal tutup gelombang tidak boleh sebelum jadwal buka.';
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
+
+        return $validated;
     }
 
     private function pastikanMilikTahun(

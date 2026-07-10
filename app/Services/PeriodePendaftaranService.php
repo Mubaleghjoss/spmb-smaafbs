@@ -56,6 +56,18 @@ class PeriodePendaftaranService
         ];
     }
 
+    public function jadwalPublikBerikutnya(): ?GelombangPendaftaran
+    {
+        return GelombangPendaftaran::query()
+            ->with('tahunAjaran')
+            ->where('aktif', true)
+            ->whereHas('tahunAjaran', fn($query) => $query->aktif())
+            ->get()
+            ->filter(fn(GelombangPendaftaran $gelombang) => $gelombang->mulaiPendaftaran()?->gt(now()))
+            ->sortBy(fn(GelombangPendaftaran $gelombang) => $gelombang->mulaiPendaftaran()?->timestamp ?? PHP_INT_MAX)
+            ->first();
+    }
+
     public function validasiKategori(array $data, bool $wajibSedangDibuka = false): array
     {
         $tahun = TahunAjaran::query()->find($data['tahun_ajaran_id'] ?? null);

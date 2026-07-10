@@ -24,10 +24,12 @@
                             <h4 class="text-muted mb-3">Mohon Maaf</h4>
                             <p class="text-muted mb-4">{{ $pesanTutup }}</p>
                             
-                            @if(!empty($spmb['tanggal_buka']) && \Carbon\Carbon::now() < \Carbon\Carbon::parse($spmb['tanggal_buka']))
+                            @if($jadwalBerikutnya)
                             <div class="alert alert-info">
                                 <i class="bi bi-info-circle me-2"></i>
-                                Pendaftaran akan dibuka: <strong>{{ \Carbon\Carbon::parse($spmb['tanggal_buka'])->translatedFormat('d F Y') }}</strong>
+                                Gelombang berikutnya:
+                                <strong>{{ $jadwalBerikutnya->tahunAjaran?->nama }} - {{ $jadwalBerikutnya->nama }}</strong><br>
+                                <span>{{ $jadwalBerikutnya->labelPeriodePendaftaran() }}</span>
                             </div>
                             @endif
                             
@@ -59,10 +61,7 @@
                                       'gelombang' => $tahun->gelombangPendaftaran->map(fn($gelombang) => [
                                           'id' => (string) $gelombang->id,
                                           'nama' => $gelombang->nama,
-                                          'periode' => trim(
-                                              ($gelombang->tanggal_buka?->translatedFormat('d M Y') ?? '')
-                                              . ($gelombang->tanggal_tutup ? ' - ' . $gelombang->tanggal_tutup->translatedFormat('d M Y') : '')
-                                          ),
+                                          'periode' => $gelombang->labelPeriodePendaftaran(),
                                       ])->values(),
                                   ])->values()),
                                   @js((string) old('tahun_ajaran_id', $tahunDefaultId)),

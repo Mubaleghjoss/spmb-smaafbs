@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\TahunAjaran;
 use App\Services\PengaturanService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -130,7 +131,25 @@ class PengaturanController extends Controller
             );
         }
         $skGelombang = $this->pengaturanService->ambilSuratKelulusanGelombang();
-        return view('admin.pengaturan.spmb', compact('spmb', 'tahapan', 'statusTahapan', 'skGelombang'));
+        $periodePendaftaran = TahunAjaran::query()
+            ->with([
+                'gelombangPendaftaran' => fn($query) => $query
+                    ->orderBy('tanggal_buka')
+                    ->orderBy('waktu_buka')
+                    ->orderBy('nama'),
+            ])
+            ->withCount('peserta')
+            ->orderByDesc('default')
+            ->orderByDesc('nama')
+            ->get();
+
+        return view('admin.pengaturan.spmb', compact(
+            'spmb',
+            'tahapan',
+            'statusTahapan',
+            'skGelombang',
+            'periodePendaftaran'
+        ));
     }
 
     /**
