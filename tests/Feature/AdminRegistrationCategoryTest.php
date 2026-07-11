@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\GelombangPendaftaran;
+use App\Models\FormulirSpmb;
 use App\Models\Pengguna;
 use App\Models\Peserta;
 use App\Models\TahunAjaran;
@@ -72,6 +73,91 @@ class AdminRegistrationCategoryTest extends TestCase
             ->assertOk()
             ->assertSee('PESERTA WAITING LIST')
             ->assertDontSee('PESERTA MASUK KUOTA');
+    }
+
+    public function test_admin_dapat_memfilter_data_formulir_peserta(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        $pesertaTarget = Peserta::factory()->create([
+            'nama' => 'PESERTA REKAP TARGET',
+            ...$kategori,
+        ]);
+        FormulirSpmb::query()->create([
+            'peserta_id' => $pesertaTarget->id,
+            'nama_lengkap' => $pesertaTarget->nama,
+            'asal_sekolah' => 'SMP AL FAJAR',
+            'kelompok' => 'Kelompok Melati',
+            'desa' => 'Desa Harmoni',
+            'daerah' => 'Daerah Timur',
+        ]);
+
+        $pesertaLain = Peserta::factory()->create([
+            'nama' => 'PESERTA REKAP LAIN',
+            ...$kategori,
+        ]);
+        FormulirSpmb::query()->create([
+            'peserta_id' => $pesertaLain->id,
+            'nama_lengkap' => $pesertaLain->nama,
+            'asal_sekolah' => 'SMP BINA BAKTI',
+            'kelompok' => 'Kelompok Mawar',
+            'desa' => 'Desa Sejahtera',
+            'daerah' => 'Daerah Barat',
+        ]);
+
+        $this->get('/admin/peserta?asal_sekolah_smp=AL+FAJAR&kelompok=Melati&desa=Harmoni&daerah=Timur')
+            ->assertOk()
+            ->assertSee('PESERTA REKAP TARGET')
+            ->assertSee('SMP AL FAJAR')
+            ->assertSee('Kelompok Melati')
+            ->assertSee('Desa Harmoni')
+            ->assertSee('Daerah Timur')
+            ->assertDontSee('PESERTA REKAP LAIN');
+    }
+
+    public function test_admin_melihat_rekap_data_formulir_peserta(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        foreach (['SATU', 'DUA'] as $suffix) {
+            $peserta = Peserta::factory()->create([
+                'nama' => "PESERTA KAMPUNG {$suffix}",
+                'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+                ...$kategori,
+            ]);
+            FormulirSpmb::query()->create([
+                'peserta_id' => $peserta->id,
+                'nama_lengkap' => $peserta->nama,
+                'asal_sekolah' => 'SMP REKAP UTAMA',
+                'kelompok' => 'Kelompok Cempaka',
+                'desa' => 'Desa Mandiri',
+                'daerah' => 'Daerah Tengah',
+            ]);
+        }
+
+        $pesertaWaiting = Peserta::factory()->create([
+            'nama' => 'PESERTA WAITING REKAP',
+            'status_kuota' => Peserta::STATUS_KUOTA_WAITING,
+            ...$kategori,
+        ]);
+        FormulirSpmb::query()->create([
+            'peserta_id' => $pesertaWaiting->id,
+            'nama_lengkap' => $pesertaWaiting->nama,
+            'asal_sekolah' => 'SMP REKAP LAIN',
+            'kelompok' => 'Kelompok Kenanga',
+            'desa' => 'Desa Madani',
+            'daerah' => 'Daerah Utara',
+        ]);
+
+        $this->get('/admin/peserta')
+            ->assertOk()
+            ->assertSee('Rekap Data Formulir')
+            ->assertSee('Asal Sekolah SMP')
+            ->assertSee('SMP REKAP UTAMA')
+            ->assertSee('Kelompok Cempaka')
+            ->assertSee('Desa Mandiri')
+            ->assertSee('Daerah Tengah')
+            ->assertSee('Waiting');
     }
 
     public function test_update_kuota_tahun_ajaran_merekalkulasi_waiting_list(): void

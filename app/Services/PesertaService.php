@@ -28,6 +28,7 @@ class PesertaService
             'grup',
             'tahunAjaran',
             'gelombangPendaftaran',
+            'formulirSpmb',
         ]);
 
         // Filter berdasarkan grup
@@ -60,6 +61,40 @@ class PesertaService
             $query->where('status_kuota', $filter['status_kuota']);
         }
 
+        if (!empty($filter['asal_sekolah_smp'])) {
+            $asalSekolah = $filter['asal_sekolah_smp'];
+            if ($this->filterKosong($asalSekolah)) {
+                $query->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('asal_sekolah')
+                            ->orWhere('asal_sekolah', '');
+                    })->whereDoesntHave('formulirSpmb', function ($sub) {
+                        $sub->whereNotNull('asal_sekolah')
+                            ->where('asal_sekolah', '<>', '');
+                    });
+                });
+            } else {
+                $query->where(function ($q) use ($asalSekolah) {
+                    $q->where('asal_sekolah', 'like', "%{$asalSekolah}%")
+                        ->orWhereHas('formulirSpmb', fn($sub) => $sub->where('asal_sekolah', 'like', "%{$asalSekolah}%"));
+                });
+            }
+        }
+
+        foreach (['kelompok', 'desa', 'daerah'] as $field) {
+            if (!empty($filter[$field])) {
+                $value = $filter[$field];
+                if ($this->filterKosong($value)) {
+                    $query->whereDoesntHave('formulirSpmb', function ($sub) use ($field) {
+                        $sub->whereNotNull($field)
+                            ->where($field, '<>', '');
+                    });
+                } else {
+                    $query->whereHas('formulirSpmb', fn($sub) => $sub->where($field, 'like', "%{$value}%"));
+                }
+            }
+        }
+
         // Filter berdasarkan status (aktif/dihapus)
         if (isset($filter['dengan_dihapus']) && $filter['dengan_dihapus']) {
             $query->withTrashed();
@@ -71,11 +106,166 @@ class PesertaService
             $query->where(function ($q) use ($cari) {
                 $q->where('nama', 'like', "%{$cari}%")
                   ->orWhere('nomor_pendaftaran', 'like', "%{$cari}%")
-                  ->orWhere('email', 'like', "%{$cari}%");
+                  ->orWhere('email', 'like', "%{$cari}%")
+                  ->orWhere('asal_sekolah', 'like', "%{$cari}%")
+                  ->orWhereHas('formulirSpmb', function ($sub) use ($cari) {
+                      $sub->where('asal_sekolah', 'like', "%{$cari}%")
+                          ->orWhere('kelompok', 'like', "%{$cari}%")
+                          ->orWhere('desa', 'like', "%{$cari}%")
+                          ->orWhere('daerah', 'like', "%{$cari}%");
+                  });
             });
         }
 
         return $query->orderBy('created_at', 'desc')->paginate($perHalaman);
+    }
+
+    public function rekapFormulir(array $filter = []): array
+    {
+        $configs = [
+            'asal_sekolah_smp' => [
+                'label' => 'Asal Sekolah SMP',
+                'param' => 'asal_sekolah_smp',
+                'expression' => "COALESCE(NULLIF(formulir_spmb.asal_sekolah, ''), NULLIF(peserta.asal_sekolah, ''), 'Belum Diisi')",
+            ],
+            'kelompok' => [
+                'label' => 'Nama Kelompok',
+                'param' => 'kelompok',
+                'expression' => "COALESCE(NULLIF(formulir_spmb.kelompok, ''), 'Belum Diisi')",
+            ],
+            'desa' => [
+                'label' => 'Nama Desa',
+                'param' => 'desa',
+                'expression' => "COALESCE(NULLIF(formulir_spmb.desa, ''), 'Belum Diisi')",
+            ],
+            'daerah' => [
+                'label' => 'Nama Daerah',
+                'param' => 'daerah',
+                'expression' => "COALESCE(NULLIF(formulir_spmb.daerah, ''), 'Belum Diisi')",
+            ],
+        ];
+
+        $rekap = [];
+
+        foreach ($configs as $key => $config) {
+            $expression = $config['expression'];
+            $baseQuery = $this->queryRekapFormulir($filter)
+                ->selectRaw("{$expression} as nama")
+                ->selectRaw('peserta.id as peserta_id')
+                ->selectRaw('peserta.status_kuota as status_kuota');
+
+            $query = DB::query()
+                ->fromSub($baseQuery, 'rekap_formulir')
+                ->select('nama')
+                ->selectRaw('COUNT(peserta_id) as jumlah')
+                ->selectRaw("SUM(CASE WHEN status_kuota = ? THEN 1 ELSE 0 END) as dalam_kuota", [Peserta::STATUS_KUOTA_DALAM])
+                ->selectRaw("SUM(CASE WHEN status_kuota = ? THEN 1 ELSE 0 END) as waiting_list", [Peserta::STATUS_KUOTA_WAITING])
+                ->groupBy('nama')
+                ->orderByDesc('jumlah')
+                ->orderBy('nama')
+                ->limit(10)
+                ->get()
+                ->each(function ($item) {
+                    $item->filter_value = $item->nama;
+                });
+
+            $rekap[$key] = [
+                ...$config,
+                'items' => $query,
+                'total_grup' => $query->count(),
+                'total_peserta' => $query->sum('jumlah'),
+            ];
+        }
+
+        return $rekap;
+    }
+
+    private function queryRekapFormulir(array $filter)
+    {
+        $query = Peserta::query()
+            ->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id');
+
+        if (!empty($filter['dengan_dihapus'])) {
+            $query->withTrashed();
+        }
+
+        if (!empty($filter['grup_id'])) {
+            $query->whereExists(function ($sub) use ($filter) {
+                $sub->selectRaw('1')
+                    ->from('grup_peserta')
+                    ->whereColumn('grup_peserta.peserta_id', 'peserta.id')
+                    ->where('grup_peserta.grup_id', $filter['grup_id']);
+            });
+        }
+
+        if (!empty($filter['tahap'])) {
+            $query->whereExists(function ($sub) use ($filter) {
+                $sub->selectRaw('1')
+                    ->from('tahapan_spmb')
+                    ->whereColumn('tahapan_spmb.peserta_id', 'peserta.id')
+                    ->where('tahapan_spmb.tahap_saat_ini', $filter['tahap']);
+            });
+        }
+
+        foreach (['tahun_ajaran_id', 'gelombang_pendaftaran_id', 'jenis_pendaftaran', 'kelas_tujuan', 'status_kuota'] as $field) {
+            if (!empty($filter[$field])) {
+                $query->where("peserta.{$field}", $filter[$field]);
+            }
+        }
+
+        if (!empty($filter['asal_sekolah_smp'])) {
+            $asalSekolah = $filter['asal_sekolah_smp'];
+            if ($this->filterKosong($asalSekolah)) {
+                $query->where(function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereNull('peserta.asal_sekolah')
+                            ->orWhere('peserta.asal_sekolah', '');
+                    })->where(function ($sub) {
+                        $sub->whereNull('formulir_spmb.asal_sekolah')
+                            ->orWhere('formulir_spmb.asal_sekolah', '');
+                    });
+                });
+            } else {
+                $query->where(function ($q) use ($asalSekolah) {
+                    $q->where('peserta.asal_sekolah', 'like', "%{$asalSekolah}%")
+                        ->orWhere('formulir_spmb.asal_sekolah', 'like', "%{$asalSekolah}%");
+                });
+            }
+        }
+
+        foreach (['kelompok', 'desa', 'daerah'] as $field) {
+            if (!empty($filter[$field])) {
+                if ($this->filterKosong($filter[$field])) {
+                    $query->where(function ($q) use ($field) {
+                        $q->whereNull("formulir_spmb.{$field}")
+                            ->orWhere("formulir_spmb.{$field}", '');
+                    });
+                } else {
+                    $query->where("formulir_spmb.{$field}", 'like', "%{$filter[$field]}%");
+                }
+            }
+        }
+
+        if (!empty($filter['cari'])) {
+            $cari = $filter['cari'];
+            $query->where(function ($q) use ($cari) {
+                $q->where('peserta.nama', 'like', "%{$cari}%")
+                    ->orWhere('peserta.nomor_pendaftaran', 'like', "%{$cari}%")
+                    ->orWhere('peserta.email', 'like', "%{$cari}%")
+                    ->orWhere('peserta.asal_sekolah', 'like', "%{$cari}%")
+                    ->orWhere('formulir_spmb.asal_sekolah', 'like', "%{$cari}%")
+                    ->orWhere('formulir_spmb.kelompok', 'like', "%{$cari}%")
+                    ->orWhere('formulir_spmb.desa', 'like', "%{$cari}%")
+                    ->orWhere('formulir_spmb.daerah', 'like', "%{$cari}%");
+            });
+        }
+
+        return $query;
+    }
+
+    private function filterKosong(string $value): bool
+    {
+        return trim($value) === 'Belum Diisi';
     }
 
     /**

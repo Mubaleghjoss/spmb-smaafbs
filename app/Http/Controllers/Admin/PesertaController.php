@@ -44,9 +44,14 @@ class PesertaController extends Controller
             'jenis_pendaftaran' => $request->get('jenis_pendaftaran'),
             'kelas_tujuan' => $request->get('kelas_tujuan'),
             'status_kuota' => $request->get('status_kuota'),
+            'asal_sekolah_smp' => $request->get('asal_sekolah_smp'),
+            'kelompok' => $request->get('kelompok'),
+            'desa' => $request->get('desa'),
+            'daerah' => $request->get('daerah'),
         ];
 
         $peserta = $this->pesertaService->ambilDenganFilter($filter, 15);
+        $rekapFormulir = $this->pesertaService->rekapFormulir($filter);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();
         $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
@@ -59,7 +64,8 @@ class PesertaController extends Controller
             'filter',
             'skGelombang',
             'tahunAjaran',
-            'gelombangPendaftaran'
+            'gelombangPendaftaran',
+            'rekapFormulir'
         ));
     }
 

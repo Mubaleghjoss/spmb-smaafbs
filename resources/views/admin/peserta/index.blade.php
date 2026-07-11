@@ -166,8 +166,24 @@
                     </select>
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Asal Sekolah SMP</label>
+                    <input type="text" name="asal_sekolah_smp" class="form-control" placeholder="Contoh: SMP AFBS" value="{{ $filter['asal_sekolah_smp'] }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nama Kelompok</label>
+                    <input type="text" name="kelompok" class="form-control" placeholder="Nama kelompok" value="{{ $filter['kelompok'] }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nama Desa</label>
+                    <input type="text" name="desa" class="form-control" placeholder="Nama desa" value="{{ $filter['desa'] }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Nama Daerah</label>
+                    <input type="text" name="daerah" class="form-control" placeholder="Nama daerah" value="{{ $filter['daerah'] }}">
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Cari</label>
-                    <input type="text" name="cari" class="form-control" placeholder="Nama/No. Pendaftaran/Email" value="{{ $filter['cari'] }}">
+                    <input type="text" name="cari" class="form-control" placeholder="Nama/No/Email/Sekolah/Kelompok" value="{{ $filter['cari'] }}">
                 </div>
                 <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
@@ -184,6 +200,57 @@
             </form>
         </div>
     </div>
+
+    @if(!empty($rekapFormulir))
+        <div class="mb-4">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
+                <div>
+                    <h5 class="mb-1">Rekap Data Formulir</h5>
+                    <div class="text-muted small">Ringkasan berdasarkan Asal Sekolah SMP, Kelompok, Desa, dan Daerah dari formulir peserta.</div>
+                </div>
+                <span class="badge bg-light text-dark border">Mengikuti filter aktif</span>
+            </div>
+            <div class="row g-3">
+                @foreach($rekapFormulir as $section)
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-start gap-2">
+                                <div>
+                                    <h6 class="mb-0">{{ $section['label'] }}</h6>
+                                    <small class="text-muted">Top {{ $section['items']->count() }} kategori</small>
+                                </div>
+                                <span class="badge bg-primary">{{ number_format($section['total_peserta']) }}</span>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                @forelse($section['items'] as $item)
+                                    @php
+                                        $rekapQuery = array_merge(request()->except('page'), [
+                                            $section['param'] => $item->filter_value,
+                                        ]);
+                                    @endphp
+                                    <a href="{{ route('admin.peserta.index', $rekapQuery) }}" class="list-group-item list-group-item-action">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div class="min-w-0">
+                                                <div class="fw-semibold text-truncate" title="{{ $item->nama }}">{{ $item->nama }}</div>
+                                                <small class="text-muted">
+                                                    Kuota {{ number_format((int) $item->dalam_kuota) }}
+                                                    &middot;
+                                                    Waiting {{ number_format((int) $item->waiting_list) }}
+                                                </small>
+                                            </div>
+                                            <span class="badge bg-success rounded-pill">{{ number_format((int) $item->jumlah) }}</span>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="list-group-item text-muted small py-3">Belum ada data.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
 
     <!-- Form Bulk Assign (hidden) -->
     <form id="bulkAssignForm" action="{{ route('admin.peserta.bulk-assign-grup') }}" method="POST" style="display: none;">
@@ -319,6 +386,7 @@
                             <th>No. Pendaftaran</th>
                             <th>Nama</th>
                             <th>No HP</th>
+                            <th>Data Formulir</th>
                             <th>Password</th>
                             <th>Kategori Pendaftaran</th>
                             <th>Grup</th>
@@ -328,6 +396,10 @@
                     </thead>
                     <tbody>
                         @forelse($peserta as $index => $p)
+                            @php
+                                $formulir = $p->formulirSpmb;
+                                $asalSmp = $formulir?->asal_sekolah ?: $p->asal_sekolah;
+                            @endphp
                             <tr class="{{ $p->trashed() ? 'table-secondary' : '' }}">
                                 <td>
                                     @if(!$p->trashed())
@@ -344,6 +416,14 @@
                                 </td>
                                 <td>{{ $p->nama }}</td>
                                 <td>{{ $p->telepon ?? '-' }}</td>
+                                <td style="min-width: 220px;">
+                                    <div class="small">
+                                        <div><span class="text-muted">SMP:</span> {{ $asalSmp ?: '-' }}</div>
+                                        <div><span class="text-muted">Kelompok:</span> {{ $formulir?->kelompok ?: '-' }}</div>
+                                        <div><span class="text-muted">Desa:</span> {{ $formulir?->desa ?: '-' }}</div>
+                                        <div><span class="text-muted">Daerah:</span> {{ $formulir?->daerah ?: '-' }}</div>
+                                    </div>
+                                </td>
                                 <td>
                                     @if($p->password_temp)
                                         <code class="user-select-all">{{ $p->password_temp }}</code>
@@ -407,7 +487,7 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="10" class="text-center py-4 text-muted">
+                                <td colspan="11" class="text-center py-4 text-muted">
                                     Belum ada peserta. <a href="{{ route('admin.peserta.create') }}">Tambah peserta pertama</a>
                                 </td>
                             </tr>
