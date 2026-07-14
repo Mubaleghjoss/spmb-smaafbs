@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Peserta;
 
 use App\Http\Controllers\Controller;
+use App\Enums\StatusPembayaran;
 use App\Models\Peserta;
 use App\Services\PembayaranService;
 use App\Services\PengaturanService;
@@ -17,9 +18,14 @@ class PembayaranController extends Controller
         private PengaturanService $pengaturanService
     ) {}
 
-    public function uploadBuktiFormulir(): View
+    public function uploadBuktiFormulir(): View|RedirectResponse
     {
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
+        if (!$this->bolehAksesUploadFormulir($peserta)) {
+            return redirect()->route('peserta.dashboard')
+                ->with('error', 'Selesaikan formulir terlebih dahulu sebelum upload bukti pembayaran.');
+        }
+
         $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'formulir');
         $spmb = $this->pengaturanService->ambilSpmb();
         return view('peserta.pembayaran.formulir', compact('peserta', 'pembayaran', 'spmb'));
@@ -36,7 +42,12 @@ class PembayaranController extends Controller
             'bukti.max' => 'Ukuran file maksimal 2MB',
         ]);
 
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
+        if (!$this->bolehAksesUploadFormulir($peserta)) {
+            return redirect()->route('peserta.dashboard')
+                ->with('error', 'Selesaikan formulir terlebih dahulu sebelum upload bukti pembayaran.');
+        }
+
         $this->pembayaranService->uploadBukti($peserta, 'formulir', $request->file('bukti'));
 
         return redirect()->route('peserta.pembayaran.status-formulir')
@@ -63,10 +74,10 @@ class PembayaranController extends Controller
      */
     public function uploadBuktiPelunasan(): View|RedirectResponse
     {
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
         
-        // Cek apakah tahap 5 sudah selesai
-        if (!$peserta->tahapanSelesai(5)) {
+        // Peserta lulus final tetap boleh upload jika data pembayaran terlewat.
+        if (!$peserta->tahapanSelesai(5) && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('peserta.dashboard')
                 ->with('error', 'Selesaikan tahap wawancara terlebih dahulu');
         }
@@ -74,12 +85,12 @@ class PembayaranController extends Controller
         $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'pertama');
         
         // Jika sudah upload, redirect ke status
-        if ($pembayaran) {
+        if ($pembayaran && $pembayaran->status !== StatusPembayaran::DITOLAK->value) {
             return redirect()->route('peserta.pembayaran.status-pelunasan');
         }
         
         $spmb = $this->pengaturanService->ambilSpmb();
-        return view('peserta.pembayaran.pelunasan', compact('peserta', 'spmb'));
+        return view('peserta.pembayaran.pelunasan', compact('peserta', 'spmb', 'pembayaran'));
     }
 
     /**
@@ -99,7 +110,12 @@ class PembayaranController extends Controller
             'nominal.numeric' => 'Nominal harus berupa angka',
         ]);
 
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
+        if (!$peserta->tahapanSelesai(5) && !$this->sudahLulusFinal($peserta)) {
+            return redirect()->route('peserta.dashboard')
+                ->with('error', 'Selesaikan tahap wawancara terlebih dahulu');
+        }
+
         $this->pembayaranService->uploadBukti($peserta, 'pertama', $request->file('bukti'), $request->nominal);
 
         return redirect()->route('peserta.pembayaran.status-pelunasan')
@@ -145,5 +161,18 @@ class PembayaranController extends Controller
         $kwitansi = $kwitansiService->ambilKwitansi($pembayaran);
         
         return view('admin.verifikasi.cetak-kwitansi', compact('kwitansi', 'pembayaran'));
+    }
+
+    private function bolehAksesUploadFormulir(Peserta $peserta): bool
+    {
+        return $peserta->tahapanSelesai(2)
+            || $peserta->tahapanSelesai(3)
+            || $this->sudahLulusFinal($peserta);
+    }
+
+    private function sudahLulusFinal(Peserta $peserta): bool
+    {
+        return ($peserta->tahapanSpmb?->status_kelulusan === 'lulus')
+            && (bool) ($peserta->tahapanSpmb?->tahap_7_selesai ?? false);
     }
 }

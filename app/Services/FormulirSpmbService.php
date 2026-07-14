@@ -178,6 +178,7 @@ class FormulirSpmbService
             'telepon_ibu' => 'nullable|string|max:20',
             // Data sekolah
             'asal_sekolah' => 'nullable|string|max:255',
+            'alamat_sekolah' => 'nullable|string|max:255',
             'nisn' => 'nullable|string|max:20',
             'tanggal_daftar' => 'nullable|date',
             // File dokumen

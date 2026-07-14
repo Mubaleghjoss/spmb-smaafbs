@@ -49,11 +49,16 @@
         </div>
     @endif
 
-    @if(isset($aksesUjian) && !$aksesUjian['dibuka'])
+    @if(isset($aksesUjian) && !$aksesUjian['dibuka'] && !($aksesPerbaikanDataLulus ?? false))
         <div class="alert alert-warning border-0 shadow-sm">
             <i class="bi bi-lock me-2"></i>
             <strong>Tes online belum dibuka.</strong>
             <span>{{ $aksesUjian['alasan'] ?? 'Silakan tunggu jadwal dari panitia.' }}</span>
+        </div>
+    @elseif(isset($aksesUjian) && !$aksesUjian['dibuka'] && ($aksesPerbaikanDataLulus ?? false))
+        <div class="alert alert-info border-0 shadow-sm">
+            <i class="bi bi-info-circle me-2"></i>
+            Anda sudah dinyatakan lulus. Tes yang belum pernah selesai tetap dapat dilengkapi sebagai perbaikan data sistem.
         </div>
     @endif
 

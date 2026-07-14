@@ -81,8 +81,8 @@ Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(fun
     Route::get('/status-tahapan', [DashboardSpmbController::class, 'ambilStatusTahapan'])->name('status-tahapan');
     
     // Pembayaran
-    Route::get('/pembayaran/formulir', [\App\Http\Controllers\Peserta\PembayaranController::class, 'uploadBuktiFormulir'])->middleware('cek.tahap.spmb:3')->name('pembayaran.formulir');
-    Route::post('/pembayaran/formulir', [\App\Http\Controllers\Peserta\PembayaranController::class, 'simpanBuktiFormulir'])->middleware('cek.tahap.spmb:3')->name('pembayaran.simpan-formulir');
+    Route::get('/pembayaran/formulir', [\App\Http\Controllers\Peserta\PembayaranController::class, 'uploadBuktiFormulir'])->name('pembayaran.formulir');
+    Route::post('/pembayaran/formulir', [\App\Http\Controllers\Peserta\PembayaranController::class, 'simpanBuktiFormulir'])->name('pembayaran.simpan-formulir');
     Route::get('/pembayaran/status-formulir', [\App\Http\Controllers\Peserta\PembayaranController::class, 'statusFormulir'])->name('pembayaran.status-formulir');
     Route::get('/pembayaran/kwitansi/{pembayaran}', [\App\Http\Controllers\Peserta\PembayaranController::class, 'cetakKwitansi'])->name('pembayaran.kwitansi');
     
@@ -91,12 +91,12 @@ Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(fun
     Route::post('/formulir', [\App\Http\Controllers\Peserta\FormulirController::class, 'simpan'])->middleware('cek.tahap.spmb:2')->name('formulir.simpan');
     Route::post('/formulir/submit', [\App\Http\Controllers\Peserta\FormulirController::class, 'submit'])->middleware('cek.tahap.spmb:2')->name('formulir.submit');
     Route::get('/formulir/review', [\App\Http\Controllers\Peserta\FormulirController::class, 'review'])->name('formulir.review');
-    Route::post('/formulir/upload-berkas', [\App\Http\Controllers\Peserta\FormulirController::class, 'uploadBerkas'])->middleware('cek.tahap.spmb:2')->name('formulir.upload-berkas');
-    Route::post('/formulir/update-data-fisik', [\App\Http\Controllers\Peserta\FormulirController::class, 'updateDataFisik'])->middleware('cek.tahap.spmb:2')->name('formulir.update-data-fisik');
+    Route::post('/formulir/upload-berkas', [\App\Http\Controllers\Peserta\FormulirController::class, 'uploadBerkas'])->name('formulir.upload-berkas');
+    Route::post('/formulir/update-data-fisik', [\App\Http\Controllers\Peserta\FormulirController::class, 'updateDataFisik'])->name('formulir.update-data-fisik');
     
     // Pelunasan (Tahap 6)
-    Route::get('/pembayaran/pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'uploadBuktiPelunasan'])->middleware('cek.tahap.spmb:6')->name('pembayaran.pelunasan');
-    Route::post('/pembayaran/pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'simpanBuktiPelunasan'])->middleware('cek.tahap.spmb:6')->name('pembayaran.simpan-pelunasan');
+    Route::get('/pembayaran/pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'uploadBuktiPelunasan'])->name('pembayaran.pelunasan');
+    Route::post('/pembayaran/pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'simpanBuktiPelunasan'])->name('pembayaran.simpan-pelunasan');
     Route::get('/pembayaran/status-pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'statusPelunasan'])->name('pembayaran.status-pelunasan');
     
     // Konfirmasi Diterima (Tahap 7)
@@ -104,11 +104,11 @@ Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(fun
     Route::get('/konfirmasi-diterima/sk', [DashboardSpmbController::class, 'downloadSuratKelulusan'])->name('surat-kelulusan.download');
     
     // Info Wawancara (Tahap 5)
-    Route::get('/wawancara/info', [DashboardSpmbController::class, 'infoWawancara'])->middleware('cek.tahap.spmb:5')->name('wawancara.info');
-    Route::post('/wawancara/simpan', [DashboardSpmbController::class, 'simpanWawancara'])->middleware('cek.tahap.spmb:5')->name('wawancara.simpan');
-    Route::get('/wawancara/download-pegon', [DashboardSpmbController::class, 'downloadTesPegon'])->middleware('cek.tahap.spmb:5')->name('wawancara.download-pegon');
-    Route::get('/wawancara/surat-pernyataan/pdf', [DashboardSpmbController::class, 'downloadSuratPernyataanPdf'])->middleware('cek.tahap.spmb:5')->name('wawancara.surat-pernyataan.pdf');
-    Route::get('/wawancara/surat-pernyataan/cetak', [DashboardSpmbController::class, 'cetakSuratPernyataan'])->middleware('cek.tahap.spmb:5')->name('wawancara.surat-pernyataan.cetak');
+    Route::get('/wawancara/info', [DashboardSpmbController::class, 'infoWawancara'])->name('wawancara.info');
+    Route::post('/wawancara/simpan', [DashboardSpmbController::class, 'simpanWawancara'])->name('wawancara.simpan');
+    Route::get('/wawancara/download-pegon', [DashboardSpmbController::class, 'downloadTesPegon'])->name('wawancara.download-pegon');
+    Route::get('/wawancara/surat-pernyataan/pdf', [DashboardSpmbController::class, 'downloadSuratPernyataanPdf'])->name('wawancara.surat-pernyataan.pdf');
+    Route::get('/wawancara/surat-pernyataan/cetak', [DashboardSpmbController::class, 'cetakSuratPernyataan'])->name('wawancara.surat-pernyataan.cetak');
 });
 
 /*

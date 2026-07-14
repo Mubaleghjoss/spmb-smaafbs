@@ -11,13 +11,24 @@
                     <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Pembayaran Formulir</h5>
                 </div>
                 <div class="card-body">
-                    @if($pembayaran)
+                    @if($pembayaran && $pembayaran->status !== \App\Enums\StatusPembayaran::DITOLAK->value)
                         <div class="alert alert-info">
                             <i class="bi bi-info-circle me-2"></i>
                             Anda sudah mengupload bukti pembayaran. 
                             <a href="{{ route('peserta.pembayaran.status-formulir') }}">Lihat status</a>
                         </div>
                     @else
+                        @if($pembayaran?->status === \App\Enums\StatusPembayaran::DITOLAK->value)
+                            <div class="alert alert-danger mb-4">
+                                <i class="bi bi-exclamation-triangle me-2"></i>
+                                Bukti pembayaran sebelumnya ditolak.
+                                @if($pembayaran->catatan)
+                                    <div class="small mt-1">{{ $pembayaran->catatan }}</div>
+                                @endif
+                                Silakan upload bukti baru.
+                            </div>
+                        @endif
+
                         <div class="alert alert-warning mb-4">
                             <h6 class="alert-heading"><i class="bi bi-bank me-2"></i>Informasi Rekening</h6>
                             <hr>

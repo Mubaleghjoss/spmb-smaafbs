@@ -83,6 +83,18 @@ class UjianController extends Controller
         ], 403);
     }
 
+    private function sudahLulusFinal(?Peserta $peserta): bool
+    {
+        if (!$peserta) {
+            return false;
+        }
+
+        $peserta->loadMissing('tahapanSpmb');
+
+        return ($peserta->tahapanSpmb?->status_kelulusan === 'lulus')
+            && (bool) ($peserta->tahapanSpmb?->tahap_7_selesai ?? false);
+    }
+
     /**
      * Halaman daftar tes yang tersedia
      * Kebutuhan: 3.1, 3.3 - Filter tes berdasarkan grup peserta
@@ -91,6 +103,7 @@ class UjianController extends Controller
     {
         $peserta = $this->getPeserta();
         $aksesUjian = $this->pengaturanService->statusAksesUjian();
+        $abaikanJadwalUntukPerbaikanData = $this->sudahLulusFinal($peserta);
         
         // Cek apakah login dengan token global
         $tokenGlobalId = session('token_global_id');
@@ -110,7 +123,7 @@ class UjianController extends Controller
         }
 
         // Cek status akses untuk setiap tes
-        $tesDenganStatus = $tesAktif->map(function ($tes) use ($peserta, $aksesUjian) {
+        $tesDenganStatus = $tesAktif->map(function ($tes) use ($peserta, $aksesUjian, $abaikanJadwalUntukPerbaikanData) {
             $akses = $this->ujianService->bisaMengaksesTes($peserta, $tes);
             $sesiAktif = $this->ujianService->ambilSesiAktif($peserta, $tes);
             
@@ -156,7 +169,7 @@ class UjianController extends Controller
                 }
             }
 
-            if (!$aksesUjian['dibuka'] && !$sesiAktif && !$sesiSelesai) {
+            if (!$aksesUjian['dibuka'] && !$sesiAktif && !$sesiSelesai && !$abaikanJadwalUntukPerbaikanData) {
                 $akses = [
                     'bisa' => false,
                     'pesan' => $aksesUjian['alasan'] ?? 'Tes online belum dibuka.',
@@ -180,6 +193,7 @@ class UjianController extends Controller
         return view('ujian.index', [
             'daftarTes' => $tesDenganStatus,
             'aksesUjian' => $aksesUjian,
+            'aksesPerbaikanDataLulus' => $abaikanJadwalUntukPerbaikanData,
         ]);
     }
 
@@ -192,7 +206,7 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
         $aksesUjian = $this->pengaturanService->statusAksesUjian();
 
-        if (!$aksesUjian['dibuka']) {
+        if (!$aksesUjian['dibuka'] && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('ujian.index')
                 ->with('error', $aksesUjian['alasan'] ?? 'Tes online belum dibuka.');
         }
@@ -230,7 +244,7 @@ class UjianController extends Controller
         $peserta = $this->getPeserta();
         $aksesUjian = $this->pengaturanService->statusAksesUjian();
 
-        if (!$aksesUjian['dibuka']) {
+        if (!$aksesUjian['dibuka'] && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('ujian.index')
                 ->with('error', $aksesUjian['alasan'] ?? 'Tes online belum dibuka.');
         }

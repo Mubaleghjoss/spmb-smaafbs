@@ -98,11 +98,22 @@ class FormulirController extends Controller
      */
     public function review(): View|RedirectResponse
     {
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
         
         if (!$formulir) {
-            return redirect()->route('peserta.formulir.isi');
+            if (!$this->sudahLulusFinal($peserta)) {
+                return redirect()->route('peserta.formulir.isi');
+            }
+
+            $formulir = \App\Models\FormulirSpmb::create([
+                'peserta_id' => $peserta->id,
+                'nama_lengkap' => $peserta->nama,
+                'telepon' => $peserta->telepon,
+                'email' => $peserta->email,
+                'asal_sekolah' => $peserta->asal_sekolah,
+                'status_verifikasi' => 'draft',
+            ]);
         }
         
         // Ambil nomor WhatsApp SPMB dari pengaturan
@@ -163,44 +174,42 @@ class FormulirController extends Controller
     }
 
     /**
-     * Update data fisik (boleh diupdate meskipun formulir sudah terverifikasi)
+     * Update semua data formulir dari halaman review.
      */
     public function updateDataFisik(Request $request): RedirectResponse
     {
-        $peserta = Peserta::find(session('peserta_id'));
+        $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
         
         if (!$formulir) {
-            return redirect()->route('peserta.formulir.isi')
-                ->with('error', 'Formulir tidak ditemukan');
+            if (!$this->sudahLulusFinal($peserta)) {
+                return redirect()->route('peserta.formulir.isi')
+                    ->with('error', 'Formulir tidak ditemukan');
+            }
+
+            $formulir = \App\Models\FormulirSpmb::create([
+                'peserta_id' => $peserta->id,
+                'status_verifikasi' => 'draft',
+            ]);
         }
         
-        // Validasi hanya field data fisik
-        $validated = $request->validate([
-            'tinggi_badan' => 'nullable|numeric|min:50|max:250',
-            'berat_badan' => 'nullable|numeric|min:10|max:200',
-            'lingkar_kepala' => 'nullable|numeric|min:30|max:80',
-            'lingkar_dada' => 'nullable|numeric|min:30|max:200',
-            'lingkar_pinggang' => 'nullable|numeric|min:30|max:200',
-            'panjang_celana' => 'nullable|numeric|min:30|max:200',
-        ], [
-            'tinggi_badan.numeric' => 'Tinggi badan harus berupa angka',
-            'tinggi_badan.min' => 'Tinggi badan minimal 50 cm',
-            'tinggi_badan.max' => 'Tinggi badan maksimal 250 cm',
-            'berat_badan.numeric' => 'Berat badan harus berupa angka',
-            'berat_badan.min' => 'Berat badan minimal 10 kg',
-            'berat_badan.max' => 'Berat badan maksimal 200 kg',
-            'lingkar_kepala.numeric' => 'Lingkar kepala harus berupa angka',
-            'lingkar_dada.numeric' => 'Lingkar dada harus berupa angka',
-            'lingkar_pinggang.numeric' => 'Lingkar pinggang harus berupa angka',
-            'panjang_celana.numeric' => 'Panjang celana harus berupa angka',
-        ]);
-        
-        // Update hanya field data fisik
-        $formulir->update($validated);
+        $validated = $request->validate(
+            $this->formulirService->validasi($request->all()),
+            $this->pesanValidasi()
+        );
+
+        foreach (['hobi', 'cita_cita'] as $field) {
+            $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
+        }
+
+        foreach (['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'foto'] as $fileField) {
+            unset($validated[$fileField]);
+        }
+
+        $this->formulirService->simpan($peserta, $validated);
         
         return redirect()->route('peserta.formulir.review')
-            ->with('sukses', 'Data fisik berhasil diperbarui');
+            ->with('sukses', 'Data formulir berhasil diperbarui');
     }
 
     /**
@@ -261,5 +270,11 @@ class FormulirController extends Controller
         $items = array_filter(array_map('trim', $items));
 
         return empty($items) ? null : implode(', ', array_values(array_unique($items)));
+    }
+
+    private function sudahLulusFinal(Peserta $peserta): bool
+    {
+        return ($peserta->tahapanSpmb?->status_kelulusan === 'lulus')
+            && (bool) ($peserta->tahapanSpmb?->tahap_7_selesai ?? false);
     }
 }

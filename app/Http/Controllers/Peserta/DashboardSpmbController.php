@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Peserta;
 
 use App\Http\Controllers\Controller;
+use App\Models\Pembayaran;
 use App\Models\Peserta;
+use App\Models\SesiTes;
 use App\Services\SpmbService;
 use App\Enums\TahapanSpmb as TahapanSpmbEnum;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +26,7 @@ class DashboardSpmbController extends Controller
      */
     public function index(): View
     {
-        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'sesiTes' => function($q) {
+        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'wawancara', 'sesiTes' => function($q) {
             $q->whereIn('status', ['selesai', 'timeout'])->with('tes')->latest();
         }])->find(session('peserta_id'));
         $statusData = $this->spmbService->ambilStatusTahapan($peserta);
@@ -41,6 +43,7 @@ class DashboardSpmbController extends Controller
         
         // Hitung berkas yang belum diunggah
         $berkasBelumLengkap = $this->hitungBerkasBelumLengkap($peserta->formulirSpmb);
+        $kelengkapanPascakelulusan = $this->buildKelengkapanPascakelulusan($peserta);
         
         return view('peserta.dashboard', [
             'peserta' => $peserta,
@@ -49,6 +52,7 @@ class DashboardSpmbController extends Controller
             'sesiTes' => $sesiTes,
             'sesiTesList' => $sesiTesList,
             'berkasBelumLengkap' => $berkasBelumLengkap,
+            'kelengkapanPascakelulusan' => $kelengkapanPascakelulusan,
         ]);
     }
 
@@ -139,8 +143,8 @@ class DashboardSpmbController extends Controller
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $pengaturanTahapan = $pengaturanService->ambilPengaturanTahapan();
         
-        // Cek apakah tahap 4 sudah selesai
-        if (!$peserta->tahapanSpmb?->tahap_4_selesai) {
+        // Peserta lulus final tetap boleh melengkapi data wawancara yang terlewat.
+        if (!$peserta->tahapanSpmb?->tahap_4_selesai && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('peserta.dashboard')
                 ->with('error', 'Anda harus menyelesaikan tes online terlebih dahulu');
         }
@@ -151,10 +155,11 @@ class DashboardSpmbController extends Controller
         $spSiswaPoin = \App\Models\Wawancara::suratPernyataanSiswaPoin();
         $spOrtuPoin = \App\Models\Wawancara::suratPernyataanOrtuPoin();
         $wawancara = $peserta->wawancara;
+        $kelengkapanWawancara = $this->hitungKelengkapanWawancara($wawancara);
         
         return view('peserta.wawancara-info', compact(
             'peserta', 'infoWawancara', 'pertanyaanOrtu', 'pertanyaanSiswa',
-            'spSiswaPoin', 'spOrtuPoin', 'wawancara'
+            'spSiswaPoin', 'spOrtuPoin', 'wawancara', 'kelengkapanWawancara'
         ));
     }
 
@@ -165,7 +170,7 @@ class DashboardSpmbController extends Controller
     {
         $peserta = Peserta::with(['tahapanSpmb', 'wawancara'])->find(session('peserta_id'));
 
-        if (!$peserta->tahapanSpmb?->tahap_4_selesai) {
+        if (!$peserta->tahapanSpmb?->tahap_4_selesai && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('peserta.dashboard')
                 ->with('error', 'Anda harus menyelesaikan tes online terlebih dahulu');
         }
@@ -386,5 +391,189 @@ class DashboardSpmbController extends Controller
             'count' => count($belumLengkap),
             'fields' => $belumLengkap,
         ];
+    }
+
+    private function buildKelengkapanPascakelulusan(Peserta $peserta): array
+    {
+        if (!$this->sudahLulusFinal($peserta)) {
+            return ['aktif' => false, 'items' => [], 'total' => 0];
+        }
+
+        $items = [];
+        $formulir = $peserta->formulirSpmb;
+        $berkas = $this->hitungBerkasBelumLengkap($formulir);
+        $fieldWajib = $formulir ? $this->hitungFieldFormulirBelumLengkap($formulir) : ['Formulir SPMB'];
+
+        if (!$formulir || !empty($fieldWajib) || $berkas['count'] > 0) {
+            $detail = [];
+            if (!$formulir) {
+                $detail[] = 'Formulir belum pernah diisi.';
+            } elseif (!empty($fieldWajib)) {
+                $detail[] = 'Data wajib belum lengkap: ' . implode(', ', $fieldWajib) . '.';
+            }
+            if ($berkas['count'] > 0) {
+                $detail[] = 'Berkas belum diunggah: ' . implode(', ', $berkas['fields']) . '.';
+            }
+
+            $items[] = [
+                'icon' => 'file-earmark-text',
+                'judul' => 'Formulir dan berkas belum lengkap',
+                'detail' => implode(' ', $detail),
+                'route' => route('peserta.formulir.review'),
+                'aksi' => 'Perbaiki Formulir',
+                'level' => 'warning',
+            ];
+        }
+
+        if (!$this->adaPembayaran($peserta, 'formulir')) {
+            $items[] = [
+                'icon' => 'credit-card',
+                'judul' => 'Bukti pembayaran formulir belum ada',
+                'detail' => 'Silakan upload bukti pembayaran formulir agar data keuangan peserta lengkap.',
+                'route' => route('peserta.pembayaran.formulir'),
+                'aksi' => 'Upload Bukti Formulir',
+                'level' => 'warning',
+            ];
+        }
+
+        foreach ($this->ambilTesBelumLengkap($peserta) as $tesBelumLengkap) {
+            $items[] = $tesBelumLengkap;
+        }
+
+        $wawancara = $this->hitungKelengkapanWawancara($peserta->wawancara);
+        if ($wawancara['count'] > 0) {
+            $items[] = [
+                'icon' => 'people',
+                'judul' => 'Data wawancara belum lengkap',
+                'detail' => 'Bagian belum lengkap: ' . implode(', ', $wawancara['fields']) . '.',
+                'route' => route('peserta.wawancara.info'),
+                'aksi' => 'Lengkapi Wawancara',
+                'level' => 'warning',
+            ];
+        }
+
+        if (!$this->adaPembayaran($peserta, 'pertama')) {
+            $items[] = [
+                'icon' => 'wallet2',
+                'judul' => 'Bukti pembayaran tahap pertama belum ada',
+                'detail' => 'Silakan upload bukti pembayaran tahap pertama atau pelunasan awal.',
+                'route' => route('peserta.pembayaran.pelunasan'),
+                'aksi' => 'Upload Bukti Bayar',
+                'level' => 'warning',
+            ];
+        }
+
+        return [
+            'aktif' => !empty($items),
+            'items' => $items,
+            'total' => count($items),
+        ];
+    }
+
+    private function hitungFieldFormulirBelumLengkap($formulir): array
+    {
+        $fields = [
+            'nama_lengkap' => 'Nama lengkap',
+            'tanggal_lahir' => 'Tanggal lahir',
+            'jenis_kelamin' => 'Jenis kelamin',
+            'asal_sekolah' => 'Asal sekolah SMP',
+            'nama_ayah' => 'Nama ayah',
+            'nama_ibu' => 'Nama ibu',
+        ];
+
+        $kosong = [];
+        foreach ($fields as $field => $label) {
+            if (empty($formulir->$field)) {
+                $kosong[] = $label;
+            }
+        }
+
+        return $kosong;
+    }
+
+    private function adaPembayaran(Peserta $peserta, string $jenis): bool
+    {
+        return Pembayaran::where('peserta_id', $peserta->id)
+            ->where('jenis', $jenis)
+            ->exists();
+    }
+
+    private function ambilTesBelumLengkap(Peserta $peserta): array
+    {
+        $tesService = app(\App\Services\TesService::class);
+        $daftarTes = $tesService->ambilTesTersediaUntukPeserta($peserta);
+        $items = [];
+
+        foreach ($daftarTes as $tes) {
+            $sesiAktif = SesiTes::where('peserta_id', $peserta->id)
+                ->where('tes_id', $tes->id)
+                ->where('status', 'berlangsung')
+                ->latest()
+                ->first();
+
+            $sesiSelesai = SesiTes::where('peserta_id', $peserta->id)
+                ->where('tes_id', $tes->id)
+                ->whereIn('status', ['selesai', 'timeout'])
+                ->latest()
+                ->first();
+
+            if ($sesiSelesai && !($sesiSelesai->status === 'timeout' && $sesiSelesai->status_verifikasi_tes !== 'diloloskan')) {
+                continue;
+            }
+
+            if ($sesiSelesai?->status === 'timeout') {
+                $items[] = [
+                    'icon' => 'hourglass-bottom',
+                    'judul' => $tes->nama,
+                    'detail' => 'Tes berakhir karena waktu habis. Ajukan perpanjangan waktu atau ulang dari 0.',
+                    'route' => route('ujian.hasil', $sesiSelesai),
+                    'aksi' => 'Ajukan Permohonan',
+                    'level' => 'warning',
+                ];
+                continue;
+            }
+
+            $items[] = [
+                'icon' => 'laptop',
+                'judul' => $tes->nama,
+                'detail' => $sesiAktif ? 'Tes sedang berjalan dan belum diselesaikan.' : 'Tes belum pernah dikerjakan.',
+                'route' => $sesiAktif ? route('ujian.kerjakan', $sesiAktif) : route('ujian.konfirmasi', $tes),
+                'aksi' => $sesiAktif ? 'Lanjutkan Tes' : 'Mulai Tes',
+                'level' => 'danger',
+            ];
+        }
+
+        return $items;
+    }
+
+    private function hitungKelengkapanWawancara($wawancara): array
+    {
+        $fields = [
+            'jawaban_ortu' => 'Form pertanyaan orang tua',
+            'jawaban_siswa' => 'Form pertanyaan siswa',
+            'surat_pernyataan_siswa' => 'Surat pernyataan siswa',
+            'surat_pernyataan_ortu' => 'Surat pernyataan orang tua',
+            'file_tes_pegon' => 'Tes pegon',
+            'file_voice_quran' => 'Rekaman bacaan Quran',
+        ];
+
+        if (!$wawancara) {
+            return ['count' => count($fields), 'fields' => array_values($fields)];
+        }
+
+        $kosong = [];
+        foreach ($fields as $field => $label) {
+            if (empty($wawancara->$field)) {
+                $kosong[] = $label;
+            }
+        }
+
+        return ['count' => count($kosong), 'fields' => $kosong];
+    }
+
+    private function sudahLulusFinal(Peserta $peserta): bool
+    {
+        return ($peserta->tahapanSpmb?->status_kelulusan === 'lulus')
+            && (bool) ($peserta->tahapanSpmb?->tahap_7_selesai ?? false);
     }
 }

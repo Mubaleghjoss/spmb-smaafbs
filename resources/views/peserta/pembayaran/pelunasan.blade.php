@@ -11,6 +11,17 @@
                     <h5 class="mb-0"><i class="bi bi-credit-card me-2"></i>Pembayaran Tahap Pertama</h5>
                 </div>
                 <div class="card-body">
+                    @if(($pembayaran ?? null)?->status === \App\Enums\StatusPembayaran::DITOLAK->value)
+                        <div class="alert alert-danger mb-4">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Bukti pembayaran sebelumnya ditolak.
+                            @if($pembayaran->catatan)
+                                <div class="small mt-1">{{ $pembayaran->catatan }}</div>
+                            @endif
+                            Silakan upload bukti baru.
+                        </div>
+                    @endif
+
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Informasi Pembayaran</h6>
                         <hr>

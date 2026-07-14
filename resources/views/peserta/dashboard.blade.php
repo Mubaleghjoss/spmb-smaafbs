@@ -100,6 +100,46 @@
         </div>
         @endif
     @endif
+
+    @if(($kelengkapanPascakelulusan['aktif'] ?? false) && $statusKelulusan === 'lulus' && ($tahapan->tahap_7_selesai ?? false))
+        <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-10 border-0">
+                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div>
+                        <h5 class="mb-1 text-warning-emphasis">
+                            <i class="bi bi-exclamation-triangle me-2"></i>Data Masih Perlu Dilengkapi
+                        </h5>
+                        <p class="mb-0 text-muted small">
+                            Anda sudah dinyatakan lulus, tetapi masih ada data tahap SPMB yang belum lengkap di sistem.
+                        </p>
+                    </div>
+                    <span class="badge bg-warning text-dark">{{ $kelengkapanPascakelulusan['total'] }} perlu tindakan</span>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    @foreach($kelengkapanPascakelulusan['items'] as $item)
+                        <div class="col-md-6">
+                            <div class="border rounded p-3 h-100">
+                                <div class="d-flex gap-3">
+                                    <div class="rounded-circle bg-{{ $item['level'] ?? 'warning' }} bg-opacity-10 text-{{ $item['level'] ?? 'warning' }} d-flex align-items-center justify-content-center flex-shrink-0" style="width: 42px; height: 42px;">
+                                        <i class="bi bi-{{ $item['icon'] }}"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ $item['judul'] }}</h6>
+                                        <p class="small text-muted mb-3">{{ $item['detail'] }}</p>
+                                        <a href="{{ $item['route'] }}" class="btn btn-sm btn-{{ $item['level'] === 'danger' ? 'danger' : 'warning' }}">
+                                            <i class="bi bi-arrow-right me-1"></i>{{ $item['aksi'] }}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    @endif
     
     <!-- Progress Tahapan -->
     <div class="card border-0 shadow-sm">

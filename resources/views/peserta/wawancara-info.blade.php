@@ -28,6 +28,23 @@
     </div>
     @endif
 
+    @if(($peserta->tahapanSpmb?->status_kelulusan === 'lulus') && ($peserta->tahapanSpmb?->tahap_7_selesai ?? false) && (($kelengkapanWawancara['count'] ?? 0) > 0))
+        <div class="alert alert-warning border-0 shadow-sm">
+            <div class="d-flex gap-3">
+                <i class="bi bi-exclamation-triangle fs-4"></i>
+                <div>
+                    <h6 class="alert-heading mb-1">Data wawancara masih belum lengkap</h6>
+                    <p class="mb-2">Anda sudah dinyatakan lulus, tetapi sistem belum menemukan kelengkapan wawancara berikut:</p>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach($kelengkapanWawancara['fields'] as $field)
+                            <span class="badge bg-warning text-dark">{{ $field }}</span>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
     {{-- ===== STEPPER BAR ===== --}}
     @php
         $steps = [
