@@ -22,6 +22,7 @@ class FormulirSpmbService
     public function simpan(Peserta $peserta, array $data): FormulirSpmb
     {
         $formulir = FormulirSpmb::where('peserta_id', $peserta->id)->first();
+        $jenisKelaminSebelum = $formulir?->jenis_kelamin;
         
         if ($formulir) {
             $formulir->update($data);
@@ -32,8 +33,14 @@ class FormulirSpmbService
                 'status_verifikasi' => 'draft',
             ]);
         }
-        
-        return $formulir->fresh();
+
+        $formulir = $formulir->fresh();
+
+        if (($data['jenis_kelamin'] ?? null) !== $jenisKelaminSebelum) {
+            app(KuotaPendaftaranService::class)->rekalkulasiPeserta($peserta);
+        }
+
+        return $formulir;
     }
 
     /**

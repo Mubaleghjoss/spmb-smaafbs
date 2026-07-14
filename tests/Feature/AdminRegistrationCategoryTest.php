@@ -177,10 +177,18 @@ class AdminRegistrationCategoryTest extends TestCase
         $this->put(route('admin.pengaturan.spmb.periode.tahun.update', $tahun), [
             'nama' => $tahun->nama,
             'kuota_peserta' => 2,
+            'kuota_laki_laki' => 1,
+            'kuota_perempuan' => 1,
             'aktif' => '1',
             'default' => '1',
         ])->assertRedirect();
 
+        $this->assertDatabaseHas('tahun_ajaran', [
+            'id' => $tahun->id,
+            'kuota_peserta' => 2,
+            'kuota_laki_laki' => 1,
+            'kuota_perempuan' => 1,
+        ]);
         $this->assertSame(2, Peserta::query()
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)

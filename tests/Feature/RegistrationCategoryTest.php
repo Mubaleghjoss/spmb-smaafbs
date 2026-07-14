@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\GelombangPendaftaran;
 use App\Models\Peserta;
 use App\Models\TahunAjaran;
+use App\Services\FormulirSpmbService;
 use App\Services\PengaturanService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -125,6 +126,60 @@ class RegistrationCategoryTest extends TestCase
             'status_kuota' => Peserta::STATUS_KUOTA_WAITING,
             'urutan_kuota' => 2,
         ]);
+    }
+
+    public function test_kuota_gender_direkalkulasi_setelah_formulir_menyimpan_jenis_kelamin(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $tahun->update([
+            'kuota_peserta' => 65,
+            'kuota_laki_laki' => 1,
+            'kuota_perempuan' => 1,
+        ]);
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+        $kategori = [
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'siswa_baru',
+            'kelas_tujuan' => 10,
+        ];
+
+        $lakiPertama = Peserta::factory()->create([
+            'nama' => 'Laki Pertama',
+            'urutan_kuota' => 1,
+            'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+            ...$kategori,
+        ]);
+        $lakiKedua = Peserta::factory()->create([
+            'nama' => 'Laki Kedua',
+            'urutan_kuota' => 2,
+            'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+            ...$kategori,
+        ]);
+        $perempuanPertama = Peserta::factory()->create([
+            'nama' => 'Perempuan Pertama',
+            'urutan_kuota' => 3,
+            'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
+            ...$kategori,
+        ]);
+
+        $service = app(FormulirSpmbService::class);
+        $service->simpan($lakiPertama, [
+            'nama_lengkap' => $lakiPertama->nama,
+            'jenis_kelamin' => 'L',
+        ]);
+        $service->simpan($lakiKedua, [
+            'nama_lengkap' => $lakiKedua->nama,
+            'jenis_kelamin' => 'L',
+        ]);
+        $service->simpan($perempuanPertama, [
+            'nama_lengkap' => $perempuanPertama->nama,
+            'jenis_kelamin' => 'P',
+        ]);
+
+        $this->assertSame(Peserta::STATUS_KUOTA_DALAM, $lakiPertama->fresh()->status_kuota);
+        $this->assertSame(Peserta::STATUS_KUOTA_WAITING, $lakiKedua->fresh()->status_kuota);
+        $this->assertSame(Peserta::STATUS_KUOTA_DALAM, $perempuanPertama->fresh()->status_kuota);
     }
 
     public function test_gelombang_dari_tahun_lain_ditolak(): void

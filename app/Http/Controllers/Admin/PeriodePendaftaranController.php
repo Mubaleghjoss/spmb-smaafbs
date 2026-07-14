@@ -46,6 +46,8 @@ class PeriodePendaftaranController extends Controller
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:20'],
             'kuota_peserta' => ['nullable', 'integer', 'min:0'],
+            'kuota_laki_laki' => ['nullable', 'integer', 'min:0'],
+            'kuota_perempuan' => ['nullable', 'integer', 'min:0'],
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
         ]);
@@ -61,6 +63,8 @@ class PeriodePendaftaranController extends Controller
                 'aktif' => $request->boolean('aktif'),
                 'default' => false,
                 'kuota_peserta' => $this->normalisasiKuota($request->input('kuota_peserta')),
+                'kuota_laki_laki' => $this->normalisasiKuota($request->input('kuota_laki_laki')),
+                'kuota_perempuan' => $this->normalisasiKuota($request->input('kuota_perempuan')),
             ]);
 
             if ($request->boolean('default') || TahunAjaran::query()->count() === 1) {
@@ -78,6 +82,8 @@ class PeriodePendaftaranController extends Controller
         $validated = $request->validate([
             'nama' => ['required', 'string', 'max:20'],
             'kuota_peserta' => ['nullable', 'integer', 'min:0'],
+            'kuota_laki_laki' => ['nullable', 'integer', 'min:0'],
+            'kuota_perempuan' => ['nullable', 'integer', 'min:0'],
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
         ]);
@@ -99,6 +105,8 @@ class PeriodePendaftaranController extends Controller
                 'nama' => $nama,
                 'aktif' => $request->boolean('aktif'),
                 'kuota_peserta' => $this->normalisasiKuota($request->input('kuota_peserta')),
+                'kuota_laki_laki' => $this->normalisasiKuota($request->input('kuota_laki_laki')),
+                'kuota_perempuan' => $this->normalisasiKuota($request->input('kuota_perempuan')),
             ]);
 
             if ($request->boolean('default')) {

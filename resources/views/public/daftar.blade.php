@@ -48,6 +48,11 @@
                                                             Total: {{ $tahun['kuota']['total'] }} &middot;
                                                             Waiting: {{ $tahun['kuota']['waiting_list'] }}
                                                         </small>
+                                                        <small class="text-muted d-block">
+                                                            L: {{ $tahun['kuota']['laki_laki']['dalam_kuota'] }}/{{ $tahun['kuota']['laki_laki']['kuota_label'] }}
+                                                            &middot;
+                                                            P: {{ $tahun['kuota']['perempuan']['dalam_kuota'] }}/{{ $tahun['kuota']['perempuan']['kuota_label'] }}
+                                                        </small>
                                                     </div>
                                                 </div>
                                                 @foreach($tahun['gelombang'] as $gelombang)
@@ -131,6 +136,11 @@
                                                     &middot; Total <span x-text="tahun.kuota.total"></span>
                                                     &middot; Waiting <span x-text="tahun.kuota.waiting_list"></span>
                                                 </div>
+                                                <div class="small text-muted">
+                                                    L <span x-text="tahun.kuota.laki_laki.dalam_kuota"></span>/<span x-text="tahun.kuota.laki_laki.kuota_label"></span>
+                                                    &middot;
+                                                    P <span x-text="tahun.kuota.perempuan.dalam_kuota"></span>/<span x-text="tahun.kuota.perempuan.kuota_label"></span>
+                                                </div>
                                                 <div class="small mt-2" :class="tahunTerbuka(tahun) ? 'text-success' : 'text-muted'">
                                                     <i class="bi" :class="tahunTerbuka(tahun) ? 'bi-check-circle' : 'bi-lock'"></i>
                                                     <span x-text="ringkasanGelombangTahun(tahun)"></span>
@@ -172,6 +182,24 @@
                                                     </strong>
                                                 </div>
                                             </div>
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Laki-laki</div>
+                                                    <strong>
+                                                        <span x-text="selectedTahun.kuota.laki_laki.dalam_kuota"></span>/<span x-text="selectedTahun.kuota.laki_laki.kuota_label"></span>
+                                                    </strong>
+                                                    <div class="text-muted small">Sisa <span x-text="selectedTahun.kuota.laki_laki.sisa_label"></span></div>
+                                                </div>
+                                            </div>
+                                            <div class="col-6 col-lg-3">
+                                                <div class="bg-white border rounded p-2 h-100">
+                                                    <div class="text-muted small">Perempuan</div>
+                                                    <strong>
+                                                        <span x-text="selectedTahun.kuota.perempuan.dalam_kuota"></span>/<span x-text="selectedTahun.kuota.perempuan.kuota_label"></span>
+                                                    </strong>
+                                                    <div class="text-muted small">Sisa <span x-text="selectedTahun.kuota.perempuan.sisa_label"></span></div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <div class="row g-3">
@@ -205,7 +233,7 @@
 
                                         <div class="alert alert-warning mt-3 mb-0" x-show="selectedTahun.kuota.penuh">
                                             <i class="bi bi-exclamation-triangle me-1"></i>
-                                            Kuota tahun ajaran ini sudah penuh. Pendaftaran tetap diterima sebagai <strong>Waiting List</strong>.
+                                            Kuota tahun ajaran atau pembagian laki-laki/perempuan sudah penuh. Pendaftaran tetap diterima sebagai <strong>Waiting List</strong> jika melewati kuota.
                                         </div>
                                         <div class="alert alert-secondary mt-3 mb-0" x-show="gelombangTerbuka.length === 0">
                                             <i class="bi bi-lock me-1"></i>

@@ -54,29 +54,37 @@
         <div class="card-body">
             <form method="POST" action="{{ route('admin.pengaturan.spmb.periode.tahun.store') }}" class="row g-3 align-items-end">
                 @csrf
-                <div class="col-md-4">
+                <div class="col-lg-3 col-md-6">
                     <label class="form-label">Tahun Ajaran</label>
                     <input type="text" name="nama" class="form-control" placeholder="2027-2028" value="{{ old('nama') }}" required>
                 </div>
-                <div class="col-md-3">
-                    <label class="form-label">Kuota Peserta</label>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Kuota Total</label>
                     <input type="number" name="kuota_peserta" class="form-control" min="0" value="{{ old('kuota_peserta') }}" placeholder="0 = tanpa batas">
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Kuota Laki-laki</label>
+                    <input type="number" name="kuota_laki_laki" class="form-control" min="0" value="{{ old('kuota_laki_laki') }}" placeholder="0 = tanpa batas">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label">Kuota Perempuan</label>
+                    <input type="number" name="kuota_perempuan" class="form-control" min="0" value="{{ old('kuota_perempuan') }}" placeholder="0 = tanpa batas">
+                </div>
+                <div class="col-lg-1 col-md-2">
                     <div class="form-check form-switch mb-2">
                         <input type="hidden" name="aktif" value="0">
                         <input class="form-check-input" type="checkbox" name="aktif" value="1" id="tahunAktifBaru" checked>
                         <label class="form-check-label" for="tahunAktifBaru">Aktif</label>
                     </div>
                 </div>
-                <div class="col-md-2">
+                <div class="col-lg-1 col-md-2">
                     <div class="form-check form-switch mb-2">
                         <input type="hidden" name="default" value="0">
                         <input class="form-check-input" type="checkbox" name="default" value="1" id="tahunDefaultBaru">
                         <label class="form-check-label" for="tahunDefaultBaru">Jadikan default</label>
                     </div>
                 </div>
-                <div class="col-md-1">
+                <div class="col-lg-1 col-md-2">
                     <button class="btn btn-primary w-100" type="submit">
                         <i class="bi bi-plus-lg"></i>
                     </button>
@@ -93,6 +101,9 @@
                 'waiting_list' => 0,
                 'total' => $tahun->peserta_count,
                 'sisa_label' => 'Tidak dibatasi',
+                'laki_laki' => ['kuota_label' => 'Tidak dibatasi', 'total' => 0, 'dalam_kuota' => 0, 'waiting_list' => 0, 'sisa_label' => 'Tidak dibatasi'],
+                'perempuan' => ['kuota_label' => 'Tidak dibatasi', 'total' => 0, 'dalam_kuota' => 0, 'waiting_list' => 0, 'sisa_label' => 'Tidak dibatasi'],
+                'belum_isi_gender' => ['total' => 0, 'dalam_kuota' => 0, 'waiting_list' => 0],
             ];
         @endphp
         <div class="card mb-4">
@@ -107,7 +118,15 @@
                     </div>
                     <div class="col-md-2">
                         <input type="number" name="kuota_peserta" class="form-control"
-                               min="0" value="{{ $tahun->kuota_peserta ?? '' }}" placeholder="Kuota">
+                               min="0" value="{{ $tahun->kuota_peserta ?? '' }}" placeholder="Total">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="kuota_laki_laki" class="form-control"
+                               min="0" value="{{ $tahun->kuota_laki_laki ?? '' }}" placeholder="Laki-laki">
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" name="kuota_perempuan" class="form-control"
+                               min="0" value="{{ $tahun->kuota_perempuan ?? '' }}" placeholder="Perempuan">
                     </div>
                     <div class="col-auto">
                         <input type="hidden" name="aktif" value="0">
@@ -137,6 +156,11 @@
                     <span class="badge bg-warning text-dark">Waiting: {{ $kuotaTahun['waiting_list'] }}</span>
                     <span class="badge bg-light text-dark border">Total: {{ $kuotaTahun['total'] }}</span>
                     <span class="badge bg-info text-dark">Sisa: {{ $kuotaTahun['sisa_label'] }}</span>
+                    <span class="badge bg-dark">L: {{ $kuotaTahun['laki_laki']['dalam_kuota'] }}/{{ $kuotaTahun['laki_laki']['kuota_label'] }}</span>
+                    <span class="badge bg-secondary">P: {{ $kuotaTahun['perempuan']['dalam_kuota'] }}/{{ $kuotaTahun['perempuan']['kuota_label'] }}</span>
+                    @if(($kuotaTahun['belum_isi_gender']['total'] ?? 0) > 0)
+                        <span class="badge bg-light text-dark border">JK belum isi: {{ $kuotaTahun['belum_isi_gender']['total'] }}</span>
+                    @endif
                     <form method="POST" action="{{ route('admin.pengaturan.spmb.periode.tahun.destroy', $tahun) }}"
                           onsubmit="return confirm('Hapus tahun ajaran ini?')">
                         @csrf

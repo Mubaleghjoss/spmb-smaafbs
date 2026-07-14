@@ -143,6 +143,8 @@
                                                         'total' => $tahun->peserta_count,
                                                         'waiting_list' => 0,
                                                         'sisa_label' => 'Tidak dibatasi',
+                                                        'laki_laki' => ['kuota_label' => 'Tidak dibatasi', 'dalam_kuota' => 0],
+                                                        'perempuan' => ['kuota_label' => 'Tidak dibatasi', 'dalam_kuota' => 0],
                                                     ];
                                                 @endphp
                                                 @forelse($tahun->gelombangPendaftaran as $gelombang)
@@ -165,6 +167,10 @@
                                                                 Total {{ $kuotaTahun['total'] }},
                                                                 sisa {{ $kuotaTahun['sisa_label'] }},
                                                                 waiting {{ $kuotaTahun['waiting_list'] }}
+                                                            </span>
+                                                            <span class="d-block text-muted">
+                                                                L {{ $kuotaTahun['laki_laki']['dalam_kuota'] }}/{{ $kuotaTahun['laki_laki']['kuota_label'] }},
+                                                                P {{ $kuotaTahun['perempuan']['dalam_kuota'] }}/{{ $kuotaTahun['perempuan']['kuota_label'] }}
                                                             </span>
                                                         </td>
                                                         <td>{{ $gelombang->nama }}</td>
