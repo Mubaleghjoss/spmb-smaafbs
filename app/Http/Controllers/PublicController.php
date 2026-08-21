@@ -22,7 +22,16 @@ class PublicController extends Controller
      */
     public function beranda(): View
     {
-        return view('public.beranda');
+        $beranda = $this->pengaturanService->ambilKontenBeranda();
+
+        // Statistik pendaftaran real (dipakai bila admin mengisi angka 'auto')
+        try {
+            $totalPendaftar = Peserta::count();
+        } catch (\Throwable $e) {
+            $totalPendaftar = 0;
+        }
+
+        return view('public.beranda', compact('beranda', 'totalPendaftar'));
     }
 
     /**

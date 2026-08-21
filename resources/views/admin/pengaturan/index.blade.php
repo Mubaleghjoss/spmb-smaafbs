@@ -53,6 +53,23 @@
             <div class="card h-100 border-0 shadow-sm">
                 <div class="card-body">
                     <div class="d-flex align-items-center mb-2">
+                        <div class="bg-success bg-opacity-10 p-2 rounded me-2">
+                            <i class="bi bi-window-stack text-success fs-5"></i>
+                        </div>
+                        <h6 class="mb-0">Konten Beranda</h6>
+                    </div>
+                    <p class="text-muted small mb-2">Hero, statistik, keunggulan, program, FAQ, testimoni & peta.</p>
+                    <a href="{{ route('admin.pengaturan.beranda') }}" class="btn btn-sm btn-outline-success">
+                        <i class="bi bi-gear me-1"></i>Kelola
+                    </a>
+                </div>
+            </div>
+        </div>
+        {{-- Email --}}
+        <div class="col-md-4 mb-3">
+            <div class="card h-100 border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center mb-2">
                         <div class="bg-info bg-opacity-10 p-2 rounded me-2">
                             <i class="bi bi-envelope text-info fs-5"></i>
                         </div>

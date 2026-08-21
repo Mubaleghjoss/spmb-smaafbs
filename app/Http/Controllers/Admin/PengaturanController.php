@@ -75,6 +75,158 @@ class PengaturanController extends Controller
     }
 
     /**
+     * Halaman konten beranda (hero, statistik, keunggulan, program, FAQ, testimoni)
+     */
+    public function beranda()
+    {
+        $beranda = $this->pengaturanService->ambilKontenBeranda();
+        $statistikPeserta = $this->statistikPesertaBeranda();
+
+        return view('admin.pengaturan.beranda', compact('beranda', 'statistikPeserta'));
+    }
+
+    /**
+     * Simpan konten beranda + upload aset.
+     */
+    public function simpanBeranda(Request $request)
+    {
+        $request->validate([
+            'beranda_hero_badge' => 'nullable|string|max:100',
+            'beranda_hero_judul' => 'required|string|max:255',
+            'beranda_hero_subjudul' => 'nullable|string|max:1000',
+            'beranda_hero_tombol1_teks' => 'nullable|string|max:50',
+            'beranda_hero_tombol2_teks' => 'nullable|string|max:50',
+            'beranda_hero_gambar' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:4096',
+            'beranda_keunggulan_judul' => 'nullable|string|max:255',
+            'beranda_keunggulan_subjudul' => 'nullable|string|max:500',
+            'beranda_program_judul' => 'nullable|string|max:255',
+            'beranda_program_subjudul' => 'nullable|string|max:500',
+            'beranda_faq_judul' => 'nullable|string|max:255',
+            'beranda_testimoni_judul' => 'nullable|string|max:255',
+            'beranda_maps_embed' => 'nullable|string|max:2000',
+            'statistik' => 'nullable|array',
+            'statistik.*.icon' => 'nullable|string|max:50',
+            'statistik.*.angka' => 'nullable|string|max:20',
+            'statistik.*.suffix' => 'nullable|string|max:10',
+            'statistik.*.label' => 'nullable|string|max:60',
+            'keunggulan' => 'nullable|array',
+            'keunggulan.*.icon' => 'nullable|string|max:50',
+            'keunggulan.*.judul' => 'nullable|string|max:100',
+            'keunggulan.*.deskripsi' => 'nullable|string|max:400',
+            'program' => 'nullable|array',
+            'program.*.icon' => 'nullable|string|max:50',
+            'program.*.judul' => 'nullable|string|max:100',
+            'program.*.deskripsi' => 'nullable|string|max:400',
+            'faq' => 'nullable|array',
+            'faq.*.tanya' => 'nullable|string|max:255',
+            'faq.*.jawab' => 'nullable|string|max:1000',
+            'testimoni' => 'nullable|array',
+            'testimoni.*.nama' => 'nullable|string|max:100',
+            'testimoni.*.peran' => 'nullable|string|max:100',
+            'testimoni.*.isi' => 'nullable|string|max:600',
+            'testimoni.*.foto_lama' => 'nullable|string|max:255',
+            'testimoni.*.foto_file' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:2048',
+        ]);
+
+        // Filter repeatable: buang baris yang benar-benar kosong
+        $statistik = collect($request->input('statistik', []))
+            ->filter(fn($r) => filled($r['angka'] ?? null) || filled($r['label'] ?? null))
+            ->map(fn($r) => [
+                'icon' => trim($r['icon'] ?? '') ?: 'star-fill',
+                'angka' => trim($r['angka'] ?? ''),
+                'suffix' => trim($r['suffix'] ?? ''),
+                'label' => trim($r['label'] ?? ''),
+            ])->values()->all();
+
+        $keunggulan = collect($request->input('keunggulan', []))
+            ->filter(fn($r) => filled($r['judul'] ?? null))
+            ->map(fn($r) => [
+                'icon' => trim($r['icon'] ?? '') ?: 'check-circle',
+                'judul' => trim($r['judul'] ?? ''),
+                'deskripsi' => trim($r['deskripsi'] ?? ''),
+            ])->values()->all();
+
+        $program = collect($request->input('program', []))
+            ->filter(fn($r) => filled($r['judul'] ?? null))
+            ->map(fn($r) => [
+                'icon' => trim($r['icon'] ?? '') ?: 'star',
+                'judul' => trim($r['judul'] ?? ''),
+                'deskripsi' => trim($r['deskripsi'] ?? ''),
+            ])->values()->all();
+
+        $faq = collect($request->input('faq', []))
+            ->filter(fn($r) => filled($r['tanya'] ?? null))
+            ->map(fn($r) => [
+                'tanya' => trim($r['tanya'] ?? ''),
+                'jawab' => trim($r['jawab'] ?? ''),
+            ])->values()->all();
+
+        // Testimoni: gabungkan foto lama + upload baru per baris
+        $testimoniInput = $request->input('testimoni', []);
+        $testimoni = [];
+        foreach ($testimoniInput as $i => $r) {
+            if (blank($r['nama'] ?? null) && blank($r['isi'] ?? null)) {
+                continue;
+            }
+            $foto = trim($r['foto_lama'] ?? '');
+            if ($request->hasFile("testimoni.$i.foto_file")) {
+                $foto = $this->pengaturanService->uploadFotoTestimoni($request->file("testimoni.$i.foto_file"));
+            }
+            $testimoni[] = [
+                'nama' => trim($r['nama'] ?? ''),
+                'peran' => trim($r['peran'] ?? ''),
+                'isi' => trim($r['isi'] ?? ''),
+                'foto' => $foto,
+            ];
+        }
+
+        $this->pengaturanService->simpanKontenBeranda([
+            'beranda_hero_badge' => $request->input('beranda_hero_badge', ''),
+            'beranda_hero_judul' => $request->input('beranda_hero_judul', ''),
+            'beranda_hero_subjudul' => $request->input('beranda_hero_subjudul', ''),
+            'beranda_hero_tombol1_teks' => $request->input('beranda_hero_tombol1_teks', ''),
+            'beranda_hero_tombol2_teks' => $request->input('beranda_hero_tombol2_teks', ''),
+            'beranda_keunggulan_judul' => $request->input('beranda_keunggulan_judul', ''),
+            'beranda_keunggulan_subjudul' => $request->input('beranda_keunggulan_subjudul', ''),
+            'beranda_program_judul' => $request->input('beranda_program_judul', ''),
+            'beranda_program_subjudul' => $request->input('beranda_program_subjudul', ''),
+            'beranda_faq_judul' => $request->input('beranda_faq_judul', ''),
+            'beranda_testimoni_judul' => $request->input('beranda_testimoni_judul', ''),
+            'beranda_maps_embed' => $request->input('beranda_maps_embed', ''),
+            'beranda_statistik_aktif' => $request->boolean('beranda_statistik_aktif'),
+            'beranda_tahapan_aktif' => $request->boolean('beranda_tahapan_aktif'),
+            'beranda_statistik' => $statistik,
+            'beranda_keunggulan' => $keunggulan,
+            'beranda_program' => $program,
+            'beranda_faq' => $faq,
+            'beranda_testimoni' => $testimoni,
+        ]);
+
+        if ($request->hasFile('beranda_hero_gambar')) {
+            $this->pengaturanService->uploadHeroBeranda($request->file('beranda_hero_gambar'));
+        } elseif ($request->boolean('hapus_hero_gambar')) {
+            $this->pengaturanService->hapusHeroBeranda();
+        }
+
+        return back()->with('success', 'Konten beranda berhasil disimpan.');
+    }
+
+    /**
+     * Statistik peserta real untuk mengisi angka beranda (opsional dipakai admin).
+     */
+    private function statistikPesertaBeranda(): array
+    {
+        try {
+            $total = \App\Models\Peserta::count();
+            $lulus = \App\Models\Peserta::where('status_kuota', \App\Models\Peserta::STATUS_KUOTA_DALAM)->count();
+
+            return ['total_pendaftar' => $total, 'dalam_kuota' => $lulus];
+        } catch (\Throwable $e) {
+            return ['total_pendaftar' => 0, 'dalam_kuota' => 0];
+        }
+    }
+
+    /**
      * Halaman pengaturan email
      */
     public function email()

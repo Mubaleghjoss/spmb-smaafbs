@@ -373,6 +373,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/pengaturan', [\App\Http\Controllers\Admin\PengaturanController::class, 'index'])->name('pengaturan.index');
     Route::get('/pengaturan/branding', [\App\Http\Controllers\Admin\PengaturanController::class, 'branding'])->name('pengaturan.branding');
     Route::post('/pengaturan/branding', [\App\Http\Controllers\Admin\PengaturanController::class, 'simpanBranding'])->name('pengaturan.branding.simpan');
+    Route::get('/pengaturan/beranda', [\App\Http\Controllers\Admin\PengaturanController::class, 'beranda'])->name('pengaturan.beranda');
+    Route::post('/pengaturan/beranda', [\App\Http\Controllers\Admin\PengaturanController::class, 'simpanBeranda'])->name('pengaturan.beranda.simpan');
     Route::get('/pengaturan/email', [\App\Http\Controllers\Admin\PengaturanController::class, 'email'])->name('pengaturan.email');
     Route::post('/pengaturan/email', [\App\Http\Controllers\Admin\PengaturanController::class, 'simpanEmail'])->name('pengaturan.email.simpan');
     Route::post('/pengaturan/email/test', [\App\Http\Controllers\Admin\PengaturanController::class, 'testEmail'])->name('pengaturan.email.test');

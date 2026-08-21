@@ -2,6 +2,25 @@
 
 @section('title', 'Jadwal SPMB')
 
+@push('styles')
+<style>
+    .timeline { position: relative; padding-left: 2.5rem; }
+    .timeline::before {
+        content: ''; position: absolute; left: .85rem; top: .25rem; bottom: .25rem;
+        width: 3px; background: linear-gradient(var(--primary-color), var(--secondary-color));
+        border-radius: 3px;
+    }
+    .timeline-item { position: relative; margin-bottom: 1.75rem; }
+    .timeline-dot {
+        position: absolute; left: -2.5rem; top: .1rem;
+        width: 1.9rem; height: 1.9rem; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: .9rem; box-shadow: 0 0 0 4px #fff;
+    }
+    .timeline-card { border-radius: .9rem; }
+</style>
+@endpush
+
 @section('content')
 <section class="py-5">
     <div class="container">
@@ -9,55 +28,54 @@
             <h1 class="fw-bold">Jadwal SPMB</h1>
             <p class="text-muted lead">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? (date('Y') . '/' . (date('Y') + 1)) }}</p>
         </div>
-        
+
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="card border-0 shadow">
-                    <div class="card-body p-4">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead class="table-success">
-                                    <tr>
-                                        <th>Kegiatan</th>
-                                        <th>Tanggal</th>
-                                        <th>Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($jadwal as $item)
-                                    <tr>
-                                        <td>
-                                            <i class="bi bi-{{ $item['icon'] ?? 'calendar' }} text-success me-2"></i>
-                                            {{ $item['kegiatan'] }}
-                                        </td>
-                                        <td>{{ $item['tanggal'] }}</td>
-                                        <td>
-                                            @php
-                                                $badgeClass = match($item['status'] ?? 'info') {
-                                                    'dibuka' => 'bg-success',
-                                                    'akan_datang' => 'bg-secondary',
-                                                    'selesai' => 'bg-dark',
-                                                    'persiapan' => 'bg-warning text-dark',
-                                                    default => 'bg-info'
-                                                };
-                                            @endphp
-                                            <span class="badge {{ $badgeClass }}">{{ $item['keterangan'] ?? '-' }}</span>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                <div class="timeline">
+                    @foreach($jadwal as $item)
+                    @php
+                        $status = $item['status'] ?? 'info';
+                        $dotClass = match($status) {
+                            'dibuka' => 'bg-success',
+                            'akan_datang' => 'bg-secondary',
+                            'selesai' => 'bg-dark',
+                            'persiapan' => 'bg-warning',
+                            default => 'bg-info'
+                        };
+                        $badgeClass = match($status) {
+                            'dibuka' => 'bg-success',
+                            'akan_datang' => 'bg-secondary',
+                            'selesai' => 'bg-dark',
+                            'persiapan' => 'bg-warning text-dark',
+                            default => 'bg-info'
+                        };
+                    @endphp
+                    <div class="timeline-item">
+                        <span class="timeline-dot {{ $dotClass }}">
+                            <i class="bi bi-{{ $item['icon'] ?? 'calendar' }}"></i>
+                        </span>
+                        <div class="card timeline-card border-0 shadow-sm">
+                            <div class="card-body py-3">
+                                <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                                    <div>
+                                        <h6 class="fw-semibold mb-1">{{ $item['kegiatan'] }}</h6>
+                                        <div class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ $item['tanggal'] }}</div>
+                                    </div>
+                                    <span class="badge {{ $badgeClass }}">{{ $item['keterangan'] ?? '-' }}</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
-                
+
                 @if(!empty($catatan))
                 <div class="alert alert-info mt-4">
                     <i class="bi bi-info-circle me-2"></i>
                     <strong>Catatan:</strong> {{ $catatan }}
                 </div>
                 @endif
-                
+
                 <div class="text-center mt-4">
                     <a href="{{ route('daftar') }}" class="btn btn-success btn-lg">
                         <i class="bi bi-pencil-square me-2"></i>Daftar Sekarang

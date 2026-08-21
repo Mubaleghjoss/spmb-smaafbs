@@ -1224,4 +1224,172 @@ class PengaturanService
             ],
         ];
     }
+
+    /* =====================================================================
+     * KONTEN HALAMAN BERANDA (editable dari Admin > Pengaturan Umum)
+     * ===================================================================== */
+
+    /**
+     * Ambil semua konten halaman beranda dalam satu struktur.
+     */
+    public function ambilKontenBeranda(): array
+    {
+        return [
+            'hero_badge' => $this->ambil('beranda_hero_badge', 'Penerimaan Murid Baru'),
+            'hero_judul' => $this->ambil('beranda_hero_judul', 'Wujudkan Generasi Qurani Berprestasi'),
+            'hero_subjudul' => $this->ambil('beranda_hero_subjudul', 'Bergabunglah bersama kami dalam perjalanan pendidikan berbasis Al-Quran, akhlak mulia, dan keunggulan akademik.'),
+            'hero_gambar' => $this->ambil('beranda_hero_gambar', ''),
+            'hero_tombol1_teks' => $this->ambil('beranda_hero_tombol1_teks', 'Daftar Sekarang'),
+            'hero_tombol2_teks' => $this->ambil('beranda_hero_tombol2_teks', 'Lihat Alur SPMB'),
+            'statistik_aktif' => (bool) $this->ambil('beranda_statistik_aktif', true),
+            'statistik' => $this->ambilJsonBeranda('beranda_statistik', $this->defaultStatistikBeranda()),
+            'keunggulan_judul' => $this->ambil('beranda_keunggulan_judul', 'Kenapa Memilih Kami?'),
+            'keunggulan_subjudul' => $this->ambil('beranda_keunggulan_subjudul', 'Sistem pendaftaran modern yang memudahkan Anda di setiap langkah.'),
+            'keunggulan' => $this->ambilJsonBeranda('beranda_keunggulan', $this->defaultKeunggulanBeranda()),
+            'program_judul' => $this->ambil('beranda_program_judul', 'Program Unggulan'),
+            'program_subjudul' => $this->ambil('beranda_program_subjudul', 'Beragam program untuk mengembangkan potensi terbaik setiap siswa.'),
+            'program' => $this->ambilJsonBeranda('beranda_program', $this->defaultProgramBeranda()),
+            'tahapan_aktif' => (bool) $this->ambil('beranda_tahapan_aktif', true),
+            'faq_judul' => $this->ambil('beranda_faq_judul', 'Pertanyaan yang Sering Diajukan'),
+            'faq' => $this->ambilJsonBeranda('beranda_faq', $this->defaultFaqBeranda()),
+            'testimoni_judul' => $this->ambil('beranda_testimoni_judul', 'Apa Kata Mereka'),
+            'testimoni' => $this->ambilJsonBeranda('beranda_testimoni', $this->defaultTestimoniBeranda()),
+            'maps_embed' => $this->ambil('beranda_maps_embed', ''),
+        ];
+    }
+
+    /**
+     * Simpan konten teks/flag beranda (bukan file & bukan repeatable JSON).
+     */
+    public function simpanKontenBeranda(array $data): void
+    {
+        $teksKeys = [
+            'beranda_hero_badge', 'beranda_hero_judul', 'beranda_hero_subjudul',
+            'beranda_hero_tombol1_teks', 'beranda_hero_tombol2_teks',
+            'beranda_keunggulan_judul', 'beranda_keunggulan_subjudul',
+            'beranda_program_judul', 'beranda_program_subjudul',
+            'beranda_faq_judul', 'beranda_testimoni_judul', 'beranda_maps_embed',
+        ];
+        $simpan = [];
+        foreach ($teksKeys as $key) {
+            if (array_key_exists($key, $data)) {
+                $simpan[$key] = $data[$key];
+            }
+        }
+        // flag boolean
+        $simpan['beranda_statistik_aktif'] = !empty($data['beranda_statistik_aktif']);
+        $simpan['beranda_tahapan_aktif'] = !empty($data['beranda_tahapan_aktif']);
+
+        // repeatable JSON groups
+        if (isset($data['beranda_statistik'])) {
+            $simpan['beranda_statistik'] = json_encode(array_values($data['beranda_statistik']), JSON_UNESCAPED_UNICODE);
+        }
+        if (isset($data['beranda_keunggulan'])) {
+            $simpan['beranda_keunggulan'] = json_encode(array_values($data['beranda_keunggulan']), JSON_UNESCAPED_UNICODE);
+        }
+        if (isset($data['beranda_program'])) {
+            $simpan['beranda_program'] = json_encode(array_values($data['beranda_program']), JSON_UNESCAPED_UNICODE);
+        }
+        if (isset($data['beranda_faq'])) {
+            $simpan['beranda_faq'] = json_encode(array_values($data['beranda_faq']), JSON_UNESCAPED_UNICODE);
+        }
+        if (isset($data['beranda_testimoni'])) {
+            $simpan['beranda_testimoni'] = json_encode(array_values($data['beranda_testimoni']), JSON_UNESCAPED_UNICODE);
+        }
+
+        $this->simpanBanyak($simpan);
+    }
+
+    /**
+     * Upload gambar hero beranda.
+     */
+    public function uploadHeroBeranda(UploadedFile $file): string
+    {
+        $lama = $this->ambil('beranda_hero_gambar');
+        if ($lama && Storage::disk('public')->exists($lama)) {
+            Storage::disk('public')->delete($lama);
+        }
+        $path = $file->store('beranda', 'public');
+        $this->simpan('beranda_hero_gambar', $path);
+
+        return $path;
+    }
+
+    /**
+     * Hapus gambar hero beranda.
+     */
+    public function hapusHeroBeranda(): void
+    {
+        $lama = $this->ambil('beranda_hero_gambar');
+        if ($lama && Storage::disk('public')->exists($lama)) {
+            Storage::disk('public')->delete($lama);
+        }
+        $this->simpan('beranda_hero_gambar', '');
+    }
+
+    /**
+     * Upload satu foto testimoni; kembalikan path.
+     */
+    public function uploadFotoTestimoni(UploadedFile $file): string
+    {
+        return $file->store('beranda/testimoni', 'public');
+    }
+
+    private function ambilJsonBeranda(string $kunci, array $default): array
+    {
+        $json = $this->ambil($kunci, null);
+        if ($json === null || $json === '') {
+            return $default;
+        }
+        $data = json_decode($json, true);
+
+        return is_array($data) ? $data : $default;
+    }
+
+    private function defaultStatistikBeranda(): array
+    {
+        return [
+            ['icon' => 'people-fill', 'angka' => '1200', 'suffix' => '+', 'label' => 'Alumni'],
+            ['icon' => 'award-fill', 'angka' => '50', 'suffix' => '+', 'label' => 'Prestasi'],
+            ['icon' => 'mortarboard-fill', 'angka' => '30', 'suffix' => '+', 'label' => 'Tenaga Pendidik'],
+            ['icon' => 'calendar-heart-fill', 'angka' => '15', 'suffix' => '', 'label' => 'Tahun Berdiri'],
+        ];
+    }
+
+    private function defaultKeunggulanBeranda(): array
+    {
+        return [
+            ['icon' => 'calendar-check', 'judul' => 'Pendaftaran Online', 'deskripsi' => 'Daftar kapan saja dan di mana saja melalui sistem online kami yang mudah digunakan.'],
+            ['icon' => 'laptop', 'judul' => 'Tes Online', 'deskripsi' => 'Ikuti tes seleksi secara online dengan sistem CBT yang aman dan terpercaya.'],
+            ['icon' => 'shield-check', 'judul' => 'Proses Transparan', 'deskripsi' => 'Pantau status pendaftaran Anda secara real-time melalui dashboard peserta.'],
+        ];
+    }
+
+    private function defaultProgramBeranda(): array
+    {
+        return [
+            ['icon' => 'book-half', 'judul' => 'Tahfizh Al-Quran', 'deskripsi' => 'Program menghafal Al-Quran dengan bimbingan ustadz berpengalaman.'],
+            ['icon' => 'building', 'judul' => 'Boarding School', 'deskripsi' => 'Lingkungan asrama yang kondusif untuk pembinaan karakter 24 jam.'],
+            ['icon' => 'translate', 'judul' => 'Bilingual', 'deskripsi' => 'Penguatan bahasa Arab dan Inggris dalam keseharian.'],
+            ['icon' => 'trophy', 'judul' => 'Ekstrakurikuler', 'deskripsi' => 'Beragam kegiatan untuk mengasah bakat dan minat siswa.'],
+        ];
+    }
+
+    private function defaultFaqBeranda(): array
+    {
+        return [
+            ['tanya' => 'Kapan pendaftaran dibuka?', 'jawab' => 'Pendaftaran dibuka sesuai jadwal gelombang yang tertera di halaman Jadwal. Silakan cek halaman pendaftaran untuk gelombang yang sedang aktif.'],
+            ['tanya' => 'Apa saja syarat pendaftaran?', 'jawab' => 'Calon peserta menyiapkan data diri, data orang tua, asal sekolah/NISN, dan pas foto. Detail lengkap ada di halaman Syarat & Ketentuan.'],
+            ['tanya' => 'Bagaimana cara mengikuti tes?', 'jawab' => 'Tes dilaksanakan secara online (CBT) menggunakan token yang diberikan panitia sesuai jadwal masing-masing peserta.'],
+            ['tanya' => 'Bagaimana cara mengetahui hasil seleksi?', 'jawab' => 'Hasil seleksi dapat dilihat melalui dashboard peserta dan halaman Cek Status menggunakan nomor pendaftaran Anda.'],
+        ];
+    }
+
+    private function defaultTestimoniBeranda(): array
+    {
+        return [
+            ['nama' => 'Orang Tua Santri', 'peran' => 'Wali Murid', 'isi' => 'Proses pendaftaran sangat mudah dan transparan. Anak saya berkembang pesat dalam hafalan dan akhlak.', 'foto' => ''],
+            ['nama' => 'Alumni', 'peran' => 'Lulusan Terbaik', 'isi' => 'Pembinaan di sini membekali saya bukan hanya ilmu akademik, tapi juga karakter dan kemandirian.', 'foto' => ''],
+        ];
+    }
 }

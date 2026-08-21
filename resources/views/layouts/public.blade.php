@@ -250,5 +250,22 @@
     </footer>
 
     @stack('scripts')
+
+    {{-- Tombol WhatsApp mengambang --}}
+    @php
+        $waFloat = app(\App\Services\PengaturanService::class)->ambil('whatsapp_spmb', '');
+    @endphp
+    @if(!empty($waFloat))
+    <a href="https://wa.me/62{{ ltrim($waFloat, '0') }}" target="_blank" rel="noopener"
+       class="float-wa" aria-label="Hubungi via WhatsApp" title="Hubungi Tim SPMB">
+        <i class="bi bi-whatsapp"></i>
+    </a>
+    <style>
+        .float-wa{position:fixed;right:18px;bottom:18px;z-index:1030;width:56px;height:56px;border-radius:50%;
+            background:#25d366;color:#fff;display:flex;align-items:center;justify-content:center;
+            box-shadow:0 6px 18px rgba(0,0,0,.25);font-size:1.6rem;text-decoration:none;transition:transform .2s ease}
+        .float-wa:hover{transform:scale(1.08);color:#fff}
+    </style>
+    @endif
 </body>
 </html>
