@@ -48,12 +48,12 @@ $konten = [
     'beranda_statistik_aktif' => true,
     'beranda_tahapan_aktif' => true,
 
-    // --- STATISTIK (angka defensif; "auto" = jumlah pendaftar real) ---
+    // --- STATISTIK (angka real dari data sekolah; "auto" = jumlah pendaftar SPMB) ---
     'beranda_statistik' => [
-        ['icon' => 'people-fill', 'angka' => 'auto', 'suffix' => '', 'label' => 'Calon Pendaftar'],
-        ['icon' => 'list-check', 'angka' => '7', 'suffix' => '', 'label' => 'Tahapan Seleksi'],
-        ['icon' => 'book-fill', 'angka' => '100', 'suffix' => '%', 'label' => 'Berbasis Al-Quran'],
-        ['icon' => 'house-heart-fill', 'angka' => '24', 'suffix' => '/7', 'label' => 'Pembinaan Asrama'],
+        ['icon' => 'people-fill', 'angka' => '162', 'suffix' => '', 'label' => 'Siswa Aktif'],
+        ['icon' => 'mortarboard-fill', 'angka' => '80', 'suffix' => '+', 'label' => 'Alumni'],
+        ['icon' => 'person-badge-fill', 'angka' => '27', 'suffix' => '', 'label' => 'Guru & Tenaga Pendidik'],
+        ['icon' => 'door-open-fill', 'angka' => '7', 'suffix' => '', 'label' => 'Rombongan Belajar'],
     ],
 
     // --- KEUNGGULAN ---
