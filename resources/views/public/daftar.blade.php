@@ -106,6 +106,30 @@
                             <input type="hidden" name="gelombang_pendaftaran_id" x-model="gelombangId">
 
                             <div class="border rounded-3 p-3 mb-4 bg-light">
+                                {{-- Ringkasan periode terpilih (tampil saat picker diminimize) --}}
+                                <div x-cloak x-show="!periodeExpanded && selectedGelombang"
+                                     class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                        <div>
+                                            <div class="text-muted small">Periode pendaftaran dipilih</div>
+                                            <div class="fw-semibold" x-text="selectedTahun?.nama"></div>
+                                            <div class="small">
+                                                <span class="fw-medium" x-text="selectedGelombang?.nama"></span>
+                                                <span class="text-muted">&middot;</span>
+                                                <span class="text-muted" x-text="selectedGelombang?.periode"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <button type="button"
+                                            class="btn btn-sm btn-outline-success align-self-start align-self-sm-center"
+                                            @click="periodeExpanded = true">
+                                        <i class="bi bi-pencil-square me-1"></i>Ubah
+                                    </button>
+                                </div>
+
+                                {{-- Picker lengkap (tersembunyi otomatis setelah gelombang dipilih) --}}
+                                <div x-show="periodeExpanded || !selectedGelombang">
                                 <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-3">
                                     <div>
                                         <h5 class="mb-1">Pilih Periode Pendaftaran</h5>
@@ -119,7 +143,7 @@
                                 </div>
 
                                 <div class="row g-2 mb-3" role="tablist" aria-label="Tahun ajaran">
-                                    <template x-for="tahun in periode" :key="tahun.id">
+                                    <template x-for="tahun in periodeTerbuka" :key="tahun.id">
                                         <div class="col-md-6">
                                             <button type="button"
                                                     class="w-100 h-100 text-start border rounded-3 p-3 bg-white"
@@ -241,6 +265,7 @@
                                         </div>
                                     </div>
                                 </template>
+                                </div>{{-- /picker lengkap --}}
 
                                 @error('tahun_ajaran_id')
                                     <div class="text-danger small mt-2">{{ $message }}</div>
@@ -450,8 +475,14 @@ function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) 
         kelasTujuan: kelasLama,
         showPassword: false,
         loading: false,
+        periodeExpanded: false,
         get selectedTahun() {
             return this.periode.find(tahun => tahun.id === this.tahunAjaranId) ?? null;
+        },
+        get periodeTerbuka() {
+            // Hanya tampilkan tahun ajaran yang punya gelombang sedang dibuka
+            const terbuka = this.periode.filter(tahun => this.tahunTerbuka(tahun));
+            return terbuka.length > 0 ? terbuka : this.periode;
         },
         get gelombangTersedia() {
             return this.selectedTahun?.gelombang ?? [];
@@ -463,11 +494,17 @@ function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) 
             return this.gelombangTersedia.find(gelombang => gelombang.id === this.gelombangId) ?? null;
         },
         init() {
-            if (!this.tahunAjaranId && this.periode.length > 0) {
-                this.tahunAjaranId = this.periode[0].id;
+            // Pilih tahun ajaran yang terbuka sebagai default jika belum ada pilihan valid
+            const terbuka = this.periode.filter(tahun => this.tahunTerbuka(tahun));
+            const daftarPilih = terbuka.length > 0 ? terbuka : this.periode;
+            const tahunValid = daftarPilih.some(tahun => tahun.id === this.tahunAjaranId);
+            if (!tahunValid && daftarPilih.length > 0) {
+                this.tahunAjaranId = daftarPilih[0].id;
             }
             this.pilihTahun(true);
             this.ubahJenis();
+            // Minimize otomatis jika gelombang sudah terpilih (mis. hanya 1 gelombang terbuka)
+            this.periodeExpanded = !this.selectedGelombang;
         },
         tahunTerbuka(tahun) {
             return (tahun.gelombang ?? []).some(gelombang => gelombang.dibuka);
@@ -497,6 +534,8 @@ function formDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama) 
             }
 
             this.gelombangId = gelombang.id;
+            // Sembunyikan picker setelah gelombang dipilih agar tampilan lebih clean
+            this.periodeExpanded = false;
         },
         ubahJenis() {
             if (this.jenisPendaftaran === 'siswa_baru') {

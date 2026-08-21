@@ -41,6 +41,8 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
     
     <style>
+        [x-cloak] { display: none !important; }
+
         :root {
             --primary-color: {{ $branding['warna_primer'] ?? '#1a5f2a' }};
             --secondary-color: {{ $branding['warna_sekunder'] ?? '#2e8b57' }};
