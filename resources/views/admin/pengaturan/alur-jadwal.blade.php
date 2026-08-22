@@ -2,7 +2,7 @@
 
 @section('title', 'Alur & Jadwal SPMB')
 
-@push('styles')
+@section('content')
 <style>
     .aj-head { background: linear-gradient(135deg, #10b981, #059669); color:#fff; border-radius:1rem; }
     .aj-card { border:0; border-radius:1rem; overflow:hidden; transition:transform .2s, box-shadow .2s; }
@@ -11,26 +11,27 @@
     .aj-num { width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center;
               font-weight:800; color:#fff; flex-shrink:0; font-size:1.1rem; background:linear-gradient(135deg,#10b981,#059669); }
     .aj-card.locked .aj-num { background:#cbd5e1; }
-    .aj-title { font-weight:700; line-height:1.2; font-size:1rem; }
-    .aj-desc { font-size:.78rem; color:#64748b; line-height:1.25; }
+    .aj-title { font-weight:700; line-height:1.2; font-size:1rem; margin:0; }
+    .aj-desc { font-size:.78rem; color:#64748b; line-height:1.3; margin:.15rem 0 0; }
     .aj-badge-fixed { font-size:.68rem; font-weight:700; color:#6b7280; background:#eef2f7; border:1px solid #e5e7eb;
                       padding:.25rem .55rem; border-radius:999px; white-space:nowrap; }
-    .aj-slot { border:1px solid #eef2f7; border-radius:.75rem; padding:.6rem .7rem; background:#fbfdff; }
-    .aj-slot-title { font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; margin-bottom:.4rem;
+    .aj-slot { border:1px solid #eef2f7; border-radius:.75rem; padding:.65rem .7rem; background:#fbfdff; }
+    .aj-slot-title { font-size:.72rem; font-weight:700; letter-spacing:.03em; text-transform:uppercase; margin-bottom:.45rem;
                      display:flex; align-items:center; gap:.35rem; }
     .aj-slot-buka .aj-slot-title { color:#059669; }
     .aj-slot-tutup .aj-slot-title { color:#dc2626; }
     .aj-card .form-label.sm { font-size:.72rem; font-weight:600; color:#64748b; margin-bottom:.15rem; }
+    .aj-card .form-control-sm { font-size:.82rem; }
     .aj-preview { font-size:.8rem; color:#475569; background:#f0fdf4; border:1px dashed #86efac; border-radius:.6rem; padding:.5rem .75rem; }
     .aj-switch { display:flex; align-items:center; justify-content:space-between; background:#f8fafc; border:1px solid #eef2f7;
                  border-radius:.75rem; padding:.5rem .75rem; margin-bottom:.85rem; }
-    .aj-switch-label { font-size:.85rem; font-weight:600; }
+    .aj-switch .form-check-input { margin:0; cursor:pointer; }
+    .aj-switch-label { font-size:.85rem; font-weight:600; margin:0; }
+    .aj-picker-label { min-width:110px; }
     .gel-pill .badge { font-weight:600; }
     [x-cloak] { display:none !important; }
+    @media (max-width: 575.98px){ .aj-picker-label{ min-width:100%; } }
 </style>
-@endpush
-
-@section('content')
 <div class="container-fluid py-4">
 
     {{-- Header --}}
@@ -69,7 +70,7 @@
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
-                <span class="text-muted small fw-semibold" style="min-width:110px;"><i class="bi bi-calendar3 me-1"></i>Tahun Ajaran:</span>
+                <span class="text-muted small fw-semibold aj-picker-label"><i class="bi bi-calendar3 me-1"></i>Tahun Ajaran:</span>
                 @foreach($daftarTahun as $ta)
                     <form action="{{ route('admin.periode-aktif.ganti') }}" method="POST" class="d-inline">
                         @csrf
@@ -88,7 +89,7 @@
             @if($tahunAjaranId)
             <hr class="my-2">
             <div class="d-flex flex-wrap align-items-center gap-2">
-                <span class="text-muted small fw-semibold" style="min-width:110px;"><i class="bi bi-layers-half me-1"></i>Gelombang:</span>
+                <span class="text-muted small fw-semibold aj-picker-label"><i class="bi bi-layers-half me-1"></i>Gelombang:</span>
                 @forelse($daftarGelombang as $g)
                     @php $st = $g->statusPendaftaran(); @endphp
                     <a href="{{ route('admin.alur-jadwal.index', ['gelombang' => $g->id]) }}"
