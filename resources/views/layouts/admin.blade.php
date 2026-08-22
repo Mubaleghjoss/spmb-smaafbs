@@ -515,6 +515,12 @@
                 <i class="bi bi-signpost-2-fill"></i>Alur &amp; Tahap
             </a>
 
+            @if($pengguna->bisaAkses('pengaturan'))
+            <a class="nav-link {{ request()->routeIs('admin.alur-jadwal.*') ? 'active' : '' }}" href="{{ route('admin.alur-jadwal.index') }}">
+                <i class="bi bi-calendar-week-fill"></i>Alur &amp; Jadwal
+            </a>
+            @endif
+
             <a class="nav-link {{ request()->routeIs('admin.alur-peserta.*') ? 'active' : '' }}" href="{{ route('admin.alur-peserta.index') }}">
                 <i class="bi bi-people-fill"></i>Alur Peserta
             </a>

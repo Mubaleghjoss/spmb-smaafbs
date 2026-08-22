@@ -243,6 +243,13 @@
                                             <i class="bi bi-calendar-event me-1"></i>{{ $item['jadwal_label'] }}
                                         </div>
                                     @endif
+
+                                    {{-- Catatan/note dari admin untuk tahap ini (per periode) --}}
+                                    @if(!empty($item['keterangan']))
+                                        <div class="alert alert-light border py-2 px-3 mb-2 small">
+                                            <i class="bi bi-pin-angle me-1 text-success"></i>{{ $item['keterangan'] }}
+                                        </div>
+                                    @endif
                                     
                                     {{-- Info berkas belum lengkap untuk tahap 2 (Isi Formulir) --}}
                                     @if($nomor == 2 && $item['selesai'] && isset($berkasBelumLengkap) && $berkasBelumLengkap['count'] > 0)

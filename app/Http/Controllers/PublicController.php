@@ -50,10 +50,26 @@ class PublicController extends Controller
      */
     public function jadwal(): View
     {
-        $jadwal = $this->pengaturanService->ambilJadwal();
-        $catatan = $this->pengaturanService->ambilCatatanJadwal();
         $branding = $this->pengaturanService->ambilBranding();
-        
+
+        // Jadwal per periode: pakai tahun ajaran default/aktif untuk publik.
+        $periode = app(\App\Services\PeriodeContextService::class);
+        $tahunAjaranId = optional($periode->pilihanTahunAjaran()->firstWhere('default', true))->id
+            ?? optional($periode->pilihanTahunAjaran()->first())->id;
+
+        if ($tahunAjaranId) {
+            $jadwal = app(\App\Services\JadwalAlurService::class)->jadwalPublik((int) $tahunAjaranId);
+        } else {
+            $jadwal = $this->pengaturanService->ambilJadwal();
+        }
+
+        // Fallback: kalau jadwal periode kosong semua, pakai jadwal lama.
+        if (empty($jadwal)) {
+            $jadwal = $this->pengaturanService->ambilJadwal();
+        }
+
+        $catatan = $this->pengaturanService->ambilCatatanJadwal();
+
         return view('public.jadwal', compact('jadwal', 'catatan', 'branding'));
     }
 

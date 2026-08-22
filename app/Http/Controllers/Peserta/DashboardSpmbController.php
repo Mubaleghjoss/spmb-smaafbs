@@ -328,6 +328,7 @@ class DashboardSpmbController extends Controller
                 'alasan' => $statusInfo['alasan'],
                 'tanggal_buka' => $statusInfo['tanggal_buka'],
                 'jadwal_label' => $statusInfo['jadwal_label'] ?? null,
+                'keterangan' => $statusInfo['keterangan'] ?? null,
             ];
         }
         
@@ -339,7 +340,7 @@ class DashboardSpmbController extends Controller
      */
     private function cekTahapanDibukaDetail(array $pengaturan, int $tahap, $tahapanPeserta): array
     {
-        $result = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null];
+        $result = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'keterangan' => null];
         
         // Tahap 1 selalu dibuka
         if ($tahap === 1) {
@@ -355,6 +356,15 @@ class DashboardSpmbController extends Controller
             return $result;
         }
 
+        // Jadwal PER PERIODE: pakai tahun ajaran peserta ybs (bukan konteks admin).
+        $tahunAjaranId = $tahapanPeserta?->peserta?->tahun_ajaran_id
+            ?? optional($tahapanPeserta?->peserta)->tahun_ajaran_id;
+
+        if ($tahunAjaranId) {
+            return app(\App\Services\JadwalAlurService::class)->statusTahap((int) $tahunAjaranId, $tahap);
+        }
+
+        // Fallback lama (tanpa tahun ajaran): pengaturan global.
         $key = "tahap_{$tahap}";
         return app(\App\Services\PengaturanService::class)->statusAksesTahap(
             $tahap,
