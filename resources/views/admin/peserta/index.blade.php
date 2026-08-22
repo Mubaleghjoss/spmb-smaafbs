@@ -17,6 +17,13 @@
     @media (max-width: 992px){
         .tabel-peserta{font-size:.78rem;}
     }
+    /* Rekap Data Formulir: kartu kompak & teks tidak melebihi batas */
+    .rekap-formulir .card-header h6{font-size:.9rem;}
+    .rekap-formulir .list-group-item{padding:.5rem .75rem;}
+    .rekap-formulir .rekap-nama{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;font-size:.85rem;}
+    .rekap-formulir .list-group-item small{font-size:.72rem;}
+    .rekap-formulir .min-w-0{min-width:0;flex:1 1 auto;}
+    .rekap-formulir .badge{flex-shrink:0;}
 </style>
 <div class="container-fluid">
     @php
@@ -217,7 +224,7 @@
     </div>
 
     @if(!empty($rekapFormulir))
-        <div class="mb-4">
+        <div class="mb-4 rekap-formulir">
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
                 <div>
                     <h5 class="mb-1">Rekap Data Formulir</h5>
@@ -246,7 +253,7 @@
                                     <a href="{{ route('admin.peserta.index', $rekapQuery) }}" class="list-group-item list-group-item-action">
                                         <div class="d-flex justify-content-between align-items-start gap-2">
                                             <div class="min-w-0">
-                                                <div class="fw-semibold text-truncate" title="{{ $item->nama }}">{{ $item->nama }}</div>
+                                                <div class="rekap-nama" title="{{ $item->nama }}">{{ $item->nama }}</div>
                                                 <small class="text-muted">
                                                     Kuota {{ number_format((int) $item->dalam_kuota) }}
                                                     &middot;
