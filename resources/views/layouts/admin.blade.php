@@ -169,6 +169,21 @@
             color: #fff;
         }
 
+        /* Badge antrean di menu sidebar */
+        .sidebar-nav .nav-link .queue-badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: #fff;
+            border-radius: 999px;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.05rem 0.45rem;
+            min-width: 20px;
+            text-align: center;
+            line-height: 1.4;
+            box-shadow: 0 2px 6px rgba(239,68,68,.5);
+        }
+
         /* Sidebar Footer */
         .sidebar-footer {
             padding: 12px;
@@ -420,25 +435,40 @@
 
         <!-- Navigation -->
         <div class="sidebar-nav">
+            @php
+                $navAntre = 0;
+                try {
+                    $navStat = app(\App\Services\VerifikasiSpmbService::class)->ambilStatistik();
+                    $navAntre = ($navStat['pembayaran_menunggu'] ?? 0)
+                        + ($navStat['formulir_menunggu'] ?? 0)
+                        + ($navStat['hasil_tes_menunggu'] ?? 0)
+                        + ($navStat['pelunasan_menunggu'] ?? 0);
+                } catch (\Throwable $e) { $navAntre = 0; }
+            @endphp
             <div class="nav-section-label">Menu Utama</div>
 
             <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" href="{{ route('admin.dashboard') }}">
                 <i class="bi bi-grid-1x2-fill"></i>Dashboard
             </a>
 
+            <a class="nav-link {{ request()->routeIs('admin.alur-tahap') ? 'active' : '' }}" href="{{ route('admin.alur-tahap') }}">
+                <i class="bi bi-signpost-2-fill"></i>Alur &amp; Tahap
+            </a>
+
             <a class="nav-link {{ request()->routeIs('admin.alur-peserta.*') ? 'active' : '' }}" href="{{ route('admin.alur-peserta.index') }}">
-                <i class="bi bi-signpost-split-fill"></i>Alur Peserta
+                <i class="bi bi-people-fill"></i>Alur Peserta
             </a>
 
             @if($pengguna->bisaAkses('peserta'))
             <a class="nav-link {{ request()->routeIs('admin.peserta.*') ? 'active' : '' }}" href="{{ route('admin.peserta.index') }}">
-                <i class="bi bi-people-fill"></i>Peserta
+                <i class="bi bi-person-vcard-fill"></i>Data Peserta
             </a>
             @endif
 
             @if($pengguna->bisaAkses('verifikasi'))
             <a class="nav-link {{ request()->routeIs('admin.verifikasi.*') ? 'active' : '' }}" href="{{ route('admin.verifikasi.index') }}">
                 <i class="bi bi-clipboard-check-fill"></i>Verifikasi SPMB
+                @if($navAntre > 0)<span class="queue-badge">{{ $navAntre > 99 ? '99+' : $navAntre }}</span>@endif
             </a>
             @endif
 

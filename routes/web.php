@@ -145,6 +145,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     
     // Verifikasi SPMB
     Route::get('/verifikasi', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'index'])->name('verifikasi.index');
+    Route::get('/alur-tahap', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'alurTahap'])->name('alur-tahap');
     Route::get('/verifikasi/peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'daftarPeserta'])->name('verifikasi.peserta');
     Route::get('/verifikasi/history/{peserta}', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'historyPeserta'])->name('verifikasi.history');
     Route::get('/verifikasi/ekspor-peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'eksporPeserta'])->name('verifikasi.ekspor-peserta');

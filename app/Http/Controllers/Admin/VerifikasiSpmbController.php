@@ -51,6 +51,31 @@ class VerifikasiSpmbController extends Controller
     }
 
     /**
+     * Halaman peta "Alur & Tahap SPMB" — panduan terpusat 7 tahap.
+     * Menampilkan yang dikerjakan peserta, yang diverifikasi admin,
+     * jumlah antrean, dan pintasan ke halaman verifikasi + pengaturan tiap tahap.
+     */
+    public function alurTahap(): View
+    {
+        $statistik = $this->verifikasiService->ambilStatistik();
+
+        // Jumlah wawancara menunggu (tahap 5): sudah lolos tes, belum lolos wawancara
+        $wawancaraMenunggu = \App\Models\Peserta::whereHas('tahapanSpmb', function ($q) {
+            $q->where('tahap_4_selesai', true)->where('tahap_5_selesai', false);
+        })->count();
+
+        // Kelulusan menunggu keputusan (tahap 7): di tahap 7 tapi status masih menunggu
+        $kelulusanMenunggu = \App\Models\Peserta::whereHas('tahapanSpmb', function ($q) {
+            $q->where('tahap_saat_ini', '>=', 6)
+              ->where(function ($s) {
+                  $s->whereNull('status_kelulusan')->orWhere('status_kelulusan', 'menunggu');
+              });
+        })->count();
+
+        return view('admin.verifikasi.alur-tahap', compact('statistik', 'wawancaraMenunggu', 'kelulusanMenunggu'));
+    }
+
+    /**
      * Daftar peserta untuk verifikasi
      */
     public function daftarPeserta(Request $request): View
