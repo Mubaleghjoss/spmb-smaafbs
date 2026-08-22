@@ -39,7 +39,9 @@
     @endif
     
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
-    
+
+    @include('partials.pwa-head')
+
     <style>
         [x-cloak] { display: none !important; }
 
@@ -250,6 +252,8 @@
     </footer>
 
     @stack('scripts')
+
+    @include('partials.pwa-scripts')
 
     {{-- Tombol WhatsApp mengambang --}}
     @php

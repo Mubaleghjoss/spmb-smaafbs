@@ -10,25 +10,65 @@
             <p class="text-muted">Selamat datang, {{ $peserta->nama }}</p>
         </div>
     </div>
-    
-    <!-- Info Peserta -->
+
+    {{-- Kartu selamat datang & kredensial akun (khusus setelah daftar berhasil) --}}
+    @if(session('pendaftaran_berhasil'))
+    <div class="card border-0 shadow-sm mb-4 border-start border-4 border-success">
+        <div class="card-body">
+            <div class="d-flex align-items-start gap-2 mb-2">
+                <i class="bi bi-check-circle-fill text-success fs-4"></i>
+                <div>
+                    <h5 class="mb-1">Pendaftaran Berhasil!</h5>
+                    <p class="text-muted small mb-0">Simpan info akun di bawah ini. Anda otomatis sudah masuk ke dashboard.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    @endif
+
+    {{-- Kartu Akun Saya (username & password = No HP) --}}
     <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex align-items-center gap-2">
+            <i class="bi bi-key-fill text-success"></i>
+            <strong>Akun Saya</strong>
+        </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
-                    <p class="mb-1"><strong>Nomor Pendaftaran:</strong></p>
-                    <p class="h5 text-success">{{ $peserta->nomor_pendaftaran }}</p>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Username & Password</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold" id="akunHp">{{ $peserta->telepon }}</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                onclick="salinTeks('{{ $peserta->telepon }}', this)" title="Salin">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted" style="font-size:.75rem">No HP yang didaftarkan</div>
                 </div>
-                <div class="col-md-4">
-                    <p class="mb-1"><strong>Tahap Saat Ini:</strong></p>
-                    <p class="h5">Tahap {{ $tahapan->tahap_saat_ini ?? 1 }} dari 7</p>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">No Pendaftaran</div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fw-bold text-success">{{ $peserta->nomor_pendaftaran }}</span>
+                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
+                                onclick="salinTeks('{{ $peserta->nomor_pendaftaran }}', this)" title="Salin">
+                            <i class="bi bi-clipboard"></i>
+                        </button>
+                    </div>
+                    <div class="text-muted" style="font-size:.75rem">Dipakai admin untuk token tes online</div>
                 </div>
-                <div class="col-md-4">
-                    <p class="mb-1"><strong>Status Kuota:</strong></p>
-                    <p class="h5 mb-0">
-                        <span class="badge bg-{{ $peserta->status_kuota_badge }}">{{ $peserta->status_kuota_label }}</span>
-                    </p>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Tahap Saat Ini</div>
+                    <div class="fw-bold">Tahap {{ $tahapan->tahap_saat_ini ?? 1 }} dari 7</div>
                 </div>
+                <div class="col-sm-6 col-lg-3">
+                    <div class="text-muted small">Status Kuota</div>
+                    <span class="badge bg-{{ $peserta->status_kuota_badge }}">{{ $peserta->status_kuota_label }}</span>
+                </div>
+            </div>
+            <div class="alert alert-light border mt-3 mb-0 small">
+                <i class="bi bi-info-circle me-1 text-success"></i>
+                Login berikutnya cukup dengan <strong>No HP</strong> di atas (sebagai username sekaligus password).
+                Untuk <strong>tes online</strong>, gunakan token yang disiapkan admin.
             </div>
         </div>
     </div>
@@ -445,3 +485,30 @@
     </div>
 </div>
 @endsection
+
+@push('scripts')
+<script>
+function salinTeks(teks, btn){
+    const done = () => {
+        if(!btn) return;
+        const old = btn.innerHTML;
+        btn.innerHTML = '<i class="bi bi-check-lg"></i>';
+        btn.classList.add('btn-success','text-white');
+        btn.classList.remove('btn-outline-secondary');
+        setTimeout(()=>{ btn.innerHTML = old; btn.classList.remove('btn-success','text-white'); btn.classList.add('btn-outline-secondary'); }, 1200);
+    };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(teks).then(done).catch(()=>fallbackCopy(teks, done));
+    } else {
+        fallbackCopy(teks, done);
+    }
+}
+function fallbackCopy(teks, cb){
+    const ta = document.createElement('textarea');
+    ta.value = teks; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); cb && cb(); } catch(e){}
+    document.body.removeChild(ta);
+}
+</script>
+@endpush

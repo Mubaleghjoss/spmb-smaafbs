@@ -9,6 +9,8 @@
     <link rel="icon" href="{{ asset('storage/' . $branding['favicon']) }}" type="image/x-icon">
     @endif
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+
+    @include('partials.pwa-head')
 </head>
 <body class="bg-light">
     <!-- Navbar -->
@@ -72,5 +74,7 @@
     <main>@yield('content')</main>
 
     @stack('scripts')
+
+    @include('partials.pwa-scripts')
 </body>
 </html>

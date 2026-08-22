@@ -1,0 +1,46 @@
+{
+    "name": "SPMB SMA Al Furqon Boarding School",
+    "short_name": "SPMB AFBS",
+    "description": "Seleksi Penerimaan Murid Baru - daftar, isi biodata, dan pantau tahapan dari HP.",
+    "start_url": "/?source=pwa",
+    "scope": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "background_color": "#ffffff",
+    "theme_color": "#1a5f2a",
+    "lang": "id",
+    "icons": [
+        {
+            "src": "/icons/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any"
+        },
+        {
+            "src": "/icons/maskable-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "maskable"
+        }
+    ],
+    "shortcuts": [
+        {
+            "name": "Daftar SPMB",
+            "short_name": "Daftar",
+            "url": "/daftar?source=pwa",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Dashboard Peserta",
+            "short_name": "Dashboard",
+            "url": "/peserta/dashboard?source=pwa",
+            "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+        }
+    ]
+}
