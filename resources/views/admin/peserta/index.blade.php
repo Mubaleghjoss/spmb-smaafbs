@@ -3,6 +3,21 @@
 @section('title', 'Manajemen Peserta')
 
 @section('content')
+<style>
+    /* Tabel peserta: kompak agar tidak melebihi batas / teks kepanjangan */
+    .tabel-peserta{font-size:.82rem;}
+    .tabel-peserta th{font-size:.72rem;text-transform:uppercase;letter-spacing:.02em;white-space:nowrap;color:#475569;}
+    .tabel-peserta td{vertical-align:middle;}
+    .tabel-peserta code{font-size:.78rem;word-break:break-all;}
+    .tabel-peserta .badge{font-weight:500;font-size:.68rem;}
+    .tabel-peserta .col-nama{max-width:180px;}
+    .tabel-peserta .col-nama .nama-teks{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;}
+    .tabel-peserta .col-kategori{max-width:180px;}
+    .tabel-peserta .btn{font-size:.74rem;padding:.25rem .5rem;}
+    @media (max-width: 992px){
+        .tabel-peserta{font-size:.78rem;}
+    }
+</style>
 <div class="container-fluid">
     @php
         $tahapLabels = [
@@ -376,7 +391,7 @@
         </div>
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover">
+                <table class="table table-hover tabel-peserta align-middle">
                     <thead>
                         <tr>
                             <th width="40">
@@ -414,7 +429,7 @@
                                         <span class="badge bg-danger">Dihapus</span>
                                     @endif
                                 </td>
-                                <td>{{ $p->nama }}</td>
+                                <td class="col-nama"><span class="nama-teks" title="{{ $p->nama }}">{{ $p->nama }}</span></td>
                                 <td>{{ $p->telepon ?? '-' }}</td>
                                 <td style="min-width: 220px;">
                                     <div class="small">
@@ -431,7 +446,7 @@
                                         <span class="text-muted small">(sudah diubah)</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="col-kategori">
                                     <div class="d-flex flex-wrap gap-1">
                                         <span class="badge bg-dark">{{ $p->tahunAjaran?->nama ?? 'Belum ada tahun' }}</span>
                                         <span class="badge bg-secondary">{{ $p->gelombangPendaftaran?->nama ?? 'Belum ada gelombang' }}</span>
