@@ -3,22 +3,21 @@
 @section('title', 'Cek Status Kelulusan')
 
 @section('content')
-<section class="py-5">
+<section class="tk-hero">
+    <div class="container text-center">
+        <span class="tk-eyebrow mb-3"><span class="dot"></span>Cek Status</span>
+        <h1 class="fw-bold display-6 mb-2">Cek Status Kelulusan</h1>
+        <p class="tk-sub mb-0" style="opacity:.92">Masukkan Nomor Pendaftaran SPMB untuk melihat status kelulusan Anda</p>
+    </div>
+</section>
+
+<section class="tk-section cream">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-6">
-                {{-- Header --}}
-                <div class="text-center mb-4">
-                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-success bg-opacity-10 mb-3" style="width: 80px; height: 80px;">
-                        <i class="bi bi-search text-success" style="font-size: 2rem;"></i>
-                    </div>
-                    <h2 class="fw-bold">Cek Status Kelulusan</h2>
-                    <p class="text-muted">Masukkan Nomor Pendaftaran SPMB untuk melihat status kelulusan Anda</p>
-                </div>
-
                 {{-- Form --}}
-                <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-body p-4">
+                <div class="tk-card mb-4 reveal">
+                    <div class="core">
                         <form method="POST" action="{{ route('cek-status') }}">
                             @csrf
                             <div class="mb-3">

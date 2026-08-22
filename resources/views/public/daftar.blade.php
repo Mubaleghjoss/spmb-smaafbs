@@ -15,18 +15,19 @@
 @endpush
 
 @section('content')
-<section class="py-4 py-md-5">
+<section class="tk-hero" style="padding: clamp(2.5rem,6vw,4rem) 0;">
+    <div class="container text-center">
+        <span class="tk-eyebrow mb-3"><span class="dot"></span>Pendaftaran</span>
+        <h1 class="fw-bold display-6 mb-1">Pendaftaran SPMB</h1>
+        <p class="tk-sub mb-0" style="opacity:.9">{{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }} · Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
+    </div>
+</section>
+<section class="tk-section cream" style="padding: clamp(2rem,5vw,4rem) 0;">
     <div class="container">
         <div class="row justify-content-center">
             <div class="col-lg-8">
-                <div class="card border-0 shadow">
-                    <div class="card-body p-3 p-md-5">
-                        <div class="text-center mb-4">
-                            <h2 class="fw-bold h3">Pendaftaran SPMB</h2>
-                            <p class="text-muted mb-1">{{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
-                            <p class="text-muted small">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
-                        </div>
-
+                <div class="tk-card">
+                    <div class="core p-3 p-md-4">
                         @if(!$pendaftaranDibuka)
                         {{-- Pendaftaran belum dibuka --}}
                         <div class="text-center py-5">

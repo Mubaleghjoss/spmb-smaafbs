@@ -42,6 +42,11 @@
 
     @include('partials.pwa-head')
 
+    {{-- Font premium (gaya "Taste", tema hijau) --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap" rel="stylesheet">
+
     <style>
         [x-cloak] { display: none !important; }
 
@@ -49,60 +54,150 @@
             --primary-color: {{ $branding['warna_primer'] ?? '#1a5f2a' }};
             --secondary-color: {{ $branding['warna_sekunder'] ?? '#2e8b57' }};
             --accent-color: #ffc107;
+            /* Tema hijau (design system publik) */
+            --tk-ease: cubic-bezier(0.22, 1, 0.36, 1);
+            --tk-ink: #10241a;
+            --tk-muted: #5b6b63;
+            --tk-cream: #f6f8f5;
+            --tk-green: var(--secondary-color);
+            --tk-green-deep: var(--primary-color);
+            --tk-green-soft: rgba(46,139,87,.10);
+            --tk-green-ring: rgba(46,139,87,.16);
         }
-        
-        .navbar-brand img {
-            height: 50px;
+
+        body {
+            font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+            color: var(--tk-ink);
         }
-        
+        h1, h2, h3, .display-5, .display-6, .tk-serif {
+            font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.01em;
+        }
+
+        /* ===== Navbar ===== */
+        .navbar { backdrop-filter: saturate(1.1); }
+        .navbar-brand img { height: 50px; }
+        .navbar .nav-link { font-weight: 600; color: #33463d; border-radius: 999px; padding: .4rem .85rem !important; transition: color .2s var(--tk-ease), background .2s var(--tk-ease); }
+        .navbar .nav-link:hover { color: var(--tk-green-deep); background: var(--tk-green-soft); }
+        .navbar .nav-link.active { color: #fff; background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+
+        /* ===== Buttons (pil + ikon lingkaran) ===== */
+        .btn { border-radius: 999px; font-weight: 600; }
+        .btn-success { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border: 0; box-shadow: 0 14px 30px -14px rgba(16,36,26,.55); }
+        .btn-success:hover, .btn-success:focus { filter: brightness(1.05); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+        .btn-outline-success { border-color: var(--secondary-color); color: var(--tk-green-deep); }
+        .btn-outline-success:hover { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border-color: transparent; }
+        .btn-warning { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); border: 0; color: #fff; box-shadow: 0 14px 30px -14px rgba(16,36,26,.55); }
+        .btn-warning:hover { color: #fff; filter: brightness(1.05); background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+
+        .tk-eyebrow {
+            display: inline-flex; align-items: center; gap: .5rem;
+            font-size: .7rem; font-weight: 700; letter-spacing: .18em; text-transform: uppercase;
+            padding: .35rem .85rem; border-radius: 999px;
+            background: rgba(255,255,255,.14); border: 1px solid rgba(255,255,255,.28); color: #fff;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .tk-eyebrow.dark { background: var(--tk-green-soft); border-color: var(--tk-green-ring); color: var(--tk-green-deep); }
+        .tk-eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--secondary-color); }
+        .tk-eyebrow:not(.dark) .dot { background: #fff; }
+
+        .tk-btn {
+            display: inline-flex; align-items: center; gap: .6rem;
+            font-weight: 600; text-decoration: none; border: 0; cursor: pointer;
+            padding: .8rem 1.1rem .8rem 1.4rem; border-radius: 999px;
+            transition: transform .25s var(--tk-ease), box-shadow .25s var(--tk-ease), filter .25s var(--tk-ease);
+        }
+        .tk-btn .tk-btn-ico { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; transition: transform .35s var(--tk-ease); }
+        .tk-btn:hover { transform: translateY(-2px); filter: brightness(1.03); }
+        .tk-btn:hover .tk-btn-ico { transform: translate(3px, -1px); }
+        .tk-btn:active { transform: scale(.985); }
+        .tk-btn-primary { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: #fff; box-shadow: 0 18px 40px -16px rgba(16,36,26,.6); }
+        .tk-btn-primary .tk-btn-ico { background: rgba(255,255,255,.18); }
+        .tk-btn-ghost { background: rgba(255,255,255,.12); color: #fff; border: 1px solid rgba(255,255,255,.3); }
+        .tk-btn-ghost .tk-btn-ico { background: rgba(255,255,255,.16); }
+        .tk-btn-soft { background: var(--tk-green-soft); color: var(--tk-green-deep); }
+        .tk-btn-soft .tk-btn-ico { background: var(--tk-green-ring); }
+
+        /* ===== Section & typography helpers ===== */
+        .tk-section { padding: clamp(3rem, 7vw, 6rem) 0; }
+        .tk-section.cream { background: var(--tk-cream); }
+        .tk-h2 { font-weight: 700; font-size: clamp(1.7rem, 3.6vw, 2.6rem); }
+        .tk-lead { color: var(--tk-muted); font-size: 1.02rem; max-width: 44rem; margin-inline: auto; }
+
+        /* ===== Hero hijau ===== */
+        .tk-hero {
+            position: relative; overflow: hidden; color: #fff;
+            background:
+                radial-gradient(60% 60% at 82% 12%, rgba(255,255,255,.16), transparent 55%),
+                radial-gradient(50% 55% at 12% 88%, rgba(255,255,255,.10), transparent 55%),
+                linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            padding: clamp(3rem, 7vw, 6rem) 0;
+        }
+        .tk-hero::after {
+            content: ''; position: absolute; inset: 0; pointer-events: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.5'/%3E%3C/svg%3E");
+            opacity: .035;
+        }
+        .tk-hero .container { position: relative; z-index: 1; }
+
+        /* ===== Double-bezel card ===== */
+        .tk-card {
+            height: 100%; border-radius: 1.5rem; padding: .45rem;
+            background: #fff; border: 1px solid rgba(16,36,26,.06);
+            box-shadow: 0 24px 50px -34px rgba(16,36,26,.28);
+            transition: transform .4s var(--tk-ease), box-shadow .4s var(--tk-ease);
+        }
+        .tk-card:hover { transform: translateY(-5px); box-shadow: 0 34px 66px -30px rgba(16,36,26,.34); }
+        .tk-card .core {
+            height: 100%; border-radius: 1.1rem; padding: 1.5rem;
+            background: linear-gradient(180deg, #fff, #fbfdfb);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+        }
+        .tk-ico-tile {
+            width: 58px; height: 58px; border-radius: 1rem;
+            display: inline-flex; align-items: center; justify-content: center; font-size: 1.5rem;
+            color: var(--secondary-color);
+            background: radial-gradient(120% 120% at 30% 20%, var(--tk-green-ring), var(--tk-green-soft));
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.7);
+        }
+
+        /* Accordion halus */
+        .accordion-item { border: 1px solid rgba(16,36,26,.06); border-radius: 1rem !important; overflow: hidden; box-shadow: 0 18px 40px -34px rgba(16,36,26,.3); }
+        .accordion-button { font-weight: 600; }
+        .accordion-button:not(.collapsed) { background: var(--tk-green-soft); color: var(--tk-ink); box-shadow: none; }
+        .accordion-button:focus { box-shadow: none; }
+
+        /* Reveal animation */
+        .reveal { opacity: 0; transform: translateY(26px); filter: blur(6px); transition: opacity .8s var(--tk-ease), transform .8s var(--tk-ease), filter .8s var(--tk-ease); }
+        .reveal.is-visible { opacity: 1; transform: none; filter: none; }
+        @media (prefers-reduced-motion: reduce) {
+            .reveal { opacity: 1; transform: none; filter: none; transition: none; }
+            .tk-card, .tk-btn { transition: none; }
+        }
+
         .hero-section {
             background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             padding: 80px 0;
         }
-        
-        .tahapan-card {
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        
-        .tahapan-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
-        }
-        
+
+        .tahapan-card { transition: transform 0.3s ease, box-shadow 0.3s ease; }
+        .tahapan-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(0,0,0,0.15); }
         .tahapan-number {
-            width: 50px;
-            height: 50px;
-            background: var(--primary-color);
-            color: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            font-weight: bold;
+            width: 50px; height: 50px;
+            background: var(--primary-color); color: white;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; font-weight: bold;
         }
-        
+
+        /* ===== Footer hijau ===== */
         .footer {
-            background: #1a1a1a;
-            color: #ccc;
+            background: linear-gradient(160deg, #0f2318, #14311f);
+            color: #cfe0d6;
         }
-        
-        .btn-primary {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-        }
-        
-        .btn-primary:hover {
-            background-color: var(--secondary-color);
-            border-color: var(--secondary-color);
-        }
-        
-        .btn-warning {
-            background-color: var(--accent-color);
-            border-color: var(--accent-color);
-            color: #000;
-        }
+        .footer a.text-light:hover { color: #fff !important; text-decoration: underline; }
+
+        .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
+        .btn-primary:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
     </style>
     
     @stack('styles')

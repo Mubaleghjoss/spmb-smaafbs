@@ -3,83 +3,89 @@
 @section('title', 'Beranda')
 
 @push('styles')
+{{-- Beranda-specific (design-system 'tk' & tema hijau kini di layout public) --}}
 <style>
-    .reveal { opacity: 0; transform: translateY(24px); transition: opacity .6s ease, transform .6s ease; }
-    .reveal.is-visible { opacity: 1; transform: none; }
-    .hero-overlay {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        position: relative; overflow: hidden;
+    .tk-hero h1 { font-weight: 700; font-size: clamp(2.1rem, 5.2vw, 3.6rem); line-height: 1.05; }
+    .tk-hero .tk-sub { font-size: 1.05rem; line-height: 1.7; color: rgba(255,255,255,.9); }
+
+    /* plate kaca hero */
+    .tk-hero-plate {
+        border-radius: 2rem; padding: .5rem;
+        background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.22);
+        box-shadow: 0 40px 80px -40px rgba(0,0,0,.5);
     }
-    .hero-overlay::after {
-        content: ''; position: absolute; inset: 0;
-        background: radial-gradient(circle at 80% 20%, rgba(255,255,255,.12), transparent 45%);
+    .tk-hero-plate .inner {
+        border-radius: calc(2rem - .5rem); overflow: hidden;
+        background: rgba(255,255,255,.06);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+        aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center;
     }
-    .stat-card { border-radius: 1rem; }
-    .stat-num { font-size: 2.4rem; font-weight: 800; line-height: 1; }
-    .feature-icon {
-        width: 64px; height: 64px; border-radius: 1rem;
-        display: inline-flex; align-items: center; justify-content: center;
-        background: rgba(46,139,87,.1);
+    .tk-hero-plate .inner img { width: 100%; height: 100%; object-fit: cover; }
+    .tk-hero-plate .inner .ico { font-size: clamp(4rem, 12vw, 7rem); color: rgba(255,255,255,.85); }
+
+    .tk-stat { text-align: center; }
+    .tk-stat .num { font-family: 'Fraunces', serif; font-weight: 700; font-size: clamp(1.9rem, 4vw, 2.6rem); color: var(--secondary-color); line-height: 1; }
+    .tk-stat .lbl { color: var(--tk-muted); font-size: .86rem; margin-top: .4rem; }
+
+    .tk-step .core { text-align: center; }
+    .tk-step .no {
+        width: 44px; height: 44px; border-radius: 50%; margin: 0 auto .75rem;
+        display: flex; align-items: center; justify-content: center; font-weight: 700; color: #fff;
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        box-shadow: 0 10px 20px -8px rgba(16,36,26,.5);
     }
-    .program-card { transition: transform .3s ease, box-shadow .3s ease; }
-    .program-card:hover { transform: translateY(-6px); box-shadow: 0 12px 30px rgba(0,0,0,.12); }
-    .float-wa {
-        position: fixed; right: 18px; bottom: 18px; z-index: 1030;
-        width: 56px; height: 56px; border-radius: 50%;
-        background: #25d366; color: #fff; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 6px 18px rgba(0,0,0,.25); font-size: 1.6rem; text-decoration: none;
-        transition: transform .2s ease;
+
+    .tk-cta {
+        border-radius: 2rem; overflow: hidden; position: relative; color: #fff;
+        background:
+            radial-gradient(60% 120% at 85% 10%, rgba(255,255,255,.16), transparent 50%),
+            linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        box-shadow: 0 40px 80px -40px rgba(16,36,26,.6);
     }
-    .float-wa:hover { transform: scale(1.08); color:#fff; }
-    .testi-card { border-radius: 1rem; }
+
     .testi-avatar { width: 56px; height: 56px; object-fit: cover; }
-    .hero-illust-fallback {
-        width: 260px; height: 260px; max-width: 80vw; max-height: 80vw;
-        border-radius: 2rem;
-        background: rgba(255,255,255,.14);
-        border: 2px dashed rgba(255,255,255,.4);
-        color: rgba(255,255,255,.85);
-        font-size: 7rem;
-    }
 </style>
 @endpush
 
 @section('content')
 
 {{-- ============ 1. HERO ============ --}}
-<section class="hero-overlay text-white py-5">
-    <div class="container position-relative" style="z-index:1">
-        <div class="row align-items-center g-4">
+<section class="tk-hero">
+    <div class="container">
+        <div class="row align-items-center g-5">
             <div class="col-lg-6">
                 @if(!empty($beranda['hero_badge']))
-                <span class="badge bg-warning text-dark mb-3 px-3 py-2">{{ $beranda['hero_badge'] }}</span>
+                <span class="tk-eyebrow mb-3"><span class="dot"></span>{{ $beranda['hero_badge'] }}</span>
                 @endif
-                <h1 class="display-5 fw-bold mb-3">{{ $beranda['hero_judul'] }}</h1>
-                <p class="lead mb-2">{{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
-                <p class="mb-4 opacity-75">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
+                <h1 class="mb-3">{{ $beranda['hero_judul'] }}</h1>
+                <p class="tk-sub mb-1 fw-semibold">{{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
+                <p class="tk-sub mb-4" style="opacity:.8">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
                 @if(!empty($beranda['hero_subjudul']))
-                <p class="mb-4">{!! nl2br(e($beranda['hero_subjudul'])) !!}</p>
+                <p class="tk-sub mb-4">{!! nl2br(e($beranda['hero_subjudul'])) !!}</p>
                 @endif
                 <div class="d-flex gap-3 flex-wrap">
-                    <a href="{{ route('daftar') }}" class="btn btn-warning btn-lg">
-                        <i class="bi bi-pencil-square me-2"></i>{{ $beranda['hero_tombol1_teks'] ?: 'Daftar Sekarang' }}
+                    <a href="{{ route('daftar') }}" class="tk-btn tk-btn-primary">
+                        {{ $beranda['hero_tombol1_teks'] ?: 'Daftar Sekarang' }}
+                        <span class="tk-btn-ico"><i class="bi bi-arrow-up-right"></i></span>
                     </a>
-                    <a href="{{ route('alur-spmb') }}" class="btn btn-outline-light btn-lg">
-                        <i class="bi bi-info-circle me-2"></i>{{ $beranda['hero_tombol2_teks'] ?: 'Lihat Alur SPMB' }}
+                    <a href="{{ route('alur-spmb') }}" class="tk-btn tk-btn-ghost">
+                        {{ $beranda['hero_tombol2_teks'] ?: 'Lihat Alur SPMB' }}
+                        <span class="tk-btn-ico"><i class="bi bi-arrow-right"></i></span>
                     </a>
                 </div>
             </div>
-            <div class="col-lg-6 text-center">
-                @if(!empty($beranda['hero_gambar']))
-                    <img src="{{ Storage::url($beranda['hero_gambar']) }}" alt="Ilustrasi" class="img-fluid rounded-4 shadow-lg" style="max-height: 380px;">
-                @elseif(!empty($branding['logo']))
-                    <img src="{{ Storage::url($branding['logo']) }}" alt="Logo" class="img-fluid" style="max-height: 240px;">
-                @else
-                    {{-- Placeholder ikon open-source (Bootstrap Icons, MIT) saat belum ada gambar --}}
-                    <div class="hero-illust-fallback mx-auto d-flex align-items-center justify-content-center">
-                        <i class="bi bi-mortarboard-fill"></i>
+            <div class="col-lg-6">
+                <div class="tk-hero-plate mx-auto reveal" style="max-width: 380px;">
+                    <div class="inner">
+                        @if(!empty($beranda['hero_gambar']))
+                            <img src="{{ Storage::url($beranda['hero_gambar']) }}" alt="Ilustrasi">
+                        @elseif(!empty($branding['logo']))
+                            <img src="{{ Storage::url($branding['logo']) }}" alt="Logo" style="object-fit:contain; padding:2rem;">
+                        @else
+                            <span class="ico"><i class="bi bi-mortarboard-fill"></i></span>
+                        @endif
                     </div>
-                @endif
+                </div>
             </div>
         </div>
     </div>
@@ -87,20 +93,20 @@
 
 {{-- ============ 2. STATISTIK ============ --}}
 @if($beranda['statistik_aktif'] && !empty($beranda['statistik']))
-<section class="py-5 bg-light">
+<section class="tk-section cream">
     <div class="container">
-        <div class="row g-3 text-center">
+        <div class="row g-3 g-md-4">
             @foreach($beranda['statistik'] as $stat)
             @php
                 $angka = strtolower(trim($stat['angka'] ?? ''));
                 $nilai = $angka === 'auto' ? number_format($totalPendaftar ?? 0, 0, ',', '.') : ($stat['angka'] ?? '');
             @endphp
             <div class="col-6 col-md-3 reveal">
-                <div class="card stat-card border-0 shadow-sm h-100">
-                    <div class="card-body py-4">
-                        <i class="bi bi-{{ $stat['icon'] ?: 'star-fill' }} text-success fs-3 mb-2 d-block"></i>
-                        <div class="stat-num text-success">{{ $nilai }}{{ $stat['suffix'] ?? '' }}</div>
-                        <div class="text-muted small mt-1">{{ $stat['label'] ?? '' }}</div>
+                <div class="tk-card">
+                    <div class="core tk-stat">
+                        <i class="bi bi-{{ $stat['icon'] ?: 'star-fill' }} mb-2 d-block" style="font-size:1.4rem;color:var(--secondary-color)"></i>
+                        <div class="num">{{ $nilai }}{{ $stat['suffix'] ?? '' }}</div>
+                        <div class="lbl">{{ $stat['label'] ?? '' }}</div>
                     </div>
                 </div>
             </div>
@@ -112,20 +118,21 @@
 
 {{-- ============ 3. KEUNGGULAN ============ --}}
 @if(!empty($beranda['keunggulan']))
-<section class="py-5">
+<section class="tk-section">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">{{ $beranda['keunggulan_judul'] }}</h2>
-            @if(!empty($beranda['keunggulan_subjudul']))<p class="text-muted">{{ $beranda['keunggulan_subjudul'] }}</p>@endif
+        <div class="text-center mb-5 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>Kenapa Kami</span>
+            <h2 class="tk-h2">{{ $beranda['keunggulan_judul'] }}</h2>
+            @if(!empty($beranda['keunggulan_subjudul']))<p class="tk-lead mt-2">{{ $beranda['keunggulan_subjudul'] }}</p>@endif
         </div>
         <div class="row g-4">
             @foreach($beranda['keunggulan'] as $item)
             <div class="col-md-4 reveal">
-                <div class="card h-100 border-0 shadow-sm">
-                    <div class="card-body text-center p-4">
-                        <div class="feature-icon mb-3"><i class="bi bi-{{ $item['icon'] ?: 'check-circle' }} text-success fs-3"></i></div>
-                        <h5 class="card-title">{{ $item['judul'] }}</h5>
-                        <p class="card-text text-muted">{{ $item['deskripsi'] }}</p>
+                <div class="tk-card">
+                    <div class="core">
+                        <div class="tk-ico-tile mb-3"><i class="bi bi-{{ $item['icon'] ?: 'check-circle' }}"></i></div>
+                        <h5 class="fw-bold mb-2" style="font-family:'Plus Jakarta Sans',sans-serif;">{{ $item['judul'] }}</h5>
+                        <p class="text-muted mb-0">{{ $item['deskripsi'] }}</p>
                     </div>
                 </div>
             </div>
@@ -137,19 +144,20 @@
 
 {{-- ============ 4. PROGRAM UNGGULAN ============ --}}
 @if(!empty($beranda['program']))
-<section class="py-5 bg-light">
+<section class="tk-section cream">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">{{ $beranda['program_judul'] }}</h2>
-            @if(!empty($beranda['program_subjudul']))<p class="text-muted">{{ $beranda['program_subjudul'] }}</p>@endif
+        <div class="text-center mb-5 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>Program</span>
+            <h2 class="tk-h2">{{ $beranda['program_judul'] }}</h2>
+            @if(!empty($beranda['program_subjudul']))<p class="tk-lead mt-2">{{ $beranda['program_subjudul'] }}</p>@endif
         </div>
         <div class="row g-4">
             @foreach($beranda['program'] as $item)
             <div class="col-6 col-md-3 reveal">
-                <div class="card program-card h-100 border-0 shadow-sm text-center">
-                    <div class="card-body p-4">
-                        <i class="bi bi-{{ $item['icon'] ?: 'star' }} text-success" style="font-size:2.2rem"></i>
-                        <h6 class="fw-bold mt-3">{{ $item['judul'] }}</h6>
+                <div class="tk-card">
+                    <div class="core text-center">
+                        <div class="tk-ico-tile mx-auto mb-3"><i class="bi bi-{{ $item['icon'] ?: 'star' }}"></i></div>
+                        <h6 class="fw-bold mb-1">{{ $item['judul'] }}</h6>
                         <p class="small text-muted mb-0">{{ $item['deskripsi'] }}</p>
                     </div>
                 </div>
@@ -163,27 +171,31 @@
 {{-- ============ 5. TAHAPAN PREVIEW ============ --}}
 @if($beranda['tahapan_aktif'])
 @php $alurSpmb = app(\App\Services\PengaturanService::class)->ambilAlurSpmb(); @endphp
-<section class="py-5">
+<section class="tk-section">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">{{ count($alurSpmb) }} Tahapan SPMB</h2>
-            <p class="text-muted">{{ $branding['teks_alur_spmb'] ?? 'Ikuti setiap tahapan untuk menjadi bagian dari keluarga besar' }} {{ $branding['nama_institusi'] ?? 'SMA Al Furqon' }}</p>
+        <div class="text-center mb-5 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>Alur</span>
+            <h2 class="tk-h2">{{ count($alurSpmb) }} Tahapan SPMB</h2>
+            <p class="tk-lead mt-2">{{ $branding['teks_alur_spmb'] ?? 'Ikuti setiap tahapan untuk menjadi bagian dari keluarga besar' }} {{ $branding['nama_institusi'] ?? 'SMA Al Furqon' }}</p>
         </div>
         <div class="row g-3 justify-content-center">
             @foreach($alurSpmb as $index => $item)
             <div class="col-6 col-md-3 col-lg reveal">
-                <div class="card border-0 shadow-sm h-100 tahapan-card">
-                    <div class="card-body text-center py-4">
-                        <div class="tahapan-number mx-auto mb-3">{{ $item['nomor'] ?? ($index + 1) }}</div>
-                        <i class="bi bi-{{ $item['icon'] ?? 'circle' }} text-success mb-2" style="font-size: 1.5rem;"></i>
-                        <p class="small mb-0 fw-medium">{{ $item['judul'] ?? '' }}</p>
+                <div class="tk-card tk-step">
+                    <div class="core">
+                        <div class="no">{{ $item['nomor'] ?? ($index + 1) }}</div>
+                        <i class="bi bi-{{ $item['icon'] ?? 'circle' }} mb-2 d-block" style="font-size:1.35rem;color:var(--secondary-color)"></i>
+                        <p class="small mb-0 fw-semibold">{{ $item['judul'] ?? '' }}</p>
                     </div>
                 </div>
             </div>
             @endforeach
         </div>
-        <div class="text-center mt-4">
-            <a href="{{ route('alur-spmb') }}" class="btn btn-success">Lihat Detail Alur <i class="bi bi-arrow-right ms-2"></i></a>
+        <div class="text-center mt-5">
+            <a href="{{ route('alur-spmb') }}" class="tk-btn tk-btn-primary" style="color:#1a1300;">
+                Lihat Detail Alur
+                <span class="tk-btn-ico"><i class="bi bi-arrow-right"></i></span>
+            </a>
         </div>
     </div>
 </section>
@@ -191,16 +203,17 @@
 
 {{-- ============ 6. FAQ ============ --}}
 @if(!empty($beranda['faq']))
-<section class="py-5 bg-light">
+<section class="tk-section cream">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">{{ $beranda['faq_judul'] }}</h2>
+        <div class="text-center mb-5 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>FAQ</span>
+            <h2 class="tk-h2">{{ $beranda['faq_judul'] }}</h2>
         </div>
         <div class="row justify-content-center">
             <div class="col-lg-8">
                 <div class="accordion" id="faqAccordion">
                     @foreach($beranda['faq'] as $i => $item)
-                    <div class="accordion-item border-0 shadow-sm mb-2 rounded overflow-hidden">
+                    <div class="accordion-item mb-3 reveal">
                         <h2 class="accordion-header">
                             <button class="accordion-button {{ $i === 0 ? '' : 'collapsed' }}" type="button"
                                     data-bs-toggle="collapse" data-bs-target="#faq{{ $i }}">
@@ -219,19 +232,20 @@
 </section>
 @endif
 
-{{-- ============ 7. TESTIMONI + PETA ============ --}}
+{{-- ============ 7. TESTIMONI ============ --}}
 @if(!empty($beranda['testimoni']))
-<section class="py-5">
+<section class="tk-section">
     <div class="container">
-        <div class="text-center mb-5">
-            <h2 class="fw-bold">{{ $beranda['testimoni_judul'] }}</h2>
+        <div class="text-center mb-5 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>Testimoni</span>
+            <h2 class="tk-h2">{{ $beranda['testimoni_judul'] }}</h2>
         </div>
         <div class="row g-4 justify-content-center">
             @foreach($beranda['testimoni'] as $t)
             <div class="col-md-6 col-lg-5 reveal">
-                <div class="card testi-card h-100 border-0 shadow-sm">
-                    <div class="card-body p-4">
-                        <i class="bi bi-quote text-success fs-1 lh-1"></i>
+                <div class="tk-card">
+                    <div class="core">
+                        <i class="bi bi-quote fs-1 lh-1" style="color:var(--secondary-color)"></i>
                         <p class="mb-4">{{ $t['isi'] }}</p>
                         <div class="d-flex align-items-center gap-3">
                             @if(!empty($t['foto']))
@@ -255,38 +269,47 @@
 </section>
 @endif
 
+{{-- ============ PETA ============ --}}
 @if(!empty($beranda['maps_embed']))
-<section class="pb-5">
+<section class="tk-section cream">
     <div class="container">
-        <div class="text-center mb-4"><h2 class="fw-bold">Lokasi Kami</h2></div>
-        <div class="ratio ratio-21x9 rounded-4 overflow-hidden shadow-sm">
-            @php
-                $embed = trim($beranda['maps_embed']);
-                $isIframe = \Illuminate\Support\Str::startsWith($embed, '<iframe');
-            @endphp
-            @if($isIframe)
-                {!! $embed !!}
-            @else
-                <iframe src="{{ $embed }}" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-            @endif
+        <div class="text-center mb-4 reveal">
+            <span class="tk-eyebrow dark mb-3"><span class="dot"></span>Lokasi</span>
+            <h2 class="tk-h2">Lokasi Kami</h2>
+        </div>
+        <div class="reveal" style="border-radius:1.5rem;padding:.45rem;background:#fff;border:1px solid rgba(16,36,26,.06);box-shadow:0 24px 50px -34px rgba(16,36,26,.28);">
+            <div class="ratio ratio-21x9" style="border-radius:1.1rem;overflow:hidden;">
+                @php
+                    $embed = trim($beranda['maps_embed']);
+                    $isIframe = \Illuminate\Support\Str::startsWith($embed, '<iframe');
+                @endphp
+                @if($isIframe)
+                    {!! $embed !!}
+                @else
+                    <iframe src="{{ $embed }}" style="border:0" allowfullscreen loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                @endif
+            </div>
         </div>
     </div>
 </section>
 @endif
 
 {{-- ============ CTA ============ --}}
-<section class="py-5">
+<section class="tk-section">
     <div class="container">
-        <div class="card border-0 bg-success text-white">
-            <div class="card-body p-5 text-center">
-                <h3 class="fw-bold mb-3">Siap Bergabung?</h3>
-                <p class="mb-4">{{ $branding['teks_cta'] ?? 'Daftarkan diri Anda sekarang dan mulai perjalanan menuju masa depan yang cerah' }} bersama {{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}.</p>
-                <a href="{{ route('daftar') }}" class="btn btn-warning btn-lg"><i class="bi bi-pencil-square me-2"></i>Daftar Sekarang</a>
+        <div class="tk-cta reveal">
+            <div class="p-5 text-center">
+                <span class="tk-eyebrow mb-3"><span class="dot"></span>Ayo Bergabung</span>
+                <h3 class="fw-bold mb-3" style="font-family:'Fraunces',serif;font-size:clamp(1.6rem,3.4vw,2.4rem);">Siap Bergabung?</h3>
+                <p class="mb-4 mx-auto" style="max-width:40rem;opacity:.92;">{{ $branding['teks_cta'] ?? 'Daftarkan diri Anda sekarang dan mulai perjalanan menuju masa depan yang cerah' }} bersama {{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}.</p>
+                <a href="{{ route('daftar') }}" class="tk-btn tk-btn-primary">
+                    Daftar Sekarang
+                    <span class="tk-btn-ico"><i class="bi bi-arrow-up-right"></i></span>
+                </a>
             </div>
         </div>
     </div>
 </section>
-
 @endsection
 
 @push('scripts')
@@ -296,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('is-visible')); return; }
     const obs = new IntersectionObserver((entries) => {
         entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-visible'); obs.unobserve(en.target); } });
-    }, { threshold: 0.12 });
+    }, { threshold: 0.08 });
     els.forEach(e => obs.observe(e));
 });
 </script>

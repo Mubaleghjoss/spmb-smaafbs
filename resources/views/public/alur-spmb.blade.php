@@ -5,10 +5,6 @@
 @push('styles')
 <style>
     /* ===== Alur SPMB — Timeline responsif (HP & desktop) ===== */
-    .alur-hero {
-        background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
-        color: #fff;
-    }
     .alur-timeline {
         position: relative;
         max-width: 820px;
@@ -45,30 +41,36 @@
         font-weight: 700;
         color: #fff;
         background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
-        box-shadow: 0 4px 12px rgba(46,139,87,.35);
+        box-shadow: 0 10px 22px -8px rgba(16,36,26,.55);
         z-index: 1;
     }
     .alur-num .bi { font-size: 1.35rem; }
     .alur-card {
         background: #fff;
-        border-radius: 16px;
-        border: 1px solid #eef2f7;
-        box-shadow: 0 2px 10px rgba(15,23,42,.05);
-        transition: transform .2s ease, box-shadow .2s ease;
+        border-radius: 1.25rem;
+        border: 1px solid rgba(16,36,26,.06);
+        padding: .4rem;
+        box-shadow: 0 24px 50px -34px rgba(16,36,26,.28);
+        transition: transform .4s var(--tk-ease), box-shadow .4s var(--tk-ease);
     }
     .alur-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 24px rgba(15,23,42,.10);
+        transform: translateY(-4px);
+        box-shadow: 0 34px 66px -30px rgba(16,36,26,.34);
     }
-    .alur-card .card-body { padding: 1.1rem 1.25rem; }
+    .alur-card .card-body {
+        padding: 1.15rem 1.3rem;
+        border-radius: .95rem;
+        background: linear-gradient(180deg, #fff, #fbfdfb);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,.9);
+    }
     .alur-step-label {
-        font-size: .72rem;
+        font-size: .7rem;
         font-weight: 700;
-        letter-spacing: .06em;
+        letter-spacing: .16em;
         text-transform: uppercase;
-        color: var(--primary-color);
+        color: var(--secondary-color);
     }
-    .alur-title { font-weight: 700; font-size: 1.08rem; line-height: 1.3; }
+    .alur-title { font-weight: 700; font-size: 1.1rem; line-height: 1.3; font-family: 'Plus Jakarta Sans', sans-serif; }
     .alur-detail li {
         display: flex;
         align-items: flex-start;
@@ -77,11 +79,10 @@
         color: #475569;
         margin-bottom: .35rem;
     }
-    .alur-detail li .bi { color: #22c55e; flex-shrink: 0; margin-top: .15rem; }
+    .alur-detail li .bi { color: var(--secondary-color); flex-shrink: 0; margin-top: .15rem; }
     /* badge sorotan untuk langkah 1 (paling penting) */
-    .alur-item.is-first .alur-card {
-        border-color: rgba(46,139,87,.35);
-        background: linear-gradient(180deg, rgba(46,139,87,.05), #fff);
+    .alur-item.is-first .alur-card .card-body {
+        background: linear-gradient(180deg, var(--tk-green-soft), #fff);
     }
     .alur-badge-mudah {
         display: inline-flex; align-items: center; gap: .3rem;
@@ -116,26 +117,24 @@
 
 @section('content')
 {{-- HERO --}}
-<section class="alur-hero py-5">
+<section class="tk-hero">
     <div class="container text-center">
-        <span class="badge bg-white text-success mb-3 px-3 py-2 rounded-pill">
-            <i class="bi bi-signpost-split me-1"></i>Alur Pendaftaran
-        </span>
+        <span class="tk-eyebrow mb-3"><span class="dot"></span>Alur Pendaftaran</span>
         <h1 class="fw-bold display-6 mb-2">Alur SPMB</h1>
-        <p class="lead mb-0 opacity-90">
+        <p class="tk-sub lead mb-0" style="opacity:.92">
             {{ $branding['teks_alur_spmb'] ?? 'Ikuti setiap tahapan untuk menjadi bagian dari keluarga besar' }}
             {{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}
         </p>
-        <p class="small opacity-75 mt-1">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
+        <p class="small mt-1" style="opacity:.75">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
     </div>
 </section>
 
 {{-- TIMELINE --}}
-<section class="py-5 bg-light">
+<section class="tk-section cream">
     <div class="container">
         <div class="alur-timeline">
             @foreach($alurSpmb as $index => $item)
-            <div class="alur-item {{ $index === 0 ? 'is-first' : '' }}">
+            <div class="alur-item {{ $index === 0 ? 'is-first' : '' }} reveal">
                 <div class="alur-num">
                     @if(!empty($item['icon']))
                         <i class="bi bi-{{ $item['icon'] }}"></i>
@@ -167,9 +166,10 @@
         </div>
 
         {{-- CTA --}}
-        <div class="text-center mt-5">
-            <a href="{{ route('daftar') }}" class="btn btn-success btn-lg px-4 shadow-sm">
-                <i class="bi bi-pencil-square me-2"></i>Mulai Pendaftaran Sekarang
+        <div class="text-center mt-5 reveal">
+            <a href="{{ route('daftar') }}" class="tk-btn tk-btn-primary">
+                Mulai Pendaftaran Sekarang
+                <span class="tk-btn-ico"><i class="bi bi-arrow-up-right"></i></span>
             </a>
             <p class="text-muted small mt-3 mb-0">
                 <i class="bi bi-info-circle me-1"></i>Daftar = langsung isi biodata, akun otomatis dibuat, dan masuk dashboard.
@@ -178,3 +178,16 @@
     </div>
 </section>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const els = document.querySelectorAll('.reveal');
+    if (!('IntersectionObserver' in window)) { els.forEach(e => e.classList.add('is-visible')); return; }
+    const obs = new IntersectionObserver((entries) => {
+        entries.forEach(en => { if (en.isIntersecting) { en.target.classList.add('is-visible'); obs.unobserve(en.target); } });
+    }, { threshold: 0.08 });
+    els.forEach(e => obs.observe(e));
+});
+</script>
+@endpush
