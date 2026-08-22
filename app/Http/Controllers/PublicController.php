@@ -51,6 +51,7 @@ class PublicController extends Controller
     public function jadwal(Request $request): View
     {
         $branding = $this->pengaturanService->ambilBranding();
+        $mode = $this->pengaturanService->ambilModeJadwal();
 
         $periode = app(\App\Services\PeriodeContextService::class);
         $jadwalAlur = app(\App\Services\JadwalAlurService::class);
@@ -62,7 +63,8 @@ class PublicController extends Controller
         $gelombangTerpilih = null;
         $jadwal = [];
 
-        if ($tahunAjaranId) {
+        // MODE OTOMATIS: /jadwal mengikuti Alur & Jadwal per gelombang (sumber sebenarnya).
+        if ($mode === 'otomatis' && $tahunAjaranId) {
             $daftarGelombang = $jadwalAlur->gelombangTahun((int) $tahunAjaranId);
 
             // Gelombang dari query (?gelombang=), else yang sedang dibuka / terpilih.
@@ -78,9 +80,14 @@ class PublicController extends Controller
             $jadwal = $jadwalAlur->jadwalPublik((int) $tahunAjaranId, $gelombangId);
         }
 
-        // Fallback: bila belum ada jadwal periode sama sekali, pakai jadwal lama.
+        // MODE MANUAL (atau fallback bila otomatis kosong): pakai daftar jadwal manual.
         if (empty($jadwal)) {
             $jadwal = $this->pengaturanService->ambilJadwal();
+            // di mode manual, pemilih gelombang tidak relevan
+            if ($mode === 'manual') {
+                $daftarGelombang = collect();
+                $gelombangTerpilih = null;
+            }
         }
 
         $catatan = $this->pengaturanService->ambilCatatanJadwal();

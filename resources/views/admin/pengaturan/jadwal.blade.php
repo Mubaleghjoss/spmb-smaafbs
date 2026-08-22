@@ -37,10 +37,94 @@
         </div>
     @endif
 
-    <form action="{{ route('admin.pengaturan.jadwal.simpan') }}" method="POST">
+    {{-- Penjelas mode + tombol ke Alur & Jadwal --}}
+    <div class="alert {{ $mode === 'manual' ? 'alert-warning' : 'alert-info' }} d-flex align-items-start gap-2">
+        <i class="bi bi-{{ $mode === 'manual' ? 'pencil-square' : 'magic' }} fs-5 mt-1"></i>
+        <div class="flex-grow-1">
+            @if($mode === 'manual')
+                <strong>Mode saat ini: MANUAL.</strong>
+                Halaman publik <a href="{{ route('jadwal') }}" target="_blank" class="alert-link">/jadwal</a>
+                memakai daftar yang Anda ketik di bawah — <strong>menggantikan</strong> jadwal otomatis dari menu Alur &amp; Jadwal.
+            @else
+                <strong>Mode saat ini: OTOMATIS.</strong>
+                Halaman publik <a href="{{ route('jadwal') }}" target="_blank" class="alert-link">/jadwal</a>
+                otomatis mengikuti <strong>Alur &amp; Jadwal</strong> per gelombang (sumber sebenarnya).
+                Daftar manual di bawah <strong>diabaikan</strong> selama mode otomatis.
+            @endif
+        </div>
+        <a href="{{ route('admin.alur-jadwal.index') }}" class="btn btn-sm btn-outline-success flex-shrink-0">
+            <i class="bi bi-calendar-week me-1"></i>Buka Alur &amp; Jadwal
+        </a>
+    </div>
+
+    <form action="{{ route('admin.pengaturan.jadwal.simpan') }}" method="POST" id="form-jadwal">
         @csrf
+        <input type="hidden" name="jadwal_mode" id="jadwal_mode" value="{{ $mode }}">
+
+        {{-- Pemilih Mode --}}
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-light">
+                <h6 class="mb-0"><i class="bi bi-sliders me-1"></i>Sumber Jadwal Halaman Publik</h6>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="w-100 mode-opt {{ $mode === 'otomatis' ? 'mode-active' : '' }}" data-mode="otomatis" style="cursor:pointer;">
+                            <div class="border rounded p-3 h-100 {{ $mode === 'otomatis' ? 'border-success bg-success bg-opacity-10' : '' }}">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <input class="form-check-input mt-0 mode-radio" type="radio" name="__mode_ui" value="otomatis" {{ $mode === 'otomatis' ? 'checked' : '' }}>
+                                    <span class="fw-bold"><i class="bi bi-magic me-1 text-success"></i>Otomatis (disarankan)</span>
+                                </div>
+                                <div class="small text-muted">Ikut menu Alur &amp; Jadwal per gelombang. Sekali atur, halaman publik &amp; dashboard peserta sinkron.</div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="w-100 mode-opt {{ $mode === 'manual' ? 'mode-active' : '' }}" data-mode="manual" style="cursor:pointer;">
+                            <div class="border rounded p-3 h-100 {{ $mode === 'manual' ? 'border-warning bg-warning bg-opacity-10' : '' }}">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <input class="form-check-input mt-0 mode-radio" type="radio" name="__mode_ui" value="manual" {{ $mode === 'manual' ? 'checked' : '' }}>
+                                    <span class="fw-bold"><i class="bi bi-pencil-square me-1 text-warning"></i>Manual</span>
+                                </div>
+                                <div class="small text-muted">Ketik sendiri daftar jadwal di bawah. <strong>Menggantikan</strong> jadwal otomatis untuk halaman publik.</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- Pratinjau jadwal OTOMATIS (read-only) — tampil saat mode otomatis --}}
+        <div class="card mb-4 border-0 shadow-sm" id="card-otomatis" style="{{ $mode === 'otomatis' ? '' : 'display:none;' }}">
+            <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                <h6 class="mb-0"><i class="bi bi-magic me-1"></i>Jadwal Otomatis (dari Alur &amp; Jadwal)
+                    @if($gelombangOtomatis)<span class="badge bg-success ms-1">{{ $gelombangOtomatis->nama }}</span>@endif
+                </h6>
+                <a href="{{ route('admin.alur-jadwal.index') }}" class="btn btn-sm btn-outline-success"><i class="bi bi-pencil me-1"></i>Ubah di Alur &amp; Jadwal</a>
+            </div>
+            <div class="card-body">
+                @if(!empty($jadwalOtomatis))
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light"><tr><th>Kegiatan</th><th style="width:35%">Tanggal</th><th style="width:120px">Status</th></tr></thead>
+                        <tbody>
+                            @foreach($jadwalOtomatis as $jo)
+                            <tr>
+                                <td><i class="bi bi-{{ $jo['icon'] ?? 'calendar' }} me-1 text-muted"></i>{{ $jo['kegiatan'] }}</td>
+                                <td class="small text-muted">{{ $jo['tanggal'] }}</td>
+                                <td><span class="badge bg-{{ ['dibuka'=>'success','akan_datang'=>'secondary','selesai'=>'dark','persiapan'=>'warning text-dark'][$jo['status']] ?? 'info' }}">{{ $jo['keterangan'] ?? '-' }}</span></td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+                @else
+                <p class="text-muted mb-0"><i class="bi bi-info-circle me-1"></i>Belum ada jadwal di Alur &amp; Jadwal. Silakan atur di sana.</p>
+                @endif
+            </div>
+        </div>
         
-        <div class="card mb-4">
+        <div class="card mb-4" id="card-manual" style="{{ $mode === 'manual' ? '' : 'display:none;' }}">
             <div class="card-header bg-light">
                 <h6 class="mb-0"><i class="bi bi-calendar3"></i> Daftar Jadwal Kegiatan</h6>
             </div>
@@ -111,7 +195,7 @@
             </div>
         </div>
 
-        <div class="card mb-4">
+        <div class="card mb-4" id="card-catatan" style="{{ $mode === 'manual' ? '' : 'display:none;' }}">
             <div class="card-header bg-light">
                 <h6 class="mb-0"><i class="bi bi-info-circle"></i> Catatan</h6>
             </div>
@@ -125,7 +209,7 @@
         <div class="card">
             <div class="card-body d-flex justify-content-between">
                 <a href="{{ route('admin.pengaturan.jadwal.reset') }}" class="btn btn-outline-warning"
-                   onclick="return confirm('Reset ke pengaturan default? Semua perubahan akan hilang.')">
+                   onclick="return confirm('Reset daftar jadwal manual ke pengaturan default? Semua perubahan manual akan hilang.')">
                     <i class="bi bi-arrow-counterclockwise"></i> Reset ke Default
                 </a>
                 <button type="submit" class="btn btn-primary">
@@ -168,7 +252,55 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const container = document.getElementById('jadwal-container');
-    
+
+    // === Toggle mode Otomatis / Manual ===
+    const hiddenMode = document.getElementById('jadwal_mode');
+    const cardOtomatis = document.getElementById('card-otomatis');
+    const cardManual = document.getElementById('card-manual');
+    const cardCatatan = document.getElementById('card-catatan');
+    const initialMode = hiddenMode ? hiddenMode.value : 'otomatis';
+
+    function paintModeCards(mode) {
+        document.querySelectorAll('.mode-opt').forEach(opt => {
+            const box = opt.querySelector('.border');
+            const isActive = opt.dataset.mode === mode;
+            box.classList.remove('border-success','bg-success','border-warning','bg-warning','bg-opacity-10');
+            if (isActive) {
+                if (mode === 'otomatis') box.classList.add('border-success','bg-success','bg-opacity-10');
+                else box.classList.add('border-warning','bg-warning','bg-opacity-10');
+            }
+        });
+        if (cardOtomatis) cardOtomatis.style.display = (mode === 'otomatis') ? '' : 'none';
+        if (cardManual) cardManual.style.display = (mode === 'manual') ? '' : 'none';
+        if (cardCatatan) cardCatatan.style.display = (mode === 'manual') ? '' : 'none';
+    }
+
+    document.querySelectorAll('.mode-radio').forEach(radio => {
+        radio.addEventListener('change', function() {
+            const chosen = this.value;
+            // Konfirmasi hanya saat BERALIH ke manual dari otomatis
+            if (chosen === 'manual' && initialMode !== 'manual') {
+                const ok = confirm(
+                    'Beralih ke MODE MANUAL?\n\n' +
+                    'Halaman publik /jadwal akan MENGGANTIKAN jadwal otomatis dari menu ' +
+                    '"Alur & Jadwal" dengan daftar manual yang Anda ketik di sini.\n\n' +
+                    'Jadwal otomatis per gelombang tetap tersimpan, tapi tidak lagi tampil ' +
+                    'di halaman publik sampai Anda kembali ke mode Otomatis.\n\nLanjutkan?'
+                );
+                if (!ok) {
+                    // batalkan: kembalikan pilihan ke otomatis
+                    const auto = document.querySelector('.mode-radio[value="otomatis"]');
+                    if (auto) auto.checked = true;
+                    paintModeCards('otomatis');
+                    if (hiddenMode) hiddenMode.value = 'otomatis';
+                    return;
+                }
+            }
+            if (hiddenMode) hiddenMode.value = chosen;
+            paintModeCards(chosen);
+        });
+    });
+
     // Update semua index dan nomor urut
     function updateIndexes() {
         const items = container.querySelectorAll('.jadwal-item');

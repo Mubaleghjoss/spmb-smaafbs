@@ -1057,7 +1057,24 @@ class PengaturanController extends Controller
         $jadwal = $this->pengaturanService->ambilJadwal();
         $catatan = $this->pengaturanService->ambilCatatanJadwal();
         $branding = $this->pengaturanService->ambilBranding();
-        return view('admin.pengaturan.jadwal', compact('jadwal', 'catatan', 'branding'));
+        $mode = $this->pengaturanService->ambilModeJadwal();
+
+        // Ringkasan jadwal otomatis (dari Alur & Jadwal) untuk ditampilkan sbg pembanding.
+        $jadwalOtomatis = [];
+        $periode = app(\App\Services\PeriodeContextService::class);
+        $jadwalAlur = app(\App\Services\JadwalAlurService::class);
+        $tahunAjaranId = optional($periode->pilihanTahunAjaran()->firstWhere('default', true))->id
+            ?? optional($periode->pilihanTahunAjaran()->first())->id;
+        $gelombangOtomatis = null;
+        if ($tahunAjaranId) {
+            $gelPub = $jadwalAlur->gelombangPublikTerpilih((int) $tahunAjaranId);
+            $gelombangOtomatis = $gelPub;
+            $jadwalOtomatis = $jadwalAlur->jadwalPublik((int) $tahunAjaranId, optional($gelPub)->id);
+        }
+
+        return view('admin.pengaturan.jadwal', compact(
+            'jadwal', 'catatan', 'branding', 'mode', 'jadwalOtomatis', 'gelombangOtomatis'
+        ));
     }
 
     /**
@@ -1066,6 +1083,7 @@ class PengaturanController extends Controller
     public function simpanJadwal(Request $request)
     {
         $request->validate([
+            'jadwal_mode' => 'required|in:otomatis,manual',
             'jadwal' => 'required|array',
             'jadwal.*.kegiatan' => 'required|string|max:255',
             'jadwal.*.icon' => 'nullable|string|max:50',
@@ -1079,6 +1097,9 @@ class PengaturanController extends Controller
             'jadwal.*.tanggal.required' => 'Tanggal wajib diisi',
             'jadwal.*.status.required' => 'Status wajib dipilih',
         ]);
+
+        // Simpan mode sumber jadwal publik (otomatis = ikut Alur & Jadwal, manual = daftar ini)
+        $this->pengaturanService->simpanModeJadwal($request->input('jadwal_mode'));
 
         $jadwal = [];
         foreach ($request->input('jadwal') as $item) {
@@ -1097,7 +1118,11 @@ class PengaturanController extends Controller
             $this->pengaturanService->simpanCatatanJadwal($request->input('catatan'));
         }
 
-        return back()->with('success', 'Pengaturan jadwal SPMB berhasil disimpan.');
+        $pesanMode = $request->input('jadwal_mode') === 'manual'
+            ? 'Mode MANUAL aktif — halaman publik /jadwal kini memakai daftar ini (menggantikan jadwal otomatis dari Alur & Jadwal).'
+            : 'Mode OTOMATIS aktif — halaman publik /jadwal mengikuti Alur & Jadwal per gelombang.';
+
+        return back()->with('success', 'Pengaturan jadwal SPMB berhasil disimpan. ' . $pesanMode);
     }
 
     /**

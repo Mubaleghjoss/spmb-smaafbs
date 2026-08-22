@@ -1166,6 +1166,23 @@ class PengaturanService
     }
 
     /**
+     * Mode sumber jadwal untuk halaman publik /jadwal:
+     *  - 'otomatis' (default): mengikuti Alur & Jadwal per gelombang (sumber sebenarnya).
+     *  - 'manual'  : memakai daftar jadwal manual yang diketik di halaman Pengaturan Jadwal.
+     */
+    public function ambilModeJadwal(): string
+    {
+        $mode = $this->ambil('jadwal_mode', 'otomatis');
+        return in_array($mode, ['otomatis', 'manual'], true) ? $mode : 'otomatis';
+    }
+
+    public function simpanModeJadwal(string $mode): void
+    {
+        $mode = in_array($mode, ['otomatis', 'manual'], true) ? $mode : 'otomatis';
+        $this->simpan('jadwal_mode', $mode);
+    }
+
+    /**
      * Default konten jadwal SPMB
      */
     private function defaultJadwal(): array
