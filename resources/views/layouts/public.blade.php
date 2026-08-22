@@ -198,6 +198,28 @@
 
         .btn-primary { background-color: var(--primary-color); border-color: var(--primary-color); }
         .btn-primary:hover { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+
+        /* ===== Dropdown Login: cegah terpotong di HP ===== */
+        @media (max-width: 991.98px) {
+            /* Di layar kecil navbar collapse; dropdown tampil menyatu (bukan floating) agar tidak terpotong */
+            .navbar .dropdown-menu {
+                position: static !important;
+                float: none;
+                width: 100%;
+                margin-top: .35rem;
+                border: 1px solid rgba(16,36,26,.10);
+                box-shadow: none;
+                border-radius: .75rem;
+            }
+            .navbar .navbar-nav ~ .d-flex,
+            .navbar .d-flex.gap-2 { flex-direction: column; align-items: stretch; width: 100%; gap: .5rem !important; }
+            .navbar .d-flex .dropdown { width: 100%; }
+            .navbar .d-flex .dropdown > .btn { width: 100%; }
+            .navbar .d-flex > .btn,
+            .navbar .d-flex form,
+            .navbar .d-flex form > .btn { width: 100%; }
+            .navbar .dropdown-item { white-space: normal; }
+        }
     </style>
     
     @stack('styles')

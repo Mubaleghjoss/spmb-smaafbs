@@ -13,15 +13,17 @@ use Illuminate\Pagination\LengthAwarePaginator;
 class PembayaranService
 {
     private SpmbService $spmbService;
+    private KompresGambarService $kompresGambar;
 
-    public function __construct(SpmbService $spmbService)
+    public function __construct(SpmbService $spmbService, KompresGambarService $kompresGambar)
     {
         $this->spmbService = $spmbService;
+        $this->kompresGambar = $kompresGambar;
     }
 
     public function uploadBukti(Peserta $peserta, string $jenis, UploadedFile $file, ?float $nominal = null): Pembayaran
     {
-        $path = $file->store("pembayaran/{$jenis}", 'public');
+        $path = $this->kompresGambar->simpan($file, "pembayaran/{$jenis}");
         return Pembayaran::create([
             'peserta_id' => $peserta->id,
             'jenis' => $jenis,

@@ -5,13 +5,17 @@ namespace App\Http\Controllers\Peserta;
 use App\Http\Controllers\Controller;
 use App\Models\Peserta;
 use App\Services\FormulirSpmbService;
+use App\Services\KompresGambarService;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 
 class FormulirController extends Controller
 {
-    public function __construct(private FormulirSpmbService $formulirService) {}
+    public function __construct(
+        private FormulirSpmbService $formulirService,
+        private KompresGambarService $kompresGambar,
+    ) {}
 
     /**
      * Halaman isi formulir
@@ -56,7 +60,7 @@ class FormulirController extends Controller
         $fileFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'foto'];
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
-                $validated[$field] = $request->file($field)->store("formulir/{$peserta->id}", 'public');
+                $validated[$field] = $this->kompresGambar->simpan($request->file($field), "formulir/{$peserta->id}");
             } else {
                 unset($validated[$field]);
             }
@@ -154,8 +158,8 @@ class FormulirController extends Controller
             'berkas.max' => 'Ukuran file maksimal 2MB',
         ]);
         
-        // Upload file
-        $path = $request->file('berkas')->store("formulir/{$peserta->id}", 'public');
+        // Upload file (gambar dikompres otomatis; PDF disimpan apa adanya)
+        $path = $this->kompresGambar->simpan($request->file('berkas'), "formulir/{$peserta->id}");
         
         // Update formulir
         $formulir->update([$field => $path]);
