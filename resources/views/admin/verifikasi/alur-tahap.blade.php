@@ -2,7 +2,7 @@
 
 @section('title', 'Alur & Tahap SPMB')
 
-@push('styles')
+@section('content')
 <style>
     .tahap-card{border:0;border-radius:1rem;overflow:hidden;transition:transform .2s,box-shadow .2s;}
     .tahap-card:hover{transform:translateY(-3px);box-shadow:0 12px 28px rgba(0,0,0,.1);}
@@ -12,16 +12,14 @@
     .peran-chip{font-size:.72rem;padding:.12rem .5rem;border-radius:6px;font-weight:600;display:inline-flex;align-items:center;gap:.25rem;}
     .chip-peserta{background:#eff6ff;color:#1d4ed8;}
     .chip-admin{background:#f0fdf4;color:#15803d;}
-    /* Tombol aksi berwarna solid & jelas (bukan outline polos) */
-    .tahap-card .btn{font-size:.82rem;font-weight:600;border:0;color:#fff;box-shadow:0 3px 8px rgba(15,23,42,.16);}
-    .tahap-card .btn:hover{transform:translateY(-1px);color:#fff;box-shadow:0 5px 14px rgba(15,23,42,.22);}
-    .btn-verif{background:linear-gradient(135deg,#10b981,#059669);}
-    .btn-atur{background:linear-gradient(135deg,#6366f1,#4f46e5);}
-    .btn-extra{background:linear-gradient(135deg,#0ea5e9,#0284c7);}
+    /* Tombol aksi berwarna solid & jelas — !important agar menang dari style admin global */
+    .tahap-card .btn-aksi{font-size:.82rem;font-weight:600;border:0 !important;color:#fff !important;box-shadow:0 3px 8px rgba(15,23,42,.18);padding:.45rem .85rem;border-radius:.55rem;text-decoration:none;display:inline-flex;align-items:center;transition:transform .15s,box-shadow .15s,filter .15s;}
+    .tahap-card .btn-aksi:hover{transform:translateY(-1px);color:#fff !important;box-shadow:0 6px 16px rgba(15,23,42,.26);filter:brightness(1.06);}
+    .tahap-card .btn-aksi i{color:#fff !important;}
+    .btn-verif{background:linear-gradient(135deg,#10b981,#059669) !important;}
+    .btn-atur{background:linear-gradient(135deg,#6366f1,#4f46e5) !important;}
+    .btn-extra{background:linear-gradient(135deg,#0ea5e9,#0284c7) !important;}
 </style>
-@endpush
-
-@section('content')
 <div class="container-fluid py-4">
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <div>
@@ -97,8 +95,8 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> melengkapi biodata &amp; unggah berkas. <span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> verifikasi formulir.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.formulir') }}" class="btn btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Formulir</a>
-                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap2" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Atur Jadwal/Teks</a>
+                                <a href="{{ route('admin.verifikasi.formulir') }}" class="btn-aksi btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Formulir</a>
+                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap2" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Atur Jadwal/Teks</a>
                             </div>
                         </div>
                     </div>
@@ -119,8 +117,8 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> upload bukti transfer. <span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> verifikasi pembayaran.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}" class="btn btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Pembayaran</a>
-                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap3" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Rekening &amp; Biaya</a>
+                                <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}" class="btn-aksi btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Pembayaran</a>
+                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap3" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Rekening &amp; Biaya</a>
                             </div>
                         </div>
                     </div>
@@ -141,9 +139,9 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> ikut tes CBT pakai token. <span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> siapkan token &amp; verifikasi hasil.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.hasil-tes') }}" class="btn btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Hasil Tes</a>
-                                <a href="{{ route('admin.monitoring-ujian.index') }}" class="btn btn-extra"><i class="bi bi-display me-1"></i>Monitoring</a>
-                                <a href="{{ route('admin.tes.index') }}" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Atur Tes</a>
+                                <a href="{{ route('admin.verifikasi.hasil-tes') }}" class="btn-aksi btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Hasil Tes</a>
+                                <a href="{{ route('admin.monitoring-ujian.index') }}" class="btn-aksi btn-extra"><i class="bi bi-display me-1"></i>Monitoring</a>
+                                <a href="{{ route('admin.tes.index') }}" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Atur Tes</a>
                             </div>
                         </div>
                     </div>
@@ -164,8 +162,8 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> isi jawaban &amp; surat pernyataan. <span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> loloskan wawancara.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.wawancara') }}" class="btn btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Wawancara</a>
-                                <a href="{{ route('admin.pengaturan.wawancara') }}" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Atur Pertanyaan</a>
+                                <a href="{{ route('admin.verifikasi.wawancara') }}" class="btn-aksi btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Wawancara</a>
+                                <a href="{{ route('admin.pengaturan.wawancara') }}" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Atur Pertanyaan</a>
                             </div>
                         </div>
                     </div>
@@ -186,8 +184,8 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> upload bukti pelunasan awal. <span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> verifikasi &amp; terbitkan kwitansi.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.pelunasan') }}" class="btn btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Pelunasan</a>
-                                <a href="{{ route('admin.pengaturan.template-kwitansi') }}" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Template Kwitansi</a>
+                                <a href="{{ route('admin.verifikasi.pelunasan') }}" class="btn-aksi btn-verif"><i class="bi bi-clipboard-check me-1"></i>Verifikasi Pelunasan</a>
+                                <a href="{{ route('admin.pengaturan.template-kwitansi') }}" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Template Kwitansi</a>
                             </div>
                         </div>
                     </div>
@@ -208,8 +206,8 @@
                             </div>
                             <div class="mb-3 small"><span class="peran-chip chip-admin"><i class="bi bi-shield-check"></i>Admin</span> tetapkan lulus/tidak &amp; unggah SK. <span class="peran-chip chip-peserta"><i class="bi bi-person"></i>Peserta</span> lihat pengumuman + unduh SK.</div>
                             <div class="d-flex flex-wrap gap-2">
-                                <a href="{{ route('admin.verifikasi.kelulusan') }}" class="btn btn-verif"><i class="bi bi-award me-1"></i>Verifikasi Kelulusan</a>
-                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn btn-atur"><i class="bi bi-gear me-1"></i>Atur Pengumuman &amp; SK</a>
+                                <a href="{{ route('admin.verifikasi.kelulusan') }}" class="btn-aksi btn-verif"><i class="bi bi-award me-1"></i>Verifikasi Kelulusan</a>
+                                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn-aksi btn-atur"><i class="bi bi-gear me-1"></i>Atur Pengumuman &amp; SK</a>
                             </div>
                         </div>
                     </div>
