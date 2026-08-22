@@ -58,7 +58,7 @@
                 <p class="lead mb-2">{{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
                 <p class="mb-4 opacity-75">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? date('Y') . '/' . (date('Y') + 1) }}</p>
                 @if(!empty($beranda['hero_subjudul']))
-                <p class="mb-4">{{ $beranda['hero_subjudul'] }}</p>
+                <p class="mb-4">{!! nl2br(e($beranda['hero_subjudul'])) !!}</p>
                 @endif
                 <div class="d-flex gap-3 flex-wrap">
                     <a href="{{ route('daftar') }}" class="btn btn-warning btn-lg">

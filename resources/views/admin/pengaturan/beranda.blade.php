@@ -54,7 +54,8 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Sub Judul / Deskripsi</label>
-                            <textarea name="beranda_hero_subjudul" class="form-control" rows="3">{{ old('beranda_hero_subjudul', $beranda['hero_subjudul']) }}</textarea>
+                            <textarea name="beranda_hero_subjudul" class="form-control" rows="4">{{ old('beranda_hero_subjudul', $beranda['hero_subjudul']) }}</textarea>
+                            <small class="text-muted"><i class="bi bi-info-circle me-1"></i>Setiap <strong>Enter</strong> (baris baru) akan tampil sebagai baris terpisah di halaman publik. Cocok untuk poin 1, 2, 3 ke bawah.</small>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
