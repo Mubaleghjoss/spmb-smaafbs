@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Services\PengaturanService;
+use App\Services\PeriodeContextService;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
@@ -36,6 +37,21 @@ class ViewServiceProvider extends ServiceProvider
                     'warna_sekunder' => '#6c757d',
                     'tahun_ajaran' => date('Y') . '/' . (date('Y') + 1),
                 ]);
+            }
+        });
+
+        // Share konteks periode aktif ke layout admin (switcher header).
+        View::composer('layouts.admin', function ($view) {
+            try {
+                if (auth('pengguna')->check()) {
+                    $periode = app(PeriodeContextService::class);
+                    $view->with('periodeAktifLabel', $periode->label());
+                    $view->with('periodeAktifSemua', $periode->semuaPeriode());
+                    $view->with('periodeAktifId', $periode->tahunAjaranId());
+                    $view->with('periodePilihan', $periode->pilihanTahunAjaran());
+                }
+            } catch (\Throwable $e) {
+                // Abaikan bila DB belum siap.
             }
         });
     }

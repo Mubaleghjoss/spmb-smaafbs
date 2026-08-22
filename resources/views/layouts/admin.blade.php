@@ -615,6 +615,53 @@
             <div class="ms-3">
                 <small class="text-muted fw-medium">@yield('title', 'Dashboard')</small>
             </div>
+
+            {{-- ===== SWITCHER PERIODE AKTIF (Tahun Ajaran) ===== --}}
+            @isset($periodePilihan)
+            <div class="ms-auto dropdown periode-switcher">
+                <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        title="Periode data yang sedang ditampilkan">
+                    <i class="bi bi-calendar3-range"></i>
+                    <span class="d-none d-sm-inline text-muted small">Periode:</span>
+                    <span class="fw-semibold">{{ $periodeAktifLabel ?? 'Semua Periode' }}</span>
+                    @if(!empty($periodeAktifSemua))
+                        <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle">Agregat</span>
+                    @endif
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 240px;">
+                    <li><h6 class="dropdown-header"><i class="bi bi-funnel me-1"></i>Tampilkan data periode</h6></li>
+                    @foreach($periodePilihan as $ta)
+                    <li>
+                        <form action="{{ route('admin.periode-aktif.ganti') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="tahun_ajaran_id" value="{{ $ta->id }}">
+                            <button type="submit" class="dropdown-item d-flex align-items-center justify-content-between {{ (empty($periodeAktifSemua) && (int)($periodeAktifId ?? 0) === (int)$ta->id) ? 'active' : '' }}">
+                                <span>
+                                    <i class="bi bi-calendar-event me-2"></i>{{ $ta->nama }}
+                                </span>
+                                @if($ta->default)
+                                    <span class="badge bg-success-subtle text-success-emphasis border border-success-subtle ms-2">Aktif</span>
+                                @elseif(!$ta->aktif)
+                                    <span class="badge bg-secondary-subtle text-secondary-emphasis border ms-2">Arsip</span>
+                                @endif
+                            </button>
+                        </form>
+                    </li>
+                    @endforeach
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('admin.periode-aktif.ganti') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="tahun_ajaran_id" value="semua">
+                            <button type="submit" class="dropdown-item d-flex align-items-center {{ !empty($periodeAktifSemua) ? 'active' : '' }}">
+                                <i class="bi bi-collection me-2"></i>Semua Periode <span class="text-muted small ms-1">(total)</span>
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+            @endisset
         </div>
 
         <!-- Content -->

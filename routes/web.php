@@ -455,6 +455,9 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::delete('/token-global/{tokenGlobal}', [\App\Http\Controllers\Admin\TokenGlobalController::class, 'destroy'])->name('token-global.destroy');
     Route::post('/token-global/{tokenGlobal}/toggle', [\App\Http\Controllers\Admin\TokenGlobalController::class, 'toggleAktif'])->name('token-global.toggle');
     Route::get('/token-global/{tokenGlobal}/logs', [\App\Http\Controllers\Admin\TokenGlobalController::class, 'logs'])->name('token-global.logs');
+
+    // Ganti periode aktif (tahun ajaran) untuk seluruh konteks admin
+    Route::post('/periode-aktif', [\App\Http\Controllers\Admin\PeriodeAktifController::class, 'ganti'])->name('periode-aktif.ganti');
 });
 
 /*

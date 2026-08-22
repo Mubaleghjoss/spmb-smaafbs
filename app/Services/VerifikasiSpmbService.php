@@ -164,12 +164,17 @@ class VerifikasiSpmbService
         return [
             'pembayaran_menunggu' => Pembayaran::where('status', 'menunggu')
                 ->where('jenis', 'formulir')
+                ->whereHas('peserta')
                 ->count(),
             'pelunasan_menunggu' => Pembayaran::where('status', 'menunggu')
                 ->where('jenis', 'pertama')
+                ->whereHas('peserta')
                 ->count(),
-            'formulir_menunggu' => FormulirSpmb::where('status_verifikasi', 'menunggu')->count(),
+            'formulir_menunggu' => FormulirSpmb::where('status_verifikasi', 'menunggu')
+                ->whereHas('peserta')
+                ->count(),
             'hasil_tes_menunggu' => \App\Models\SesiTes::whereIn('status', ['selesai', 'timeout'])
+                ->whereHas('peserta')
                 ->where(function ($q) {
                     $q->where('status_verifikasi_tes', 'menunggu')
                       ->orWhereNull('status_verifikasi_tes');
@@ -190,7 +195,8 @@ class VerifikasiSpmbService
     {
         $hasil = [];
         for ($i = 1; $i <= 7; $i++) {
-            $hasil[$i] = TahapanSpmb::where('tahap_saat_ini', $i)->count();
+            // Lewat relasi peserta agar ikut ter-scope periode aktif (PeriodeScope).
+            $hasil[$i] = Peserta::whereHas('tahapanSpmb', fn ($q) => $q->where('tahap_saat_ini', $i))->count();
         }
         return $hasil;
     }

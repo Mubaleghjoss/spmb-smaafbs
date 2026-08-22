@@ -40,10 +40,11 @@ class MonitoringSpmbService
     {
         $hasil = [];
         for ($i = 1; $i <= 7; $i++) {
-            $hasil[$i] = TahapanSpmb::where('tahap_saat_ini', $i)->count();
+            // Lewat relasi peserta agar ikut ter-scope periode aktif (PeriodeScope).
+            $hasil[$i] = Peserta::whereHas('tahapanSpmb', fn ($q) => $q->where('tahap_saat_ini', $i))->count();
         }
         // Tambahkan peserta yang sudah selesai (tahap 7 selesai)
-        $hasil['selesai'] = TahapanSpmb::where('tahap_7_selesai', true)->count();
+        $hasil['selesai'] = Peserta::whereHas('tahapanSpmb', fn ($q) => $q->where('tahap_7_selesai', true))->count();
         return $hasil;
     }
 

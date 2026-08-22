@@ -35,8 +35,9 @@ class HasilController extends Controller
         ->orderBy('created_at', 'asc')
         ->get();
 
-        // Ambil semua sesi tes yang selesai
+        // Ambil semua sesi tes yang selesai (ter-scope periode aktif via relasi peserta)
         $sesiQuery = SesiTes::whereIn('status', ['selesai', 'timeout'])
+            ->whereHas('peserta')
             ->with([
                 'peserta' => fn ($q) => $q
                     ->select('id', 'nama', 'nomor_pendaftaran', 'asal_sekolah')
