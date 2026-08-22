@@ -33,6 +33,14 @@
     .float-wa:hover { transform: scale(1.08); color:#fff; }
     .testi-card { border-radius: 1rem; }
     .testi-avatar { width: 56px; height: 56px; object-fit: cover; }
+    .hero-illust-fallback {
+        width: 260px; height: 260px; max-width: 80vw; max-height: 80vw;
+        border-radius: 2rem;
+        background: rgba(255,255,255,.14);
+        border: 2px dashed rgba(255,255,255,.4);
+        color: rgba(255,255,255,.85);
+        font-size: 7rem;
+    }
 </style>
 @endpush
 
@@ -66,6 +74,11 @@
                     <img src="{{ Storage::url($beranda['hero_gambar']) }}" alt="Ilustrasi" class="img-fluid rounded-4 shadow-lg" style="max-height: 380px;">
                 @elseif(!empty($branding['logo']))
                     <img src="{{ Storage::url($branding['logo']) }}" alt="Logo" class="img-fluid" style="max-height: 240px;">
+                @else
+                    {{-- Placeholder ikon open-source (Bootstrap Icons, MIT) saat belum ada gambar --}}
+                    <div class="hero-illust-fallback mx-auto d-flex align-items-center justify-content-center">
+                        <i class="bi bi-mortarboard-fill"></i>
+                    </div>
                 @endif
             </div>
         </div>
