@@ -11,6 +11,7 @@
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
 
     @include('partials.pwa-head')
+    @include('partials.tk-backend')
 
     <style>
         /* ===== BOTTOM NAV (MOBILE) — Peserta ===== */
@@ -62,7 +63,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-success">
         <div class="container">
             <a class="navbar-brand" href="{{ route('peserta.dashboard') }}">
-                <i class="bi bi-mortarboard me-2"></i>{{ $branding['nama_singkat'] ?? 'SPMB' }}
+                <i class="bi bi-mortarboard me-2"></i>{{ $branding['nama_singkat'] ?? 'SPMB' }} SMA AFBS
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

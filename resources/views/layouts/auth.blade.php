@@ -10,11 +10,12 @@
     @endif
     
     @vite(['resources/sass/app.scss', 'resources/js/app.js'])
+    @include('partials.tk-backend')
     
     <style>
         body {
             min-height: 100vh;
-            background: linear-gradient(135deg, #1a5f2a 0%, #2e8b57 100%);
+            background: linear-gradient(135deg, var(--tk-primary, #1a5f2a) 0%, var(--tk-secondary, #2e8b57) 100%);
         }
         
         .auth-card {

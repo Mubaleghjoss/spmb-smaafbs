@@ -210,7 +210,10 @@
                 @if(!empty($branding['logo']))
                 <img src="{{ asset('storage/' . $branding['logo']) }}" alt="Logo" class="me-2" style="height: 50px;">
                 @endif
-                <span class="fw-bold" style="color: {{ $branding['warna_primer'] ?? '#1a5f2a' }}">{{ $branding['nama_singkat'] ?? 'SPMB' }}</span>
+                <span class="d-flex flex-column lh-1">
+                    <span class="fw-bold" style="color: {{ $branding['warna_primer'] ?? '#1a5f2a' }}; font-family:'Fraunces',serif; font-size:1.15rem;">{{ $branding['nama_singkat'] ?? 'SPMB' }} SMA AFBS</span>
+                    <small class="text-muted" style="font-size:.68rem; letter-spacing:.03em;">Seleksi Penerimaan Murid Baru</small>
+                </span>
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
