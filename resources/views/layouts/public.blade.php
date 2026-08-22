@@ -125,16 +125,24 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('beranda') ? 'active' : '' }}" href="{{ route('beranda') }}">Beranda</a>
+                        <a class="nav-link {{ request()->routeIs('beranda') ? 'active' : '' }}" href="{{ route('beranda') }}">
+                            <i class="bi bi-house-door me-1"></i>Beranda
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('alur-spmb') ? 'active' : '' }}" href="{{ route('alur-spmb') }}">Alur SPMB</a>
+                        <a class="nav-link {{ request()->routeIs('alur-spmb') ? 'active' : '' }}" href="{{ route('alur-spmb') }}">
+                            <i class="bi bi-signpost-split me-1"></i>Alur SPMB
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('jadwal') ? 'active' : '' }}" href="{{ route('jadwal') }}">Jadwal</a>
+                        <a class="nav-link {{ request()->routeIs('jadwal') ? 'active' : '' }}" href="{{ route('jadwal') }}">
+                            <i class="bi bi-calendar-event me-1"></i>Jadwal
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('kontak') ? 'active' : '' }}" href="{{ route('kontak') }}">Kontak</a>
+                        <a class="nav-link {{ request()->routeIs('kontak') ? 'active' : '' }}" href="{{ route('kontak') }}">
+                            <i class="bi bi-envelope me-1"></i>Kontak
+                        </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('cek-status') ? 'active' : '' }}" href="{{ route('cek-status') }}">
@@ -145,10 +153,14 @@
                 
                 <div class="d-flex gap-2">
                     @auth('pengguna')
-                        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-success">Dashboard</a>
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-outline-success">
+                            <i class="bi bi-speedometer2 me-1"></i>Dashboard
+                        </a>
                         <form action="{{ route('logout') }}" method="POST" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-outline-danger">Keluar</button>
+                            <button type="submit" class="btn btn-outline-danger">
+                                <i class="bi bi-box-arrow-right me-1"></i>Keluar
+                            </button>
                         </form>
                     @else
                         <!-- Dropdown Login -->
@@ -175,7 +187,9 @@
                                 </li>
                             </ul>
                         </div>
-                        <a href="{{ route('daftar') }}" class="btn btn-success">Daftar SPMB</a>
+                        <a href="{{ route('daftar') }}" class="btn btn-success">
+                            <i class="bi bi-pencil-square me-1"></i>Daftar SPMB
+                        </a>
                     @endauth
                 </div>
             </div>
@@ -234,10 +248,10 @@
                 <div class="col-md-4 mb-4">
                     <h5 class="text-white mb-3">Link Cepat</h5>
                     <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="{{ route('alur-spmb') }}" class="text-decoration-none text-light">Alur SPMB</a></li>
-                        <li class="mb-2"><a href="{{ route('jadwal') }}" class="text-decoration-none text-light">Jadwal</a></li>
-                        <li class="mb-2"><a href="{{ route('kontak') }}" class="text-decoration-none text-light">Kontak</a></li>
-                        <li class="mb-2"><a href="{{ route('peserta.login') }}" class="text-decoration-none text-light">Login Peserta</a></li>
+                        <li class="mb-2"><a href="{{ route('alur-spmb') }}" class="text-decoration-none text-light"><i class="bi bi-signpost-split me-2"></i>Alur SPMB</a></li>
+                        <li class="mb-2"><a href="{{ route('jadwal') }}" class="text-decoration-none text-light"><i class="bi bi-calendar-event me-2"></i>Jadwal</a></li>
+                        <li class="mb-2"><a href="{{ route('kontak') }}" class="text-decoration-none text-light"><i class="bi bi-envelope me-2"></i>Kontak</a></li>
+                        <li class="mb-2"><a href="{{ route('peserta.login') }}" class="text-decoration-none text-light"><i class="bi bi-box-arrow-in-right me-2"></i>Login Peserta</a></li>
                     </ul>
                 </div>
             </div>
