@@ -407,6 +407,66 @@
         .pagination { margin-bottom: 0; font-size: 0.875rem; }
         .pagination .page-link { padding: 0.375rem 0.75rem; font-size: 0.875rem; }
         nav[role="navigation"] { font-size: 0.875rem; }
+
+        /* ===== BOTTOM NAV (MOBILE) ===== */
+        .mobile-bottom-nav { display: none; }
+        @media (max-width: 768px) {
+            .mobile-bottom-nav {
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                position: fixed;
+                left: 0; right: 0; bottom: 0;
+                height: 62px;
+                background: #ffffff;
+                border-top: 1px solid #e5e7eb;
+                box-shadow: 0 -4px 16px rgba(15,23,42,.08);
+                z-index: 1050;
+                padding-bottom: env(safe-area-inset-bottom, 0);
+            }
+            .mobile-bottom-nav a, .mobile-bottom-nav button {
+                border: 0; background: none;
+                display: flex; flex-direction: column; align-items: center; justify-content: center;
+                gap: 2px; min-width: 0; padding: 4px 2px;
+                color: #64748b; font-size: .64rem; font-weight: 600;
+                text-decoration: none; position: relative;
+                transition: color .15s;
+            }
+            .mobile-bottom-nav a i, .mobile-bottom-nav button i { font-size: 1.25rem; }
+            .mobile-bottom-nav a.active { color: #059669; }
+            .mobile-bottom-nav a.active i { color: #059669; }
+            .mobile-bottom-nav .mbn-label { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+            .mobile-bottom-nav .mbn-badge {
+                position: absolute; top: 6px; right: 50%; transform: translateX(18px);
+                background: #ef4444; color: #fff; border-radius: 999px;
+                font-size: .6rem; font-weight: 800; line-height: 1;
+                min-width: 16px; padding: 2px 4px; text-align: center;
+            }
+            /* beri ruang agar konten tidak tertutup bottom-nav */
+            .admin-main { padding-bottom: 74px !important; }
+        }
+
+        /* Sheet menu "Lainnya" (mobile) */
+        .mbn-sheet-backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.55); z-index: 1060; display: none; }
+        .mbn-sheet-backdrop.show { display: block; }
+        .mbn-sheet {
+            position: fixed; left: 0; right: 0; bottom: 0; z-index: 1061;
+            background: #fff; border-radius: 18px 18px 0 0;
+            padding: 16px 16px calc(16px + env(safe-area-inset-bottom, 0));
+            transform: translateY(100%); transition: transform .25s ease;
+            max-height: 80vh; overflow-y: auto;
+        }
+        .mbn-sheet.show { transform: translateY(0); }
+        .mbn-sheet .mbn-grip { width: 44px; height: 5px; border-radius: 999px; background: #cbd5e1; margin: 0 auto 12px; }
+        .mbn-sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .mbn-sheet-item {
+            display: flex; flex-direction: column; align-items: center; gap: 6px;
+            padding: 12px 6px; border: 1px solid #e5e7eb; border-radius: 14px;
+            color: #334155; text-decoration: none; font-size: .72rem; font-weight: 600; text-align: center;
+            position: relative;
+        }
+        .mbn-sheet-item i { font-size: 1.35rem; color: #059669; }
+        .mbn-sheet-item.active { border-color: #10b981; background: #f0fdf4; color: #047857; }
+        .mbn-sheet-item .mbn-badge { position: absolute; top: 6px; right: 8px; transform: none; }
     </style>
 </head>
 <body>
@@ -577,6 +637,69 @@
         </div>
     </div>
 
+    {{-- ===== BOTTOM NAV (MOBILE) ===== --}}
+    @php
+        $mbnItems = [
+            ['route' => 'admin.dashboard',       'match' => 'admin.dashboard',      'icon' => 'grid-1x2-fill',      'label' => 'Dashboard', 'akses' => null],
+            ['route' => 'admin.alur-tahap',      'match' => 'admin.alur-tahap',     'icon' => 'signpost-2-fill',    'label' => 'Alur',      'akses' => null],
+            ['route' => 'admin.verifikasi.index','match' => 'admin.verifikasi.*',   'icon' => 'clipboard-check-fill','label' => 'Verifikasi','akses' => 'verifikasi', 'badge' => $navAntre ?? 0],
+            ['route' => 'admin.peserta.index',   'match' => 'admin.peserta.*',      'icon' => 'person-vcard-fill',  'label' => 'Peserta',   'akses' => 'peserta'],
+        ];
+        // Menu "Lainnya" (sheet)
+        $mbnMore = [
+            ['route' => 'admin.alur-peserta.index','match' => 'admin.alur-peserta.*','icon' => 'people-fill',          'label' => 'Alur Peserta', 'akses' => null],
+            ['route' => 'admin.tes.index',         'match' => 'admin.tes.*',         'icon' => 'journal-text',         'label' => 'Tes',          'akses' => 'tes'],
+            ['route' => 'admin.soal.index',        'match' => 'admin.soal.*',        'icon' => 'question-diamond-fill','label' => 'Bank Soal',    'akses' => 'soal'],
+            ['route' => 'admin.monitoring-ujian.index','match' => 'admin.monitoring-ujian.*','icon' => 'display-fill','label' => 'Monitoring','akses' => 'monitoring_ujian'],
+            ['route' => 'admin.hasil.index',       'match' => 'admin.hasil.*',       'icon' => 'bar-chart-fill',       'label' => 'Hasil Ujian',  'akses' => 'hasil'],
+            ['route' => 'admin.pengaturan.index',  'match' => 'admin.pengaturan.*',  'icon' => 'gear-fill',            'label' => 'Pengaturan',   'akses' => 'pengaturan'],
+            ['route' => 'admin.pengguna.index',    'match' => 'admin.pengguna.*',    'icon' => 'person-fill-gear',     'label' => 'Pengguna',     'akses' => 'pengguna'],
+        ];
+        $bolehTampil = fn($akses) => $akses === null || (isset($pengguna) && $pengguna->bisaAkses($akses));
+    @endphp
+
+    <nav class="mobile-bottom-nav" aria-label="Navigasi bawah">
+        @foreach($mbnItems as $it)
+            @if($bolehTampil($it['akses']))
+            <a href="{{ route($it['route']) }}" class="{{ request()->routeIs($it['match']) ? 'active' : '' }}">
+                <i class="bi bi-{{ $it['icon'] }}"></i>
+                <span class="mbn-label">{{ $it['label'] }}</span>
+                @if(!empty($it['badge']) && $it['badge'] > 0)
+                    <span class="mbn-badge">{{ $it['badge'] > 99 ? '99+' : $it['badge'] }}</span>
+                @endif
+            </a>
+            @endif
+        @endforeach
+        <button type="button" onclick="mbnToggleSheet(true)" aria-label="Menu lainnya">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span class="mbn-label">Lainnya</span>
+        </button>
+    </nav>
+
+    {{-- Sheet menu lainnya --}}
+    <div class="mbn-sheet-backdrop" id="mbnBackdrop" onclick="mbnToggleSheet(false)"></div>
+    <div class="mbn-sheet" id="mbnSheet" role="dialog" aria-modal="true" aria-label="Menu lainnya">
+        <div class="mbn-grip"></div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0">Menu Lainnya</h6>
+            <button type="button" class="btn btn-sm btn-light" onclick="mbnToggleSheet(false)"><i class="bi bi-x-lg"></i></button>
+        </div>
+        <div class="mbn-sheet-grid">
+            @foreach($mbnMore as $it)
+                @if($bolehTampil($it['akses']))
+                <a href="{{ route($it['route']) }}" class="mbn-sheet-item {{ request()->routeIs($it['match']) ? 'active' : '' }}">
+                    <i class="bi bi-{{ $it['icon'] }}"></i>
+                    <span>{{ $it['label'] }}</span>
+                </a>
+                @endif
+            @endforeach
+        </div>
+        <form action="{{ route('logout') }}" method="POST" class="mt-3">
+            @csrf
+            <button type="submit" class="w-100 btn btn-outline-danger"><i class="bi bi-box-arrow-right me-1"></i>Keluar</button>
+        </form>
+    </div>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const sidebar = document.getElementById('sidebar');
@@ -662,6 +785,18 @@
                 });
             });
         });
+    </script>
+
+    <script>
+        // Bottom-nav sheet "Lainnya"
+        function mbnToggleSheet(open) {
+            var sheet = document.getElementById('mbnSheet');
+            var bd = document.getElementById('mbnBackdrop');
+            if (!sheet || !bd) return;
+            if (open) { bd.classList.add('show'); requestAnimationFrame(function(){ sheet.classList.add('show'); }); document.body.style.overflow = 'hidden'; }
+            else { sheet.classList.remove('show'); bd.classList.remove('show'); document.body.style.overflow = ''; }
+        }
+        document.addEventListener('keydown', function(e){ if (e.key === 'Escape') mbnToggleSheet(false); });
     </script>
 
     @stack('scripts')
