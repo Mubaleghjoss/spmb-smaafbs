@@ -259,6 +259,35 @@
                                             <a href="{{ route('peserta.formulir.review') }}" class="alert-link">Lengkapi sekarang</a>
                                         </div>
                                     @endif
+
+                                    {{-- Tombol "Kabari Tim SPMB" saat formulir tahap 2 menunggu verifikasi --}}
+                                    @if($nomor == 2 && ($peserta->formulirSpmb->status_verifikasi ?? '') === 'menunggu')
+                                        @php
+                                            $timList = collect($kontakTimSpmb ?? [])->filter(fn($k) => !empty($k['whatsapp']))->values();
+                                            if ($timList->isEmpty() && !empty($whatsappSpmb)) {
+                                                $timList = collect([['nama' => 'Tim SPMB', 'whatsapp' => $whatsappSpmb]]);
+                                            }
+                                            $pesanWa = "Assalamu'alaikum, saya *".($peserta->nama)."* dengan nomor pendaftaran *".($peserta->nomor_pendaftaran)."* sudah mengisi & mengirim formulir SPMB. Mohon segera diverifikasi. Terima kasih.";
+                                        @endphp
+                                        @if($timList->isNotEmpty())
+                                        <div class="alert alert-success py-2 px-3 mb-2 small">
+                                            <div class="mb-2"><i class="bi bi-whatsapp me-1"></i>Formulir menunggu verifikasi. <strong>Kabari salah satu</strong> Tim SPMB agar segera diverifikasi:</div>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach($timList as $tim)
+                                                    @php
+                                                        $waDigits = preg_replace('/[^0-9]/', '', $tim['whatsapp'] ?? '');
+                                                        if (str_starts_with($waDigits, '62')) { $waDigits = substr($waDigits, 2); }
+                                                        $waDigits = ltrim($waDigits, '0');
+                                                        $waLink = 'https://wa.me/62' . $waDigits . '?text=' . urlencode($pesanWa);
+                                                    @endphp
+                                                    <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
+                                                        <i class="bi bi-whatsapp me-1"></i>Kabari {{ $tim['nama'] ?? 'Tim SPMB' }}
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                        @endif
+                                    @endif
                                     
                                     @if($nomor == 7 && $statusKelulusan === 'tidak_lulus')
                                         <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Tidak Lulus</span>

@@ -44,7 +44,12 @@ class DashboardSpmbController extends Controller
         // Hitung berkas yang belum diunggah
         $berkasBelumLengkap = $this->hitungBerkasBelumLengkap($peserta->formulirSpmb);
         $kelengkapanPascakelulusan = $this->buildKelengkapanPascakelulusan($peserta);
-        
+
+        // Daftar kontak Tim SPMB (untuk tombol "Kabari" saat formulir menunggu verifikasi)
+        $pengaturanService = app(\App\Services\PengaturanService::class);
+        $kontakTimSpmb = $pengaturanService->ambilKontakTimSpmb();
+        $whatsappSpmb = $pengaturanService->ambilSpmb()['whatsapp_spmb'] ?? '';
+
         return view('peserta.dashboard', [
             'peserta' => $peserta,
             'tahapan' => $peserta->tahapanSpmb,
@@ -53,6 +58,8 @@ class DashboardSpmbController extends Controller
             'sesiTesList' => $sesiTesList,
             'berkasBelumLengkap' => $berkasBelumLengkap,
             'kelengkapanPascakelulusan' => $kelengkapanPascakelulusan,
+            'kontakTimSpmb' => $kontakTimSpmb,
+            'whatsappSpmb' => $whatsappSpmb,
         ]);
     }
 

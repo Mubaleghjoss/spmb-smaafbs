@@ -116,12 +116,12 @@ class FormulirController extends Controller
             ]);
         }
         
-        // Ambil nomor WhatsApp SPMB dari pengaturan
+        // Ambil daftar kontak Tim SPMB dari pengaturan (bisa banyak nomor)
         $pengaturanService = app(\App\Services\PengaturanService::class);
-        $spmb = $pengaturanService->ambilSpmb();
-        $whatsappSpmb = $spmb['whatsapp_spmb'] ?? '';
-        
-        return view('peserta.formulir.review', compact('peserta', 'formulir', 'whatsappSpmb'));
+        $kontakTimSpmb = $pengaturanService->ambilKontakTimSpmb();
+        $whatsappSpmb = $pengaturanService->ambilSpmb()['whatsapp_spmb'] ?? '';
+
+        return view('peserta.formulir.review', compact('peserta', 'formulir', 'whatsappSpmb', 'kontakTimSpmb'));
     }
 
     /**

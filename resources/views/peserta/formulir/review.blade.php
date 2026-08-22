@@ -336,19 +336,42 @@
                 </div>
             @endforeach
 
-            @if($formulir->status_verifikasi === 'menunggu' && !empty($whatsappSpmb))
+            @php
+                // Normalisasi daftar kontak tim (nama + whatsapp). Fallback ke nomor tunggal lama.
+                $timList = collect($kontakTimSpmb ?? [])
+                    ->filter(fn($k) => !empty($k['whatsapp']))
+                    ->values();
+                if ($timList->isEmpty() && !empty($whatsappSpmb)) {
+                    $timList = collect([['nama' => 'Tim SPMB', 'whatsapp' => $whatsappSpmb]]);
+                }
+                $pesanWa = "Assalamu'alaikum, saya *{$formulir->nama_lengkap}* dengan nomor pendaftaran *{$peserta->nomor_pendaftaran}* sudah mengisi & mengirim formulir SPMB. Mohon segera diverifikasi. Terima kasih.";
+            @endphp
+
+            @if($formulir->status_verifikasi === 'menunggu' && $timList->isNotEmpty())
                 <div class="card border-0 shadow-sm mt-4 border-success">
                     <div class="card-body text-center py-4">
                         <i class="bi bi-whatsapp text-success" style="font-size: 3rem;"></i>
-                        <h5 class="mt-3">Konfirmasi via WhatsApp</h5>
-                        <p class="text-muted mb-3">Klik tombol di bawah untuk menghubungi Tim SPMB dan mempercepat proses verifikasi formulir Anda.</p>
-                        @php
-                            $pesan = "Assalamu'alaikum, saya *{$formulir->nama_lengkap}* dengan nomor pendaftaran *{$peserta->nomor_pendaftaran}* ingin mengkonfirmasi bahwa saya sudah mengisi dan mengirim formulir SPMB. Mohon untuk segera diverifikasi. Terima kasih.";
-                            $waLink = "https://wa.me/62" . ltrim($whatsappSpmb, '0') . "?text=" . urlencode($pesan);
-                        @endphp
-                        <a href="{{ $waLink }}" target="_blank" class="btn btn-success btn-lg">
-                            <i class="bi bi-whatsapp me-2"></i>Konfirmasi via WhatsApp
-                        </a>
+                        <h5 class="mt-3">Kabari Tim SPMB SMA AFBS</h5>
+                        <p class="text-muted mb-3">
+                            Formulir Anda sedang menunggu verifikasi. Hubungi <strong>salah satu</strong>
+                            Tim SPMB di bawah agar segera diverifikasi.
+                        </p>
+                        <div class="d-flex flex-wrap justify-content-center gap-2">
+                            @foreach($timList as $tim)
+                                @php
+                                    $waDigits = preg_replace('/[^0-9]/', '', $tim['whatsapp'] ?? '');
+                                    if (str_starts_with($waDigits, '62')) { $waDigits = substr($waDigits, 2); }
+                                    $waDigits = ltrim($waDigits, '0');
+                                    $waLink = 'https://wa.me/62' . $waDigits . '?text=' . urlencode($pesanWa);
+                                @endphp
+                                <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn btn-success btn-lg">
+                                    <i class="bi bi-whatsapp me-2"></i>Kabari {{ $tim['nama'] ?? 'Tim SPMB' }}
+                                </a>
+                            @endforeach
+                        </div>
+                        <div class="small text-muted mt-3">
+                            <i class="bi bi-info-circle me-1"></i>Cukup hubungi satu narahubung saja.
+                        </div>
                     </div>
                 </div>
             @endif
