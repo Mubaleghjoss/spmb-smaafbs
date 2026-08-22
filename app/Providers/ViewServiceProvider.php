@@ -40,8 +40,8 @@ class ViewServiceProvider extends ServiceProvider
             }
         });
 
-        // Share konteks periode aktif ke layout admin (switcher header).
-        View::composer('layouts.admin', function ($view) {
+        // Share konteks periode aktif ke layout admin (switcher header) & banner partial.
+        View::composer(['layouts.admin', 'partials.periode-banner'], function ($view) {
             try {
                 if (auth('pengguna')->check()) {
                     $periode = app(PeriodeContextService::class);

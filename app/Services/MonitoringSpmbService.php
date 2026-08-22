@@ -194,7 +194,7 @@ class MonitoringSpmbService
      */
     public function eksporDataPeserta(array $filter = []): Collection
     {
-        $query = Peserta::with(['tahapanSpmb', 'formulirSpmb']);
+        $query = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'tahunAjaran']);
 
         if (!empty($filter['tahap'])) {
             $query->whereHas('tahapanSpmb', function ($q) use ($filter) {
@@ -205,6 +205,7 @@ class MonitoringSpmbService
         return $query->get()->map(function ($peserta) {
             $tahapan = $peserta->tahapanSpmb;
             return [
+                'tahun_ajaran' => $peserta->tahunAjaran?->nama ?? '-',
                 'nomor_pendaftaran' => $peserta->nomor_pendaftaran,
                 'nama' => $peserta->nama,
                 'email' => $peserta->email,

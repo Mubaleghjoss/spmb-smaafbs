@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    @include('partials.periode-banner')
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
         <h4 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Panel Verifikasi SPMB</h4>
         <a href="{{ route('admin.alur-tahap') }}" class="btn btn-success">

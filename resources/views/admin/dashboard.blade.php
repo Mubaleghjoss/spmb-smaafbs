@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    @include('partials.periode-banner')
     <div class="row mb-4">
         <div class="col">
             <h4 class="fw-bold">Dashboard</h4>

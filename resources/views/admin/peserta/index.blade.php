@@ -26,6 +26,7 @@
     .rekap-formulir .badge{flex-shrink:0;}
 </style>
 <div class="container-fluid">
+    @include('partials.periode-banner')
     @php
         $tahapLabels = [
             1 => 'Pendaftaran',

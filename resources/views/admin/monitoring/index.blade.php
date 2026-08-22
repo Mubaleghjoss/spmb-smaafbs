@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    @include('partials.periode-banner')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0"><i class="bi bi-graph-up me-2"></i>Monitoring SPMB</h4>
         <div>

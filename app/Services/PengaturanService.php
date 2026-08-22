@@ -1044,26 +1044,25 @@ class PengaturanService
         return [
             [
                 'nomor' => 1,
-                'judul' => 'Buat Akun & Login',
+                'judul' => 'Daftar & Isi Biodata',
                 'icon' => 'person-plus-fill',
-                'deskripsi' => 'Daftarkan diri Anda dengan mengisi data dasar untuk membuat akun peserta SPMB.',
+                'deskripsi' => 'Cukup satu langkah: isi biodata calon siswa dan nomor HP. Akun otomatis dibuat (No HP menjadi username sekaligus password), lalu Anda langsung masuk ke dashboard peserta.',
                 'detail' => [
-                    'Isi nama lengkap, email, dan nomor telepon',
-                    'Buat password untuk akun Anda',
-                    'Dapatkan nomor pendaftaran otomatis',
-                    'Login ke dashboard peserta'
+                    'Pilih periode/gelombang dan jenis pendaftaran (siswa baru/pindahan)',
+                    'Isi biodata: nama, jenis kelamin, tempat/tanggal lahir, asal sekolah, data orang tua',
+                    'Masukkan No HP/WA (siswa atau orang tua) sebagai akun login',
+                    'Langsung masuk dashboard — tanpa registrasi & login terpisah',
                 ]
             ],
             [
                 'nomor' => 2,
-                'judul' => 'Isi Formulir PPDB',
+                'judul' => 'Lengkapi Formulir & Berkas',
                 'icon' => 'file-earmark-text-fill',
-                'deskripsi' => 'Lengkapi formulir pendaftaran dengan data diri, orang tua, dan asal sekolah.',
+                'deskripsi' => 'Dari dashboard, lengkapi sisa data formulir pendaftaran dan unggah dokumen yang diperlukan.',
                 'detail' => [
-                    'Data diri lengkap (nama, tempat/tanggal lahir, alamat)',
-                    'Data orang tua/wali',
-                    'Data asal sekolah dan NISN',
-                    'Upload pas foto terbaru'
+                    'Lengkapi data diri, orang tua/wali, dan NISN',
+                    'Upload pas foto terbaru',
+                    'Periksa kembali seluruh data sebelum lanjut',
                 ]
             ],
             [

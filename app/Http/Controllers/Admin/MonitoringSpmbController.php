@@ -93,9 +93,13 @@ class MonitoringSpmbController extends Controller
         $filter = $request->only(['tahap']);
         $data = $this->monitoringService->eksporDataPeserta($filter);
 
+        // Sisipkan label periode aktif ke nama file agar ekspor tiap periode jelas berbeda.
+        $periode = app(\App\Services\PeriodeContextService::class);
+        $labelPeriode = $periode->semuaPeriode() ? 'semua-periode' : \Illuminate\Support\Str::slug($periode->label());
+
         $headers = [
             'Content-Type' => 'text/csv',
-            'Content-Disposition' => 'attachment; filename="peserta-spmb-' . date('Y-m-d') . '.csv"',
+            'Content-Disposition' => 'attachment; filename="peserta-spmb-' . $labelPeriode . '-' . date('Y-m-d') . '.csv"',
         ];
 
         return response()->stream(function () use ($data) {
@@ -103,7 +107,7 @@ class MonitoringSpmbController extends Controller
             
             // Header
             fputcsv($handle, [
-                'No. Pendaftaran', 'Nama', 'Email', 'Telepon', 'Asal Sekolah',
+                'Tahun Ajaran', 'No. Pendaftaran', 'Nama', 'Email', 'Telepon', 'Asal Sekolah',
                 'Tahap Saat Ini', 'Tahap 1', 'Tahap 2', 'Tahap 3', 'Tahap 4',
                 'Tahap 5', 'Tahap 6', 'Tahap 7', 'Tanggal Daftar'
             ]);

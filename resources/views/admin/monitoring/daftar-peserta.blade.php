@@ -4,6 +4,7 @@
 
 @section('content')
 <div class="container-fluid py-4">
+    @include('partials.periode-banner')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h4 class="mb-0"><i class="bi bi-people me-2"></i>Daftar Peserta SPMB</h4>
         <a href="{{ route('admin.monitoring.index') }}" class="btn btn-outline-secondary">
