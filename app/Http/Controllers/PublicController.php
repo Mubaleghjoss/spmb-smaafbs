@@ -48,29 +48,46 @@ class PublicController extends Controller
     /**
      * Halaman jadwal
      */
-    public function jadwal(): View
+    public function jadwal(Request $request): View
     {
         $branding = $this->pengaturanService->ambilBranding();
 
-        // Jadwal per periode: pakai tahun ajaran default/aktif untuk publik.
         $periode = app(\App\Services\PeriodeContextService::class);
+        $jadwalAlur = app(\App\Services\JadwalAlurService::class);
+
         $tahunAjaranId = optional($periode->pilihanTahunAjaran()->firstWhere('default', true))->id
             ?? optional($periode->pilihanTahunAjaran()->first())->id;
 
+        $daftarGelombang = collect();
+        $gelombangTerpilih = null;
+        $jadwal = [];
+
         if ($tahunAjaranId) {
-            $jadwal = app(\App\Services\JadwalAlurService::class)->jadwalPublik((int) $tahunAjaranId);
-        } else {
-            $jadwal = $this->pengaturanService->ambilJadwal();
+            $daftarGelombang = $jadwalAlur->gelombangTahun((int) $tahunAjaranId);
+
+            // Gelombang dari query (?gelombang=), else yang sedang dibuka / terpilih.
+            $gelombangId = $request->integer('gelombang') ?: null;
+            if ($gelombangId && ! $daftarGelombang->firstWhere('id', $gelombangId)) {
+                $gelombangId = null;
+            }
+            if (! $gelombangId) {
+                $gelombangId = optional($jadwalAlur->gelombangPublikTerpilih((int) $tahunAjaranId))->id;
+            }
+
+            $gelombangTerpilih = $gelombangId ? $daftarGelombang->firstWhere('id', $gelombangId) : null;
+            $jadwal = $jadwalAlur->jadwalPublik((int) $tahunAjaranId, $gelombangId);
         }
 
-        // Fallback: kalau jadwal periode kosong semua, pakai jadwal lama.
+        // Fallback: bila belum ada jadwal periode sama sekali, pakai jadwal lama.
         if (empty($jadwal)) {
             $jadwal = $this->pengaturanService->ambilJadwal();
         }
 
         $catatan = $this->pengaturanService->ambilCatatanJadwal();
 
-        return view('public.jadwal', compact('jadwal', 'catatan', 'branding'));
+        return view('public.jadwal', compact(
+            'jadwal', 'catatan', 'branding', 'daftarGelombang', 'gelombangTerpilih'
+        ));
     }
 
     /**

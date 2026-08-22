@@ -298,13 +298,24 @@ class PengaturanController extends Controller
             ->get();
         $ringkasanKuota = $this->kuotaPendaftaranService->ringkasanBanyak($periodePendaftaran);
 
+        // Ringkasan jadwal (read-only) untuk tab Timeline — dari sumber baru per gelombang.
+        // Pakai tahun default + gelombang publik terpilih agar mencerminkan yang sedang tampil.
+        $ringkasJadwal = [];
+        $jadwalAlurSvc = app(\App\Services\JadwalAlurService::class);
+        $tahunDefault = $periodePendaftaran->firstWhere('default', true) ?? $periodePendaftaran->first();
+        if ($tahunDefault) {
+            $gelPub = $jadwalAlurSvc->gelombangPublikTerpilih($tahunDefault->id);
+            $ringkasJadwal = $jadwalAlurSvc->jadwalGelombang($tahunDefault->id, optional($gelPub)->id);
+        }
+
         return view('admin.pengaturan.spmb', compact(
             'spmb',
             'tahapan',
             'statusTahapan',
             'skGelombang',
             'periodePendaftaran',
-            'ringkasanKuota'
+            'ringkasanKuota',
+            'ringkasJadwal'
         ));
     }
 

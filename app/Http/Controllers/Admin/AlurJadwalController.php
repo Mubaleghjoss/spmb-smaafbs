@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\GelombangPendaftaran;
 use App\Services\JadwalAlurService;
 use App\Services\PeriodeContextService;
 use Illuminate\Http\RedirectResponse;
@@ -10,10 +11,9 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 /**
- * Satu halaman terpusat untuk mengatur ALUR & JADWAL SPMB per tahap (1..7),
- * per PERIODE (tahun ajaran aktif). Menggabungkan pengaturan waktu buka/tutup
- * tiap tahap + keterangan/note yang dilihat pendaftar — sebelumnya tersebar di
- * beberapa halaman (Pengaturan SPMB, Ujian, Jadwal, Periode).
+ * Satu halaman terpusat: ALUR & JADWAL SPMB per tahap (1..7), per PERIODE (tahun ajaran)
+ * dan per GELOMBANG. Sumber tunggal — sinkron ke halaman publik /jadwal, timeline
+ * frontend, dan status tahap di dashboard peserta.
  */
 class AlurJadwalController extends Controller
 {
@@ -22,23 +22,44 @@ class AlurJadwalController extends Controller
         private PeriodeContextService $periode,
     ) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $tahunAjaranId = $this->periode->tahunAjaranId();
-
-        // Bila konteks "Semua Periode", jatuhkan ke tahun default agar ada 1 periode konkret untuk diedit.
         if ($tahunAjaranId === null) {
             $tahunAjaranId = optional($this->periode->pilihanTahunAjaran()->firstWhere('default', true))->id
                 ?? optional($this->periode->pilihanTahunAjaran()->first())->id;
         }
 
         $tahunAjaran = $this->periode->pilihanTahunAjaran()->firstWhere('id', $tahunAjaranId);
-        $jadwal = $tahunAjaranId ? $this->jadwalAlur->jadwalPeriode((int) $tahunAjaranId) : [];
+
+        // Daftar gelombang pada tahun ini
+        $daftarGelombang = $tahunAjaranId
+            ? $this->jadwalAlur->gelombangTahun((int) $tahunAjaranId)
+            : collect();
+
+        // Gelombang terpilih: dari query, else gelombang publik terpilih, else pertama.
+        $gelombangId = $request->integer('gelombang') ?: null;
+        if ($gelombangId && ! $daftarGelombang->firstWhere('id', $gelombangId)) {
+            $gelombangId = null; // id tidak valid utk tahun ini
+        }
+        if (! $gelombangId && $daftarGelombang->isNotEmpty()) {
+            $gelombangId = optional($this->jadwalAlur->gelombangPublikTerpilih((int) $tahunAjaranId))->id
+                ?? $daftarGelombang->first()->id;
+        }
+
+        $gelombang = $gelombangId ? $daftarGelombang->firstWhere('id', $gelombangId) : null;
+
+        $jadwal = $tahunAjaranId
+            ? $this->jadwalAlur->jadwalGelombang((int) $tahunAjaranId, $gelombangId)
+            : [];
 
         return view('admin.pengaturan.alur-jadwal', [
             'tahunAjaranId' => $tahunAjaranId,
             'tahunAjaran' => $tahunAjaran,
             'daftarTahun' => $this->periode->pilihanTahunAjaran(),
+            'daftarGelombang' => $daftarGelombang,
+            'gelombangId' => $gelombangId,
+            'gelombang' => $gelombang,
             'jadwal' => $jadwal,
             'periodeSemua' => $this->periode->semuaPeriode(),
         ]);
@@ -48,6 +69,7 @@ class AlurJadwalController extends Controller
     {
         $validated = $request->validate([
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
+            'gelombang_pendaftaran_id' => 'nullable|integer|exists:gelombang_pendaftaran,id',
             'tahap' => 'required|array',
             'tahap.*.dibuka' => 'nullable',
             'tahap.*.tanggal_buka' => 'nullable|date',
@@ -58,11 +80,20 @@ class AlurJadwalController extends Controller
             'tahap.*.keterangan' => 'nullable|string|max:2000',
         ]);
 
-        $this->jadwalAlur->simpanJadwalPeriode(
+        $gelombangId = $validated['gelombang_pendaftaran_id'] ?? null;
+
+        $this->jadwalAlur->simpanJadwalGelombang(
             (int) $validated['tahun_ajaran_id'],
+            $gelombangId ? (int) $gelombangId : null,
             $validated['tahap']
         );
 
-        return back()->with('success', 'Jadwal & alur SPMB untuk periode ini berhasil disimpan.');
+        $namaGel = $gelombangId
+            ? optional(GelombangPendaftaran::find($gelombangId))->nama
+            : 'semua gelombang (tingkat tahun)';
+
+        return redirect()
+            ->route('admin.alur-jadwal.index', ['gelombang' => $gelombangId])
+            ->with('success', "Jadwal & alur untuk {$namaGel} berhasil disimpan.");
     }
 }

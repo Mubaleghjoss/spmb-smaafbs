@@ -24,10 +24,29 @@
 @section('content')
 <section class="py-5">
     <div class="container">
-        <div class="text-center mb-5">
+        <div class="text-center mb-4">
             <h1 class="fw-bold">Jadwal SPMB</h1>
-            <p class="text-muted lead">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? (date('Y') . '/' . (date('Y') + 1)) }}</p>
+            <p class="text-muted lead mb-0">Tahun Ajaran {{ $branding['tahun_ajaran'] ?? (date('Y') . '/' . (date('Y') + 1)) }}</p>
+            @if(!empty($gelombangTerpilih))
+                <p class="text-success fw-semibold mt-1 mb-0">
+                    <i class="bi bi-layers-half me-1"></i>{{ $gelombangTerpilih->nama }}
+                </p>
+            @endif
         </div>
+
+        {{-- Pemilih gelombang (jika ada >1) --}}
+        @if(!empty($daftarGelombang) && $daftarGelombang->count() > 1)
+        <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+            @foreach($daftarGelombang as $g)
+                @php $st = $g->statusPendaftaran(); @endphp
+                <a href="{{ route('jadwal', ['gelombang' => $g->id]) }}"
+                   class="btn btn-sm {{ (optional($gelombangTerpilih)->id === $g->id) ? 'btn-success' : 'btn-outline-success' }}">
+                    {{ $g->nama }}
+                    <span class="badge bg-{{ $st['class'] }} ms-1">{{ $st['label'] }}</span>
+                </a>
+            @endforeach
+        </div>
+        @endif
 
         <div class="row justify-content-center">
             <div class="col-lg-8">
@@ -60,6 +79,9 @@
                                     <div>
                                         <h6 class="fw-semibold mb-1">{{ $item['kegiatan'] }}</h6>
                                         <div class="text-muted small"><i class="bi bi-calendar3 me-1"></i>{{ $item['tanggal'] }}</div>
+                                        @if(!empty($item['catatan']))
+                                            <div class="small text-secondary mt-1"><i class="bi bi-pin-angle me-1"></i>{{ $item['catatan'] }}</div>
+                                        @endif
                                     </div>
                                     <span class="badge {{ $badgeClass }}">{{ $item['keterangan'] ?? '-' }}</span>
                                 </div>

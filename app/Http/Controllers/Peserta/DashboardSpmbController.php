@@ -356,12 +356,14 @@ class DashboardSpmbController extends Controller
             return $result;
         }
 
-        // Jadwal PER PERIODE: pakai tahun ajaran peserta ybs (bukan konteks admin).
-        $tahunAjaranId = $tahapanPeserta?->peserta?->tahun_ajaran_id
-            ?? optional($tahapanPeserta?->peserta)->tahun_ajaran_id;
+        // Jadwal PER GELOMBANG: pakai tahun ajaran + gelombang peserta ybs.
+        $peserta = $tahapanPeserta?->peserta;
+        $tahunAjaranId = $peserta?->tahun_ajaran_id;
+        $gelombangId = $peserta?->gelombang_pendaftaran_id;
 
         if ($tahunAjaranId) {
-            return app(\App\Services\JadwalAlurService::class)->statusTahap((int) $tahunAjaranId, $tahap);
+            return app(\App\Services\JadwalAlurService::class)
+                ->statusTahap((int) $tahunAjaranId, $gelombangId ? (int) $gelombangId : null, $tahap);
         }
 
         // Fallback lama (tanpa tahun ajaran): pengaturan global.

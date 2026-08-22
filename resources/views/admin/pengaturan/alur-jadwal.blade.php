@@ -59,9 +59,12 @@
                 </p>
             </div>
             <div class="text-md-end">
-                <div class="small opacity-75">Periode yang sedang diatur</div>
+                <div class="small opacity-75">Sedang diatur</div>
                 <div class="fs-5 fw-bold">
                     <i class="bi bi-calendar3-range me-1"></i>{{ $tahunAjaran->nama ?? '—' }}
+                    @if($gelombang)
+                        <span class="opacity-75">›</span> {{ $gelombang->nama }}
+                    @endif
                 </div>
             </div>
         </div>
@@ -81,8 +84,8 @@
     @endif
 
     {{-- Pemilih periode (kalau ada >1 tahun ajaran) --}}
-    <div class="d-flex flex-wrap align-items-center gap-2 mb-4">
-        <span class="text-muted small"><i class="bi bi-funnel me-1"></i>Ganti periode:</span>
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+        <span class="text-muted small"><i class="bi bi-calendar3 me-1"></i>Tahun Ajaran:</span>
         @foreach($daftarTahun as $ta)
             <form action="{{ route('admin.periode-aktif.ganti') }}" method="POST" class="d-inline">
                 @csrf
@@ -95,9 +98,31 @@
             </form>
         @endforeach
         <a href="{{ route('admin.pengaturan.spmb.periode') }}" class="btn btn-sm btn-outline-primary ms-auto">
-            <i class="bi bi-plus-circle me-1"></i>Kelola Tahun Ajaran / Gelombang
+            <i class="bi bi-plus-circle me-1"></i>Kelola Tahun / Gelombang
         </a>
     </div>
+
+    {{-- Pemilih GELOMBANG --}}
+    @if($tahunAjaranId)
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-4 p-2 rounded" style="background:#f1f5f9;">
+        <span class="text-muted small fw-semibold"><i class="bi bi-layers-half me-1"></i>Gelombang:</span>
+        @forelse($daftarGelombang as $g)
+            <a href="{{ route('admin.alur-jadwal.index', ['gelombang' => $g->id]) }}"
+               class="btn btn-sm {{ (int)$gelombangId === (int)$g->id ? 'btn-primary' : 'btn-outline-primary' }}">
+                {{ $g->nama }}
+                @php $st = $g->statusPendaftaran(); @endphp
+                <span class="badge bg-{{ $st['class'] }} ms-1">{{ $st['label'] }}</span>
+            </a>
+        @empty
+            <span class="text-muted small">Belum ada gelombang.
+                <a href="{{ route('admin.pengaturan.spmb.periode') }}">Tambah gelombang</a>.
+            </span>
+        @endforelse
+        <span class="text-muted small ms-auto">
+            <i class="bi bi-info-circle me-1"></i>Jadwal yang Anda atur berlaku untuk gelombang terpilih.
+        </span>
+    </div>
+    @endif
 
     @if(!$tahunAjaranId)
         <div class="alert alert-warning"><i class="bi bi-exclamation-triangle me-1"></i>
@@ -108,6 +133,7 @@
           x-data="alurJadwal()">
         @csrf
         <input type="hidden" name="tahun_ajaran_id" value="{{ $tahunAjaranId }}">
+        <input type="hidden" name="gelombang_pendaftaran_id" value="{{ $gelombangId }}">
 
         <div class="row g-3">
             @foreach($jadwal as $tahap => $j)
@@ -201,15 +227,15 @@
         <div class="position-sticky bottom-0 bg-white border-top mt-4 py-3" style="z-index: 5;">
             <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center">
                 <span class="text-muted small">
-                    <i class="bi bi-info-circle me-1"></i>Perubahan berlaku untuk periode
-                    <strong>{{ $tahunAjaran->nama ?? '' }}</strong> saja.
+                    <i class="bi bi-info-circle me-1"></i>Perubahan berlaku untuk
+                    <strong>{{ $tahunAjaran->nama ?? '' }}{{ $gelombang ? ' › '.$gelombang->nama : '' }}</strong> saja.
                 </span>
                 <div class="d-flex gap-2">
                     <a href="{{ route('jadwal') }}" target="_blank" class="btn btn-outline-secondary">
                         <i class="bi bi-eye me-1"></i>Lihat Halaman Publik
                     </a>
                     <button type="submit" class="btn btn-success px-4">
-                        <i class="bi bi-save me-1"></i>Simpan Jadwal Periode Ini
+                        <i class="bi bi-save me-1"></i>Simpan Jadwal Gelombang Ini
                     </button>
                 </div>
             </div>

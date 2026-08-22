@@ -14,6 +14,7 @@ class JadwalAlurPeriode extends Model
 
     protected $fillable = [
         'tahun_ajaran_id',
+        'gelombang_pendaftaran_id',
         'tahap',
         'dibuka',
         'tanggal_buka',
@@ -37,5 +38,10 @@ class JadwalAlurPeriode extends Model
     public function tahunAjaran(): BelongsTo
     {
         return $this->belongsTo(TahunAjaran::class);
+    }
+
+    public function gelombangPendaftaran(): BelongsTo
+    {
+        return $this->belongsTo(GelombangPendaftaran::class);
     }
 }

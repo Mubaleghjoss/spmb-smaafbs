@@ -2,32 +2,34 @@
 
 namespace App\Services;
 
+use App\Models\GelombangPendaftaran;
 use App\Models\JadwalAlurPeriode;
 use App\Models\TahunAjaran;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Collection;
 
 /**
  * JadwalAlurService
  *
- * Sumber tunggal jadwal alur SPMB PER PERIODE (tahun ajaran).
- * Tiap tahun ajaran punya jadwal 7 tahap sendiri (tabel jadwal_alur_periode).
+ * Sumber tunggal jadwal alur SPMB, granularitas PER GELOMBANG (di dalam tahun ajaran).
+ * Tiap gelombang punya jadwal 7 tahap sendiri (tabel jadwal_alur_periode dengan
+ * gelombang_pendaftaran_id). Baris dengan gelombang_pendaftaran_id NULL = jadwal
+ * tingkat tahun (fallback untuk semua gelombang pada tahun tsb).
  *
- * Fallback: bila baris per-periode belum ada untuk suatu tahap, memakai
- * setting lama (PengaturanService: tahap_X_* / SPMB / ujian) agar data existing
- * tidak hilang saat pertama kali fitur ini dipakai.
+ * Rantai fallback saat membaca satu tahap:
+ *   1. baris gelombang spesifik  ->  2. baris tahun (gelombang NULL)
+ *   ->  3. setting lama global (PengaturanService tahap_X_* / SPMB / ujian).
  *
- * Tahap 1 (Daftar & Isi Biodata) tidak punya jadwal — selalu terbuka.
+ * Tahap 1 (Daftar & Isi Biodata) selalu terbuka, tanpa jadwal.
  */
 class JadwalAlurService
 {
-    /** Tahap yang punya jadwal manual. */
     public const TAHAP_BERJADWAL = [2, 3, 4, 5, 6, 7];
 
     public function __construct(private PengaturanService $pengaturan) {}
 
     /**
-     * Metadata statis 7 tahap (judul, ikon, deskripsi singkat).
+     * Metadata statis 7 tahap.
      *
      * @return array<int, array{judul:string, icon:string, deskripsi:string}>
      */
@@ -45,24 +47,35 @@ class JadwalAlurService
     }
 
     /**
-     * Ambil jadwal lengkap 7 tahap untuk satu tahun ajaran (untuk form admin & tampilan).
-     * Menggabungkan baris DB per-periode + fallback setting lama + meta statis.
+     * Jadwal lengkap 7 tahap untuk satu gelombang (untuk form admin & tampilan).
+     * Menggabungkan: baris gelombang -> baris tahun (NULL) -> setting lama -> meta statis.
      *
      * @return array<int, array>
      */
-    public function jadwalPeriode(int $tahunAjaranId): array
+    public function jadwalGelombang(int $tahunAjaranId, ?int $gelombangId): array
     {
-        $rows = JadwalAlurPeriode::where('tahun_ajaran_id', $tahunAjaranId)
-            ->get()
-            ->keyBy('tahap');
+        // baris spesifik gelombang
+        $rowsGel = $gelombangId
+            ? JadwalAlurPeriode::where('tahun_ajaran_id', $tahunAjaranId)
+                ->where('gelombang_pendaftaran_id', $gelombangId)
+                ->get()->keyBy('tahap')
+            : collect();
+
+        // baris tingkat tahun (gelombang NULL) sebagai fallback
+        $rowsTahun = JadwalAlurPeriode::where('tahun_ajaran_id', $tahunAjaranId)
+            ->whereNull('gelombang_pendaftaran_id')
+            ->get()->keyBy('tahap');
 
         $legacy = $this->pengaturan->ambilPengaturanTahapan();
         $meta = $this->metaTahap();
         $hasil = [];
 
         foreach ($meta as $tahap => $m) {
-            $row = $rows->get($tahap);
-            $leg = $legacy["tahap_{$tahap}"] ?? [];
+            $row = $rowsGel->get($tahap);         // prioritas 1
+            $rowT = $rowsTahun->get($tahap);      // prioritas 2
+            $leg = $legacy["tahap_{$tahap}"] ?? []; // prioritas 3
+            $sumber = $row ? 'gelombang' : ($rowT ? 'tahun' : 'warisan');
+            $src = $row ?? $rowT;
 
             $hasil[$tahap] = [
                 'tahap' => $tahap,
@@ -70,14 +83,14 @@ class JadwalAlurService
                 'icon' => $m['icon'],
                 'deskripsi' => $m['deskripsi'],
                 'berjadwal' => in_array($tahap, self::TAHAP_BERJADWAL, true),
-                'dibuka' => $row->dibuka ?? (bool) ($leg['dibuka'] ?? true),
-                'tanggal_buka' => optional($row?->tanggal_buka)->format('Y-m-d') ?? ($leg['tanggal_buka'] ?? ''),
-                'waktu_mulai' => $this->jamHm($row->waktu_mulai ?? ($leg['waktu_mulai'] ?? '')),
-                'tanggal_tutup' => optional($row?->tanggal_tutup)->format('Y-m-d') ?? ($leg['tanggal_tutup'] ?? ''),
-                'waktu_selesai' => $this->jamHm($row->waktu_selesai ?? ($leg['waktu_selesai'] ?? '')),
-                'lokasi' => $row->lokasi ?? ($leg['lokasi'] ?? ''),
-                'keterangan' => $row->keterangan ?? ($leg['keterangan'] ?? ''),
-                'sumber' => $row ? 'periode' : 'warisan',
+                'dibuka' => $src->dibuka ?? (bool) ($leg['dibuka'] ?? true),
+                'tanggal_buka' => optional($src?->tanggal_buka)->format('Y-m-d') ?? ($leg['tanggal_buka'] ?? ''),
+                'waktu_mulai' => $this->jamHm($src->waktu_mulai ?? ($leg['waktu_mulai'] ?? '')),
+                'tanggal_tutup' => optional($src?->tanggal_tutup)->format('Y-m-d') ?? ($leg['tanggal_tutup'] ?? ''),
+                'waktu_selesai' => $this->jamHm($src->waktu_selesai ?? ($leg['waktu_selesai'] ?? '')),
+                'lokasi' => $src->lokasi ?? ($leg['lokasi'] ?? ''),
+                'keterangan' => $src->keterangan ?? ($leg['keterangan'] ?? ''),
+                'sumber' => $sumber,
             ];
         }
 
@@ -85,17 +98,21 @@ class JadwalAlurService
     }
 
     /**
-     * Simpan jadwal 7 tahap untuk satu periode (dari form admin).
+     * Simpan jadwal 7 tahap untuk satu gelombang (dari form admin).
      *
-     * @param array<int, array> $data  keyed by tahap
+     * @param array<int, array> $data keyed by tahap
      */
-    public function simpanJadwalPeriode(int $tahunAjaranId, array $data): void
+    public function simpanJadwalGelombang(int $tahunAjaranId, ?int $gelombangId, array $data): void
     {
         foreach (self::TAHAP_BERJADWAL as $tahap) {
             $c = $data[$tahap] ?? [];
 
             JadwalAlurPeriode::updateOrCreate(
-                ['tahun_ajaran_id' => $tahunAjaranId, 'tahap' => $tahap],
+                [
+                    'tahun_ajaran_id' => $tahunAjaranId,
+                    'gelombang_pendaftaran_id' => $gelombangId,
+                    'tahap' => $tahap,
+                ],
                 [
                     'dibuka' => (bool) ($c['dibuka'] ?? false),
                     'tanggal_buka' => $this->tanggalAtauNull($c['tanggal_buka'] ?? null),
@@ -107,23 +124,20 @@ class JadwalAlurService
                 ]
             );
         }
-
-        Cache::forget($this->cacheKey($tahunAjaranId));
     }
 
     /**
-     * Status akses satu tahap untuk peserta pada tahun ajaran tertentu.
-     * Mengembalikan: dibuka(bool), alasan, tanggal_buka(label), jadwal_label, keterangan.
+     * Status akses satu tahap untuk kombinasi tahun+gelombang tertentu.
      */
-    public function statusTahap(int $tahunAjaranId, int $tahap): array
+    public function statusTahap(int $tahunAjaranId, ?int $gelombangId, int $tahap): array
     {
         $hasil = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'keterangan' => null];
 
         if (! in_array($tahap, self::TAHAP_BERJADWAL, true)) {
-            return $hasil; // tahap 1 selalu terbuka
+            return $hasil;
         }
 
-        $j = $this->jadwalPeriode($tahunAjaranId)[$tahap] ?? null;
+        $j = $this->jadwalGelombang($tahunAjaranId, $gelombangId)[$tahap] ?? null;
         if (! $j) {
             return $hasil;
         }
@@ -135,7 +149,7 @@ class JadwalAlurService
 
         $hasil['tanggal_buka'] = $mulaiLabel;
         $hasil['keterangan'] = $j['keterangan'] ?: null;
-        $hasil['jadwal_label'] = $this->labelJadwal($j['judul'], $mulaiLabel, $selesaiLabel);
+        $hasil['jadwal_label'] = $this->labelJadwal($mulaiLabel, $selesaiLabel);
 
         if (! $j['dibuka']) {
             $hasil['dibuka'] = false;
@@ -156,19 +170,18 @@ class JadwalAlurService
     }
 
     /**
-     * Bangun daftar jadwal publik (untuk halaman /jadwal) dari jadwal periode.
-     * Menghasilkan struktur mirip ambilJadwal() lama agar view tetap kompatibel.
+     * Daftar timeline publik (untuk /jadwal) dari jadwal satu gelombang.
      *
-     * @return array<int, array{kegiatan:string, icon:string, tanggal:string, status:string, keterangan:string}>
+     * @return array<int, array{kegiatan:string, icon:string, tanggal:string, status:string, keterangan:string, catatan:?string}>
      */
-    public function jadwalPublik(int $tahunAjaranId): array
+    public function jadwalPublik(int $tahunAjaranId, ?int $gelombangId): array
     {
-        $jadwal = $this->jadwalPeriode($tahunAjaranId);
+        $jadwal = $this->jadwalGelombang($tahunAjaranId, $gelombangId);
         $out = [];
 
         foreach ($jadwal as $tahap => $j) {
             if ($tahap === 1) {
-                continue; // langkah daftar tidak perlu baris jadwal publik
+                continue;
             }
 
             $mulai = $this->gabung($j['tanggal_buka'], $j['waktu_mulai'], false);
@@ -186,7 +199,6 @@ class JadwalAlurService
                 $tanggalTeks = 'Menyusul';
             }
 
-            // status untuk badge di halaman publik
             if (! $j['dibuka']) {
                 $status = 'info';
                 $ket = 'Ditutup';
@@ -194,7 +206,7 @@ class JadwalAlurService
                 $status = 'akan_datang';
                 $ket = 'Akan Datang';
             } elseif ($selesai && now()->gt($selesai)) {
-                $status = 'info';
+                $status = 'selesai';
                 $ket = 'Selesai';
             } else {
                 $status = 'dibuka';
@@ -207,25 +219,53 @@ class JadwalAlurService
                 'tanggal' => $tanggalTeks,
                 'status' => $status,
                 'keterangan' => $ket,
+                'catatan' => $j['keterangan'] ?: null,
             ];
         }
 
         return $out;
     }
 
-    /* ================= helpers ================= */
-
-    private function cacheKey(int $tahunAjaranId): string
+    /**
+     * Gelombang yang ditampilkan di halaman publik: yang sedang dibuka (paling awal),
+     * jika tidak ada yang dibuka -> gelombang terbaru pada tahun tsb.
+     */
+    public function gelombangPublikTerpilih(int $tahunAjaranId): ?GelombangPendaftaran
     {
-        return "jadwal_alur_periode_{$tahunAjaranId}";
+        $semua = GelombangPendaftaran::where('tahun_ajaran_id', $tahunAjaranId)
+            ->where('aktif', true)
+            ->orderBy('tanggal_buka')
+            ->get();
+
+        if ($semua->isEmpty()) {
+            return null;
+        }
+
+        $terbuka = $semua->first(fn ($g) => $g->sedangDibuka());
+
+        return $terbuka ?? $semua->last();
     }
+
+    /**
+     * Semua gelombang aktif pada tahun (untuk tombol "lihat gelombang lain").
+     *
+     * @return Collection<int, GelombangPendaftaran>
+     */
+    public function gelombangTahun(int $tahunAjaranId): Collection
+    {
+        return GelombangPendaftaran::where('tahun_ajaran_id', $tahunAjaranId)
+            ->where('aktif', true)
+            ->orderBy('tanggal_buka')
+            ->get();
+    }
+
+    /* ================= helpers ================= */
 
     private function jamHm(?string $v): string
     {
         if (empty($v)) {
             return '';
         }
-        // "14:30:00" -> "14:30"
         return substr($v, 0, 5);
     }
 
@@ -254,7 +294,7 @@ class JadwalAlurService
             . ($pakaiJam ? ' WIB' : '');
     }
 
-    private function labelJadwal(string $judul, ?string $mulai, ?string $selesai): ?string
+    private function labelJadwal(?string $mulai, ?string $selesai): ?string
     {
         if ($mulai && $selesai) {
             return 'Jadwal: ' . $mulai . ' sampai ' . $selesai;
