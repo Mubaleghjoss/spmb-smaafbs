@@ -3,6 +3,26 @@
 @section('title', 'Dashboard SPMB')
 
 @section('content')
+<style>
+    /* Cegah dashboard melebar di HP: kolom teks harus boleh menyusut & membungkus */
+    .tahapan-list .list-group-item { overflow: hidden; }
+    .tahapan-list .flex-grow-1 { min-width: 0; }               /* wajib agar flex child bisa menyusut */
+    .tahapan-list .flex-grow-1 > .d-flex { min-width: 0; flex-wrap: wrap; row-gap: .5rem; }
+    .tahapan-list .flex-grow-1 > .d-flex > div:first-child { min-width: 0; flex: 1 1 auto; }
+    .tahapan-list .flex-shrink-0.ms-3 { margin-left: .75rem !important; }
+    /* teks panjang (nomor, catatan, nama tes) tidak memaksa lebar */
+    .tahapan-list h6, .tahapan-list p, .tahapan-list .alert, .tahapan-list small, .tahapan-list code {
+        overflow-wrap: anywhere; word-break: break-word;
+    }
+    .tahapan-list .alert { max-width: 100%; }
+    /* tombol Kabari boleh turun baris rapi, tidak melebar */
+    .tahapan-list .btn { max-width: 100%; white-space: normal; }
+    @media (max-width: 575.98px) {
+        /* di HP: aksi pindah ke bawah teks, bukan mendorong ke samping */
+        .tahapan-list .flex-grow-1 > .d-flex { flex-direction: column; }
+        .tahapan-list .flex-shrink-0.ms-3 { margin-left: 0 !important; margin-top: .5rem; }
+    }
+</style>
 <div class="container py-4">
     <div class="row mb-4">
         <div class="col">
@@ -187,7 +207,7 @@
             <h5 class="mb-0"><i class="bi bi-list-check me-2"></i>Progress Tahapan SPMB</h5>
         </div>
         <div class="card-body p-0">
-            <div class="list-group list-group-flush">
+            <div class="list-group list-group-flush tahapan-list">
                 @foreach($statusTahapan as $nomor => $item)
                 <div class="list-group-item py-3">
                     <div class="d-flex align-items-start">

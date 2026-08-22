@@ -14,6 +14,7 @@
     @include('partials.tk-backend')
 
     <style>
+        html, body { overflow-x: hidden; max-width: 100%; }
         /* ===== BOTTOM NAV (MOBILE) — Peserta ===== */
         .mobile-bottom-nav { display: none; }
         @media (max-width: 768px) {
