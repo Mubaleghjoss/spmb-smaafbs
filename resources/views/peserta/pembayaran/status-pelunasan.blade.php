@@ -33,9 +33,16 @@
                                 </div>
                                 <h5 class="text-success">Terverifikasi</h5>
                                 <p class="text-muted">Pembayaran Anda sudah diverifikasi</p>
-                                <div class="alert alert-success mt-3">
-                                    <i class="bi bi-trophy me-2"></i>
-                                    <strong>Selamat!</strong> Anda resmi diterima sebagai peserta didik baru {{ $branding['nama_institusi'] ?? 'SMA Al Furqon' }}.
+                                <div class="alert alert-success mt-3 text-start">
+                                    <div class="mb-1">
+                                        <i class="bi bi-check-circle me-2"></i>
+                                        <strong>Pembayaran tahap pertama Anda sudah diterima.</strong>
+                                    </div>
+                                    <div class="small">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Keputusan penerimaan sebagai peserta didik baru {{ $branding['nama_institusi'] ?? 'SMA Al Furqon' }}
+                                        dinyatakan resmi melalui <strong>SK Kelulusan</strong> pada tahap akhir. Mohon menunggu pengumuman dari Tim SPMB.
+                                    </div>
                                 </div>
                             @else
                                 <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
