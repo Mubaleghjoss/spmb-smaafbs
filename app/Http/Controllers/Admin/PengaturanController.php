@@ -285,6 +285,10 @@ class PengaturanController extends Controller
             );
         }
         $skGelombang = $this->pengaturanService->ambilSuratKelulusanGelombang();
+
+        // Daftar periode untuk memilih SK per tahun ajaran + periode aktif sebagai default
+        $daftarTahunAjaran = TahunAjaran::orderByDesc('default')->orderByDesc('nama')->get();
+        $periodeAktifId = app(\App\Services\PeriodeContextService::class)->tahunAjaranId();
         $periodePendaftaran = TahunAjaran::query()
             ->with([
                 'gelombangPendaftaran' => fn($query) => $query
@@ -313,6 +317,8 @@ class PengaturanController extends Controller
             'tahapan',
             'statusTahapan',
             'skGelombang',
+            'daftarTahunAjaran',
+            'periodeAktifId',
             'periodePendaftaran',
             'ringkasanKuota',
             'ringkasJadwal'
@@ -340,9 +346,11 @@ class PengaturanController extends Controller
             'surat_kelulusan' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'sk_gelombang_existing' => 'nullable|array',
             'sk_gelombang_existing.*.nama' => 'nullable|string|max:100',
+            'sk_gelombang_existing.*.tahun_ajaran_id' => 'nullable|integer|exists:tahun_ajaran,id',
             'sk_gelombang_existing.*.file_upload' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'sk_gelombang_baru' => 'nullable|array',
             'sk_gelombang_baru.*.nama' => 'nullable|string|max:100',
+            'sk_gelombang_baru.*.tahun_ajaran_id' => 'nullable|integer|exists:tahun_ajaran,id',
             'sk_gelombang_baru.*.file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
         ];
 
@@ -529,6 +537,7 @@ class PengaturanController extends Controller
                     'id' => $row['id'] ?? (string) Str::uuid(),
                     'nama' => $nama,
                     'file' => $filePath,
+                    'tahun_ajaran_id' => $row['tahun_ajaran_id'] ?? null,
                     'uploaded_at' => $row['uploaded_at'] ?? now()->toDateTimeString(),
                 ];
             }
@@ -546,6 +555,7 @@ class PengaturanController extends Controller
                 'id' => (string) Str::uuid(),
                 'nama' => $nama,
                 'file' => $this->pengaturanService->uploadSuratKelulusanGelombang($uploaded, $nama),
+                'tahun_ajaran_id' => $row['tahun_ajaran_id'] ?? null,
                 'uploaded_at' => now()->toDateTimeString(),
             ];
         }

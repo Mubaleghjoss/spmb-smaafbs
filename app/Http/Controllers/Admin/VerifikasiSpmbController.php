@@ -745,10 +745,23 @@ class VerifikasiSpmbController extends Controller
         // Ambil pengaturan kelulusan
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $pengaturanKelulusan = $pengaturanService->ambilPengaturanKelulusan();
-        $skGelombang = $pengaturanService->ambilSuratKelulusanGelombang();
+
+        // SK dibatasi pada periode yang sedang aktif agar tidak tercampur antar tahun ajaran
+        $periode = app(\App\Services\PeriodeContextService::class);
+        $periodeAktifId = $periode->tahunAjaranId();
+        $periodeLabel = $periode->label();
+
+        $skGelombang = $pengaturanService->ambilSuratKelulusanGelombang($periodeAktifId);
         $skGelombangById = collect($skGelombang)->keyBy('id')->all();
 
-        return view('admin.verifikasi.kelulusan', compact('peserta', 'statistik', 'pengaturanKelulusan', 'skGelombang', 'skGelombangById'));
+        // Untuk membedakan "belum ada SK sama sekali" vs "ada, tapi bukan periode ini"
+        $skSemuaPeriode = $pengaturanService->ambilSuratKelulusanGelombang();
+
+        return view('admin.verifikasi.kelulusan', compact(
+            'peserta', 'statistik', 'pengaturanKelulusan',
+            'skGelombang', 'skGelombangById', 'skSemuaPeriode',
+            'periodeAktifId', 'periodeLabel'
+        ));
     }
 
     /**
@@ -756,7 +769,7 @@ class VerifikasiSpmbController extends Controller
      */
     public function luluskanPeserta(Request $request, Peserta $peserta): RedirectResponse
     {
-        $skGelombangId = $this->validasiSkGelombangKelulusan($request);
+        $skGelombangId = $this->validasiSkGelombangKelulusan($request, $peserta);
         $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId);
 
         return redirect()->route('admin.verifikasi.kelulusan')
@@ -1411,14 +1424,19 @@ class VerifikasiSpmbController extends Controller
 
     /**
      * Validasi pilihan SK gelombang untuk status lulus.
+     * SK dibatasi pada periode peserta agar tidak memakai SK tahun ajaran lain.
      */
-    private function validasiSkGelombangKelulusan(Request $request): ?string
+    private function validasiSkGelombangKelulusan(Request $request, ?Peserta $peserta = null): ?string
     {
-        $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
+        $pengaturan = app(\App\Services\PengaturanService::class);
+        $periodeId = $peserta?->tahun_ajaran_id
+            ?? app(\App\Services\PeriodeContextService::class)->tahunAjaranId();
+
+        $skGelombang = $pengaturan->ambilSuratKelulusanGelombang($periodeId);
 
         if (empty($skGelombang)) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'sk_gelombang_kelulusan' => 'Tambahkan dan upload SK gelombang terlebih dahulu di Pengaturan SPMB > Kelulusan.',
+                'sk_gelombang_kelulusan' => 'Belum ada SK Kelulusan untuk periode peserta ini. Daftarkan SK-nya dulu di Pengaturan SPMB → Tahap 7 (Kelulusan).',
             ]);
         }
 
@@ -1431,7 +1449,7 @@ class VerifikasiSpmbController extends Controller
         $selected = $request->input('sk_gelombang_kelulusan');
         if (!collect($skGelombang)->contains('id', $selected)) {
             throw \Illuminate\Validation\ValidationException::withMessages([
-                'sk_gelombang_kelulusan' => 'SK gelombang yang dipilih tidak ditemukan.',
+                'sk_gelombang_kelulusan' => 'SK yang dipilih tidak tersedia untuk periode peserta ini.',
             ]);
         }
 

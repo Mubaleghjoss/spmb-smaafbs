@@ -392,7 +392,10 @@
                                 <h6 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>SK Kelulusan per Gelombang</h6>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted small mb-3">Tambahkan gelombang dan upload SK yang sesuai. Saat meluluskan peserta, admin dapat memilih SK gelombang mana yang dipakai.</p>
+                                <p class="text-muted small mb-3">
+                                    Tambahkan SK per gelombang <strong>untuk setiap periode (tahun ajaran)</strong>.
+                                    Saat meluluskan peserta, admin hanya akan melihat SK milik periode yang sedang aktif.
+                                </p>
 
                                 <div id="skGelombangContainer">
                                     @foreach($skGelombang ?? [] as $index => $sk)
@@ -401,11 +404,20 @@
                                         <input type="hidden" name="sk_gelombang_existing[{{ $index }}][file]" value="{{ $sk['file'] }}">
                                         <input type="hidden" name="sk_gelombang_existing[{{ $index }}][uploaded_at]" value="{{ $sk['uploaded_at'] ?? '' }}">
                                         <div class="row g-2 align-items-end">
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
                                                 <label class="form-label small">Nama Gelombang</label>
                                                 <input type="text" name="sk_gelombang_existing[{{ $index }}][nama]" class="form-control form-control-sm" value="{{ $sk['nama'] }}" placeholder="Gelombang 1">
                                             </div>
-                                            <div class="col-md-4">
+                                            <div class="col-md-3">
+                                                <label class="form-label small">Periode (Tahun Ajaran)</label>
+                                                <select name="sk_gelombang_existing[{{ $index }}][tahun_ajaran_id]" class="form-select form-select-sm">
+                                                    <option value="">Semua periode</option>
+                                                    @foreach($daftarTahunAjaran ?? [] as $ta)
+                                                        <option value="{{ $ta->id }}" @selected(($sk['tahun_ajaran_id'] ?? null) == $ta->id)>{{ $ta->nama }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
                                                 <label class="form-label small">Ganti File SK</label>
                                                 <input type="file" name="sk_gelombang_existing[{{ $index }}][file_upload]" class="form-control form-control-sm" accept=".pdf,image/*">
                                             </div>
@@ -414,13 +426,18 @@
                                                     <i class="bi bi-eye me-1"></i>Lihat
                                                 </a>
                                             </div>
-                                            <div class="col-md-2">
+                                            <div class="col-md-1">
                                                 <div class="form-check">
                                                     <input type="checkbox" name="sk_gelombang_existing[{{ $index }}][hapus]" value="1" class="form-check-input" id="hapusSk{{ $index }}">
                                                     <label for="hapusSk{{ $index }}" class="form-check-label small text-danger">Hapus</label>
                                                 </div>
                                             </div>
                                         </div>
+                                        @if(empty($sk['tahun_ajaran_id']))
+                                        <div class="form-text text-warning mt-2">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>Belum diberi periode — SK ini masih tampil di semua periode. Pilih periodenya agar tidak tercampur.
+                                        </div>
+                                        @endif
                                     </div>
                                     @endforeach
                                 </div>
@@ -716,21 +733,31 @@ function applyBulkDates() {
 let kontakIndex = {{ count($kontakTim) }};
 let skGelombangBaruIndex = 0;
 
+// Opsi periode untuk baris SK baru (disiapkan dari server)
+const skPeriodeOptions = `@foreach($daftarTahunAjaran ?? [] as $ta)<option value="{{ $ta->id }}" @selected(($periodeAktifId ?? null) == $ta->id)>{{ $ta->nama }}</option>@endforeach`;
+
 function tambahSkGelombang() {
     const container = document.getElementById('skGelombangContainer');
     const index = skGelombangBaruIndex++;
     const html = `
         <div class="sk-gelombang-item border rounded p-3 mb-3 bg-light">
             <div class="row g-2 align-items-end">
-                <div class="col-md-5">
+                <div class="col-md-4">
                     <label class="form-label small">Nama Gelombang</label>
                     <input type="text" name="sk_gelombang_baru[${index}][nama]" class="form-control form-control-sm" placeholder="Gelombang 1">
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-3">
+                    <label class="form-label small">Periode (Tahun Ajaran)</label>
+                    <select name="sk_gelombang_baru[${index}][tahun_ajaran_id]" class="form-select form-select-sm">
+                        <option value="">Semua periode</option>
+                        ${skPeriodeOptions}
+                    </select>
+                </div>
+                <div class="col-md-4">
                     <label class="form-label small">File SK</label>
                     <input type="file" name="sk_gelombang_baru[${index}][file]" class="form-control form-control-sm" accept=".pdf,image/*">
                 </div>
-                <div class="col-md-2">
+                <div class="col-md-1">
                     <button type="button" class="btn btn-sm btn-outline-danger w-100" onclick="this.closest('.sk-gelombang-item').remove()">
                         <i class="bi bi-trash"></i>
                     </button>

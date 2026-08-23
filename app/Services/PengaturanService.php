@@ -522,8 +522,12 @@ class PengaturanService
 
     /**
      * Ambil daftar SK kelulusan per gelombang.
+     *
+     * @param  int|string|null  $tahunAjaranId  Bila diisi, hanya SK milik periode
+     *         tersebut yang dikembalikan (SK lama tanpa periode ikut disertakan
+     *         agar data terdahulu tetap terpakai).
      */
-    public function ambilSuratKelulusanGelombang(): array
+    public function ambilSuratKelulusanGelombang(int|string|null $tahunAjaranId = null): array
     {
         $json = $this->ambil('surat_kelulusan_gelombang', '[]');
         $items = json_decode($json, true) ?: [];
@@ -535,22 +539,34 @@ class PengaturanService
                     'id' => 'default',
                     'nama' => 'Umum',
                     'file' => $suratLama,
+                    'tahun_ajaran_id' => null,
                 ];
             }
         }
 
-        return collect($items)
+        $hasil = collect($items)
             ->filter(fn($item) => !empty($item['nama']) && !empty($item['file']))
             ->map(function ($item) {
+                $taId = $item['tahun_ajaran_id'] ?? null;
+
                 return [
                     'id' => $item['id'] ?? (string) Str::uuid(),
                     'nama' => $item['nama'],
                     'file' => $item['file'],
+                    'tahun_ajaran_id' => ($taId === '' || $taId === null) ? null : (int) $taId,
                     'uploaded_at' => $item['uploaded_at'] ?? null,
                 ];
-            })
-            ->values()
-            ->all();
+            });
+
+        if ($tahunAjaranId !== null && $tahunAjaranId !== '') {
+            $taId = (int) $tahunAjaranId;
+            $hasil = $hasil->filter(
+                // SK tanpa periode dianggap berlaku umum (kompatibilitas data lama).
+                fn($item) => $item['tahun_ajaran_id'] === null || $item['tahun_ajaran_id'] === $taId
+            );
+        }
+
+        return $hasil->values()->all();
     }
 
     /**
@@ -561,10 +577,13 @@ class PengaturanService
         $normalized = collect($items)
             ->filter(fn($item) => !empty($item['nama']) && !empty($item['file']))
             ->map(function ($item) {
+                $taId = $item['tahun_ajaran_id'] ?? null;
+
                 return [
                     'id' => $item['id'] ?? (string) Str::uuid(),
                     'nama' => trim($item['nama']),
                     'file' => $item['file'],
+                    'tahun_ajaran_id' => ($taId === '' || $taId === null) ? null : (int) $taId,
                     'uploaded_at' => !empty($item['uploaded_at']) ? $item['uploaded_at'] : now()->toDateTimeString(),
                 ];
             })
@@ -711,17 +730,23 @@ class PengaturanService
 
     /**
      * Ambil SK kelulusan berdasarkan gelombang yang dipilih peserta.
+     *
+     * @param  int|string|null  $tahunAjaranId  Periode peserta; dipakai agar SK
+     *         cadangan (bila id tidak ditemukan) tetap dari periode yang benar.
      */
-    public function ambilSuratKelulusanUntukGelombang(?string $gelombangId): ?array
+    public function ambilSuratKelulusanUntukGelombang(?string $gelombangId, int|string|null $tahunAjaranId = null): ?array
     {
-        $items = $this->ambilSuratKelulusanGelombang();
-
+        // Cari berdasarkan id di SELURUH daftar supaya SK yang sudah ditetapkan
+        // ke peserta tetap ditemukan walau periodenya berbeda.
         if (!empty($gelombangId)) {
-            $selected = collect($items)->firstWhere('id', $gelombangId);
+            $selected = collect($this->ambilSuratKelulusanGelombang())->firstWhere('id', $gelombangId);
             if ($selected) {
                 return $selected;
             }
         }
+
+        // Cadangan: SK pertama pada periode peserta.
+        $items = $this->ambilSuratKelulusanGelombang($tahunAjaranId);
 
         return $items[0] ?? null;
     }

@@ -112,13 +112,46 @@
     @endif
 
     @if(empty($skGelombang))
-        <div class="alert alert-warning d-flex align-items-start gap-2">
-            <i class="bi bi-exclamation-triangle mt-1"></i>
-            <div>
-                Belum ada SK gelombang. Tambahkan file SK di
-                <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="alert-link">Pengaturan SPMB - Kelulusan</a>
-                sebelum meluluskan peserta.
+        <div class="alert alert-warning border-start border-4 border-warning">
+            <div class="d-flex flex-wrap align-items-start gap-2">
+                <i class="bi bi-exclamation-triangle-fill fs-4 text-warning"></i>
+                <div class="flex-grow-1" style="min-width:14rem;">
+                    <h6 class="alert-heading mb-1">Belum ada SK Kelulusan untuk periode {{ $periodeLabel ?? 'ini' }}</h6>
+                    @if(!empty($skSemuaPeriode))
+                        <p class="mb-1 small">
+                            Ada {{ count($skSemuaPeriode) }} SK tersimpan, tetapi tidak ada yang terdaftar untuk periode
+                            <strong>{{ $periodeLabel ?? '-' }}</strong>. Tombol Luluskan dimatikan sampai SK periode ini didaftarkan.
+                        </p>
+                        <p class="mb-0 small text-muted">
+                            SK yang sudah ada: {{ collect($skSemuaPeriode)->pluck('nama')->implode(', ') }}
+                        </p>
+                    @else
+                        <p class="mb-0 small">
+                            Belum ada SK Kelulusan yang didaftarkan sama sekali. Upload SK per gelombang terlebih dahulu —
+                            peserta tidak bisa diluluskan tanpa SK karena SK inilah bukti resmi kelulusannya.
+                        </p>
+                    @endif
+                </div>
+                <div class="flex-shrink-0 d-flex flex-column gap-2">
+                    <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn btn-warning btn-sm">
+                        <i class="bi bi-plus-circle me-1"></i>Buat SK Kelulusan Sekarang
+                    </a>
+                    <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-gear me-1"></i>Pengaturan Tahap 7
+                    </a>
+                </div>
             </div>
+        </div>
+    @else
+        <div class="alert alert-light border d-flex flex-wrap align-items-center gap-2 py-2">
+            <i class="bi bi-file-earmark-check text-success"></i>
+            <div class="flex-grow-1 small">
+                SK aktif untuk periode <strong>{{ $periodeLabel ?? '-' }}</strong>:
+                {{ collect($skGelombang)->pluck('nama')->implode(', ') }}
+            </div>
+            <a href="{{ route('admin.pengaturan.spmb') }}?tab=tahap7" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-pencil-square me-1"></i>Kelola SK
+            </a>
         </div>
     @endif
 

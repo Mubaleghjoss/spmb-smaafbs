@@ -98,7 +98,8 @@ class DashboardSpmbController extends Controller
         $pengaturanTahapan = $pengaturanService->ambilPengaturanTahapan();
         $branding = $pengaturanService->ambilBranding();
         $skKelulusan = $pengaturanService->ambilSuratKelulusanUntukGelombang(
-            $peserta->tahapanSpmb?->sk_gelombang_kelulusan
+            $peserta->tahapanSpmb?->sk_gelombang_kelulusan,
+            $peserta->tahun_ajaran_id
         );
         
         return view('peserta.konfirmasi-diterima', compact(
@@ -126,7 +127,8 @@ class DashboardSpmbController extends Controller
 
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $skKelulusan = $pengaturanService->ambilSuratKelulusanUntukGelombang(
-            $peserta->tahapanSpmb?->sk_gelombang_kelulusan
+            $peserta->tahapanSpmb?->sk_gelombang_kelulusan,
+            $peserta->tahun_ajaran_id
         );
 
         if (!$skKelulusan || empty($skKelulusan['file']) || !Storage::disk('public')->exists($skKelulusan['file'])) {
