@@ -77,7 +77,7 @@
                     <i class="bi bi-stop-fill me-1"></i> Stop Terpilih
                 </button>
                 <button type="button" class="btn btn-info btn-sm" id="btnBulkDurasi" disabled data-bs-toggle="modal" data-bs-target="#modalDurasiJadwal">
-                    <i class="bi bi-clock me-1"></i> Atur Durasi & Jadwal
+                    <i class="bi bi-clock me-1"></i> Atur Durasi
                 </button>
                 <button type="button" class="btn btn-primary btn-sm" id="btnBulkPeriode" disabled data-bs-toggle="modal" data-bs-target="#modalPeriode">
                     <i class="bi bi-calendar-range me-1"></i> Atur Periode
@@ -239,15 +239,22 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-info text-white">
-                <h5 class="modal-title"><i class="bi bi-clock me-2"></i>Atur Durasi & Jadwal Tes</h5>
+                <h5 class="modal-title"><i class="bi bi-clock me-2"></i>Atur Durasi Tes</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form id="formDurasiJadwal" action="{{ route('admin.tes.bulk-durasi-jadwal') }}" method="POST">
                 @csrf
                 <input type="hidden" name="tes_ids" id="durasiTesIds">
                 <div class="modal-body">
-                    <p class="text-muted mb-3">Atur durasi dan jadwal untuk <strong><span id="durasiSelectedCount">0</span> tes</strong> yang dipilih:</p>
-                    
+                    <p class="text-muted mb-3">Atur durasi untuk <strong><span id="durasiSelectedCount">0</span> tes</strong> yang dipilih:</p>
+
+                    <div class="alert alert-primary py-2">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <small><strong>Jadwal buka/tutup Tes Online kini otomatis</strong> mengikuti
+                        <strong>Tahap 4. Tes Online</strong> di menu <a href="{{ route('admin.alur-jadwal.index') }}" class="alert-link">Alur &amp; Jadwal</a>
+                        sesuai periode. Di sini cukup atur <strong>durasi pengerjaan</strong> saja.</small>
+                    </div>
+
                     <div class="mb-3">
                         <div class="form-check">
                             <input class="form-check-input" type="checkbox" id="ubahDurasi" name="ubah_durasi" value="1" checked>

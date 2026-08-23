@@ -96,13 +96,49 @@ class UjianController extends Controller
     }
 
     /**
+     * Status akses Tes Online (Tahap 4) — SUMBER TUNGGAL: Alur & Jadwal.
+     *
+     * Mengikuti timeline Tahap 4 pada /admin/alur-jadwal sesuai tahun ajaran +
+     * gelombang peserta. Tidak lagi memakai setelan ujian terpisah, sehingga
+     * jadwal tes online otomatis menyesuaikan pengaturan Tahap 4 per periode.
+     * Fallback: bila peserta tak punya tahun ajaran, pakai setelan lama global.
+     *
+     * @return array{dibuka:bool, alasan:?string}
+     */
+    private function aksesUjianPeserta(?Peserta $peserta): array
+    {
+        $tahunAjaranId = $peserta?->tahun_ajaran_id;
+
+        if ($tahunAjaranId) {
+            $status = app(\App\Services\JadwalAlurService::class)->statusTahap(
+                (int) $tahunAjaranId,
+                $peserta?->gelombang_pendaftaran_id ? (int) $peserta->gelombang_pendaftaran_id : null,
+                4
+            );
+
+            return [
+                'dibuka' => (bool) ($status['dibuka'] ?? true),
+                'alasan' => $status['alasan'] ?? null,
+            ];
+        }
+
+        // Fallback lama (tanpa tahun ajaran)
+        $lama = $this->pengaturanService->statusAksesUjian();
+
+        return [
+            'dibuka' => (bool) ($lama['dibuka'] ?? true),
+            'alasan' => $lama['alasan'] ?? null,
+        ];
+    }
+
+    /**
      * Halaman daftar tes yang tersedia
      * Kebutuhan: 3.1, 3.3 - Filter tes berdasarkan grup peserta
      */
     public function index(): View
     {
         $peserta = $this->getPeserta();
-        $aksesUjian = $this->pengaturanService->statusAksesUjian();
+        $aksesUjian = $this->aksesUjianPeserta($peserta);
         $abaikanJadwalUntukPerbaikanData = $this->sudahLulusFinal($peserta);
         
         // Cek apakah login dengan token global
@@ -204,7 +240,7 @@ class UjianController extends Controller
     public function konfirmasi(Tes $tes): View|RedirectResponse
     {
         $peserta = $this->getPeserta();
-        $aksesUjian = $this->pengaturanService->statusAksesUjian();
+        $aksesUjian = $this->aksesUjianPeserta($peserta);
 
         if (!$aksesUjian['dibuka'] && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('ujian.index')
@@ -242,7 +278,7 @@ class UjianController extends Controller
     public function mulai(Request $request, Tes $tes): RedirectResponse
     {
         $peserta = $this->getPeserta();
-        $aksesUjian = $this->pengaturanService->statusAksesUjian();
+        $aksesUjian = $this->aksesUjianPeserta($peserta);
 
         if (!$aksesUjian['dibuka'] && !$this->sudahLulusFinal($peserta)) {
             return redirect()->route('ujian.index')
