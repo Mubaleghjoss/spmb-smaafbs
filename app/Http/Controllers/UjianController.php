@@ -444,6 +444,7 @@ class UjianController extends Controller
         return view('ujian.hasil', [
             'hasil' => $hasil,
             'tes' => $sesi->tes,
+            'peserta' => $peserta,
         ]);
     }
 

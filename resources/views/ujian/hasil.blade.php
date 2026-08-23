@@ -768,29 +768,40 @@
                         @endphp
                         <div class="alert {{ $hasil['sesi']->status_verifikasi_tes === 'diloloskan' ? 'alert-success' : ($hasil['sesi']->status_verifikasi_tes === 'ditolak' ? 'alert-danger' : 'alert-warning') }} mt-3">
                             @if($hasil['sesi']->status_verifikasi_tes === 'menunggu')
-                                <h6 class="alert-heading"><i class="bi bi-hourglass-split me-2"></i>Menunggu Keputusan Admin</h6>
-                                <p class="mb-2">Nilai Anda belum memenuhi syarat SPMB kami. Hasil tes Anda sedang ditinjau oleh admin untuk menentukan apakah Anda dapat melanjutkan ke tahap berikutnya atau melakukan tes ini ulang.</p>
-                                
+                                <h6 class="alert-heading"><i class="bi bi-hourglass-split me-2"></i>Menunggu Verifikasi Admin</h6>
+                                <p class="mb-2">Nilai Anda pada tes ini belum memenuhi syarat. Jangan khawatir — silakan <strong>hubungi Tim SPMB langsung via WhatsApp</strong> untuk verifikasi dan bantuan langkah berikutnya (perpanjangan waktu / mengulang tes / peninjauan).</p>
+
                                 @if(!empty($kontakTimSpmb))
                                     <hr>
-                                    <p class="mb-2"><strong><i class="bi bi-telephone me-1"></i> Hubungi Admin untuk Mempercepat Verifikasi:</strong></p>
+                                    <p class="mb-2"><strong><i class="bi bi-whatsapp me-1 text-success"></i> Hubungi Tim SPMB untuk Verifikasi:</strong></p>
                                     <div class="d-flex flex-wrap gap-2">
                                         @foreach($kontakTimSpmb as $kontak)
                                             @if(!empty($kontak['whatsapp']))
                                                 @php
+                                                    // Normalisasi nomor Indonesia ke format internasional (62...) agar link WA valid
                                                     $waNumber = preg_replace('/[^0-9]/', '', $kontak['whatsapp']);
-                                                    if (substr($waNumber, 0, 1) === '0') {
+                                                    if (str_starts_with($waNumber, '620')) {
+                                                        $waNumber = '62' . ltrim(substr($waNumber, 2), '0');
+                                                    } elseif (str_starts_with($waNumber, '62')) {
+                                                        // sudah format internasional
+                                                    } elseif (str_starts_with($waNumber, '0')) {
                                                         $waNumber = '62' . substr($waNumber, 1);
+                                                    } elseif (str_starts_with($waNumber, '8')) {
+                                                        $waNumber = '62' . $waNumber;
                                                     }
+                                                    $waText = rawurlencode("Assalamu'alaikum, saya " . session('peserta_nama') . " (No. " . ($peserta->nomor_pendaftaran ?? '-') . "). Nilai tes " . $tes->nama . " saya belum memenuhi syarat, mohon bantuan verifikasi untuk melanjutkan proses SPMB.");
                                                 @endphp
-                                                <a href="https://wa.me/{{ $waNumber }}?text=Assalamu'alaikum, saya {{ session('peserta_nama') }} ingin menanyakan hasil tes SPMB saya." 
-                                                   class="btn btn-success btn-sm" target="_blank">
-                                                    <i class="bi bi-whatsapp me-1"></i> 
-                                                    {{ $kontak['nama'] ?? 'Admin' }} ({{ $kontak['whatsapp'] }})
+                                                <a href="https://wa.me/{{ $waNumber }}?text={{ $waText }}"
+                                                   class="btn btn-success btn-sm" target="_blank" rel="noopener">
+                                                    <i class="bi bi-whatsapp me-1"></i>
+                                                    {{ $kontak['nama'] ?? 'Tim SPMB' }}
                                                 </a>
                                             @endif
                                         @endforeach
                                     </div>
+                                @else
+                                    <hr>
+                                    <p class="mb-0 small"><i class="bi bi-info-circle me-1"></i> Silakan hubungi panitia SPMB sekolah untuk verifikasi hasil tes Anda.</p>
                                 @endif
                             @elseif($hasil['sesi']->status_verifikasi_tes === 'diloloskan')
                                 <h6 class="alert-heading"><i class="bi bi-check-circle me-2"></i>Diloloskan oleh Admin</h6>
