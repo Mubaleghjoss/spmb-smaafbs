@@ -25,8 +25,11 @@
                     <div class="alert alert-info mb-4">
                         <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Informasi Pembayaran</h6>
                         <hr>
-                        <p class="mb-1">Selamat! Anda telah lulus seleksi dan wawancara.</p>
+                        <p class="mb-1">Selamat! Anda telah <strong>lulus wawancara</strong>.</p>
                         <p class="mb-1">Silakan lakukan pembayaran tahap pertama sesuai ketentuan.</p>
+                        <p class="mb-1 small text-muted">
+                            <i class="bi bi-info-circle me-1"></i>Kelulusan SPMB dinyatakan resmi melalui SK Kelulusan pada tahap akhir.
+                        </p>
                         <hr>
                         <p class="mb-1"><strong>Bank:</strong> {{ $spmb['rekening_bank'] ?? 'BSI' }}</p>
                         <p class="mb-1"><strong>No. Rekening:</strong> <code class="fs-5">{{ $spmb['nomor_rekening'] ?? '-' }}</code></p>
