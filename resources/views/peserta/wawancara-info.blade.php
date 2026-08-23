@@ -208,23 +208,23 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Lengkap</label>
-                            <input type="text" name="sp_siswa[nama_lengkap]" class="form-control" value="{{ ($spSiswa['nama_lengkap'] ?? '') ?: ($prefillWawancara['siswa']['nama_lengkap'] ?? '') }}" required>
+                            <input type="text" name="sp_siswa[nama_lengkap]" class="form-control bg-light" value="{{ ($spSiswa['nama_lengkap'] ?? '') ?: ($prefillWawancara['siswa']['nama_lengkap'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Tempat, Tanggal Lahir</label>
-                            <input type="text" name="sp_siswa[tempat_tgl_lahir]" class="form-control" value="{{ ($spSiswa['tempat_tgl_lahir'] ?? '') ?: ($prefillWawancara['siswa']['tempat_tgl_lahir'] ?? '') }}" required>
+                            <input type="text" name="sp_siswa[tempat_tgl_lahir]" class="form-control bg-light" value="{{ ($spSiswa['tempat_tgl_lahir'] ?? '') ?: ($prefillWawancara['siswa']['tempat_tgl_lahir'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Alamat</label>
-                            <input type="text" name="sp_siswa[alamat]" class="form-control" value="{{ ($spSiswa['alamat'] ?? '') ?: ($prefillWawancara['siswa']['alamat'] ?? '') }}" required>
+                            <input type="text" name="sp_siswa[alamat]" class="form-control bg-light" value="{{ ($spSiswa['alamat'] ?? '') ?: ($prefillWawancara['siswa']['alamat'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Orangtua/Wali</label>
-                            <input type="text" name="sp_siswa[nama_ortu]" class="form-control" value="{{ ($spSiswa['nama_ortu'] ?? '') ?: ($prefillWawancara['siswa']['nama_ortu'] ?? '') }}" required>
+                            <input type="text" name="sp_siswa[nama_ortu]" class="form-control bg-light" value="{{ ($spSiswa['nama_ortu'] ?? '') ?: ($prefillWawancara['siswa']['nama_ortu'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">No.Telp/HP Orang tua/Wali</label>
-                            <input type="text" name="sp_siswa[no_telp_ortu]" class="form-control" value="{{ ($spSiswa['no_telp_ortu'] ?? '') ?: ($prefillWawancara['siswa']['no_telp_ortu'] ?? '') }}" required>
+                            <input type="text" name="sp_siswa[no_telp_ortu]" class="form-control bg-light" value="{{ ($spSiswa['no_telp_ortu'] ?? '') ?: ($prefillWawancara['siswa']['no_telp_ortu'] ?? '') }}" readonly required>
                         </div>
                     </div>
 
@@ -296,15 +296,15 @@
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Lengkap</label>
-                            <input type="text" name="sp_ortu[nama_lengkap]" class="form-control" value="{{ ($spOrtu['nama_lengkap'] ?? '') ?: ($prefillWawancara['ortu']['nama_lengkap'] ?? '') }}" required>
+                            <input type="text" name="sp_ortu[nama_lengkap]" class="form-control bg-light" value="{{ ($spOrtu['nama_lengkap'] ?? '') ?: ($prefillWawancara['ortu']['nama_lengkap'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Alamat</label>
-                            <input type="text" name="sp_ortu[alamat]" class="form-control" value="{{ ($spOrtu['alamat'] ?? '') ?: ($prefillWawancara['ortu']['alamat'] ?? '') }}" required>
+                            <input type="text" name="sp_ortu[alamat]" class="form-control bg-light" value="{{ ($spOrtu['alamat'] ?? '') ?: ($prefillWawancara['ortu']['alamat'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Kelompok</label>
-                            <input type="text" name="sp_ortu[kelompok]" class="form-control" value="{{ ($spOrtu['kelompok'] ?? '') ?: ($prefillWawancara['ortu']['kelompok'] ?? '') }}">
+                            <input type="text" name="sp_ortu[kelompok]" class="form-control bg-light" value="{{ ($spOrtu['kelompok'] ?? '') ?: ($prefillWawancara['ortu']['kelompok'] ?? '') }}" readonly>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama KI Kelompok + No. HP</label>
@@ -312,23 +312,23 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Desa</label>
-                            <input type="text" name="sp_ortu[desa]" class="form-control" value="{{ ($spOrtu['desa'] ?? '') ?: ($prefillWawancara['ortu']['desa'] ?? '') }}">
+                            <input type="text" name="sp_ortu[desa]" class="form-control bg-light" value="{{ ($spOrtu['desa'] ?? '') ?: ($prefillWawancara['ortu']['desa'] ?? '') }}" readonly>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Daerah</label>
-                            <input type="text" name="sp_ortu[daerah]" class="form-control" value="{{ ($spOrtu['daerah'] ?? '') ?: ($prefillWawancara['ortu']['daerah'] ?? '') }}">
+                            <input type="text" name="sp_ortu[daerah]" class="form-control bg-light" value="{{ ($spOrtu['daerah'] ?? '') ?: ($prefillWawancara['ortu']['daerah'] ?? '') }}" readonly>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">No. HP Orang tua/Wali</label>
-                            <input type="text" name="sp_ortu[no_hp]" class="form-control" value="{{ ($spOrtu['no_hp'] ?? '') ?: ($prefillWawancara['ortu']['no_hp'] ?? '') }}" required>
+                            <input type="text" name="sp_ortu[no_hp]" class="form-control bg-light" value="{{ ($spOrtu['no_hp'] ?? '') ?: ($prefillWawancara['ortu']['no_hp'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama Siswa</label>
-                            <input type="text" name="sp_ortu[nama_siswa]" class="form-control" value="{{ ($spOrtu['nama_siswa'] ?? '') ?: ($prefillWawancara['ortu']['nama_siswa'] ?? '') }}" required>
+                            <input type="text" name="sp_ortu[nama_siswa]" class="form-control bg-light" value="{{ ($spOrtu['nama_siswa'] ?? '') ?: ($prefillWawancara['ortu']['nama_siswa'] ?? '') }}" readonly required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Asal Sekolah</label>
-                            <input type="text" name="sp_ortu[asal_sekolah]" class="form-control" value="{{ ($spOrtu['asal_sekolah'] ?? '') ?: ($prefillWawancara['ortu']['asal_sekolah'] ?? '') }}">
+                            <input type="text" name="sp_ortu[asal_sekolah]" class="form-control bg-light" value="{{ ($spOrtu['asal_sekolah'] ?? '') ?: ($prefillWawancara['ortu']['asal_sekolah'] ?? '') }}" readonly>
                         </div>
                     </div>
 

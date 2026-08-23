@@ -164,9 +164,11 @@ class DashboardSpmbController extends Controller
         $wawancara = $peserta->wawancara;
         $kelengkapanWawancara = $this->hitungKelengkapanWawancara($wawancara);
 
-        // Nilai otomatis dari formulir biodata (Tahap 2) untuk surat pernyataan.
+        // Data identitas surat pernyataan dibaca LANGSUNG dari formulir biodata
+        // (tidak disalin), sehingga perubahan formulir otomatis ikut terpakai.
         $formulir = $peserta->formulirSpmb;
-        $prefillWawancara = $this->siapkanPrefillWawancara($peserta, $formulir);
+        $prefillWawancara = app(\App\Services\DataSuratPernyataanService::class)
+            ->untukSurat($peserta, $formulir);
         
         return view('peserta.wawancara-info', compact(
             'peserta', 'infoWawancara', 'pertanyaanOrtu', 'pertanyaanSiswa',
@@ -177,63 +179,36 @@ class DashboardSpmbController extends Controller
 
     /**
      * Susun nilai otomatis surat pernyataan dari data formulir biodata.
-     * Hasil dipakai sebagai nilai awal input bila peserta belum pernah mengisi,
-     * sehingga nama/tanggal lahir/orang tua tidak perlu ditulis ulang.
+     * Delegasi ke DataSuratPernyataanService agar aturan pembacaan formulir
+     * hanya ada di satu tempat (dipakai juga saat cetak & PDF).
      *
      * @return array{siswa: array<string,string>, ortu: array<string,string>}
      */
     private function siapkanPrefillWawancara(Peserta $peserta, ?\App\Models\FormulirSpmb $formulir): array
     {
-        $rapikan = fn (?string $v): string => trim((string) $v);
+        return app(\App\Services\DataSuratPernyataanService::class)
+            ->dariFormulir($peserta, $formulir);
+    }
 
-        // Alamat lengkap dirangkai dari bagian-bagian yang terisi saja.
-        $bagianAlamat = array_filter([
-            $formulir?->alamat,
-            $formulir?->alamat_kelurahan,
-            $formulir?->alamat_kecamatan,
-            $formulir?->alamat_kota,
-            $formulir?->alamat_provinsi,
-        ], fn ($v) => $rapikan($v) !== '');
-        $alamatLengkap = implode(', ', array_map($rapikan, $bagianAlamat));
-        if ($alamatLengkap === '') {
-            $alamatLengkap = $rapikan($peserta->alamat);
+    /**
+     * Buang kolom identitas dari input surat pernyataan agar TIDAK tersimpan
+     * sebagai salinan. Kolom tersebut selalu dibaca ulang dari formulir biodata,
+     * jadi memperbaiki formulir otomatis memperbaiki surat & PDF-nya.
+     *
+     * @param  array<string,mixed>  $input
+     * @param  'siswa'|'ortu'  $jenis
+     * @return array<string,mixed>
+     */
+    private function buangKolomIkutFormulir(array $input, string $jenis): array
+    {
+        $kolom = app(\App\Services\DataSuratPernyataanService::class)
+            ->kolomIkutFormulir()[$jenis] ?? [];
+
+        foreach ($kolom as $k) {
+            unset($input[$k]);
         }
 
-        // "Kota, 1 Januari 2010"
-        $tempatTglLahir = collect([
-            $rapikan($formulir?->tempat_lahir),
-            $formulir?->tanggal_lahir
-                ? $formulir->tanggal_lahir->locale('id')->translatedFormat('d F Y')
-                : '',
-        ])->filter()->implode(', ');
-
-        $namaOrtu = $rapikan($formulir?->nama_ayah) ?: $rapikan($formulir?->nama_ibu);
-        $telpOrtu = $rapikan($formulir?->telepon_ayah)
-            ?: $rapikan($formulir?->telepon_ibu)
-            ?: $rapikan($formulir?->telp_rumah)
-            ?: $rapikan($peserta->telepon);
-        $namaSiswa = $rapikan($formulir?->nama_lengkap) ?: $rapikan($peserta->nama);
-        $asalSekolah = $rapikan($formulir?->asal_sekolah) ?: $rapikan($peserta->asal_sekolah);
-
-        return [
-            'siswa' => [
-                'nama_lengkap' => $namaSiswa,
-                'tempat_tgl_lahir' => $tempatTglLahir,
-                'alamat' => $alamatLengkap,
-                'nama_ortu' => $namaOrtu,
-                'no_telp_ortu' => $telpOrtu,
-            ],
-            'ortu' => [
-                'nama_lengkap' => $namaOrtu,
-                'alamat' => $alamatLengkap,
-                'kelompok' => $rapikan($formulir?->kelompok),
-                'desa' => $rapikan($formulir?->desa),
-                'daerah' => $rapikan($formulir?->daerah),
-                'no_hp' => $telpOrtu,
-                'nama_siswa' => $namaSiswa,
-                'asal_sekolah' => $asalSekolah,
-            ],
-        ];
+        return $input;
     }
 
     /**
@@ -262,6 +237,9 @@ class DashboardSpmbController extends Controller
                 break;
             case 3:
                 $suratSiswa = $request->input('sp_siswa', []);
+                // Identitas TIDAK disalin — dibaca langsung dari formulir saat
+                // ditampilkan/dicetak. Hanya persetujuan & tanggal yang disimpan.
+                $suratSiswa = $this->buangKolomIkutFormulir($suratSiswa, 'siswa');
                 $suratSiswa['tanggal_surat'] = $suratSiswa['tanggal_surat']
                     ?? ($wawancara->surat_pernyataan_siswa['tanggal_surat'] ?? now()->toDateString());
                 $wawancara->surat_pernyataan_siswa = $suratSiswa;
@@ -272,6 +250,8 @@ class DashboardSpmbController extends Controller
                 break;
             case 4:
                 $suratOrtu = $request->input('sp_ortu', []);
+                // Identitas ikut formulir; nama_ki tetap disimpan (tidak ada di formulir).
+                $suratOrtu = $this->buangKolomIkutFormulir($suratOrtu, 'ortu');
                 $suratOrtu['tanggal_surat'] = $suratOrtu['tanggal_surat']
                     ?? ($wawancara->surat_pernyataan_ortu['tanggal_surat'] ?? now()->toDateString());
                 $wawancara->surat_pernyataan_ortu = $suratOrtu;

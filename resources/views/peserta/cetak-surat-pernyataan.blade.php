@@ -72,7 +72,11 @@
     </div>
 
     {{-- ============ SURAT PERNYATAAN SISWA ============ --}}
-    @php $sp = $peserta->wawancara?->surat_pernyataan_siswa ?? []; @endphp
+    {{-- Identitas dibaca LANGSUNG dari formulir biodata (tidak dari salinan). --}}
+    @php
+        $spSumber = app(\App\Services\DataSuratPernyataanService::class)->untukSurat($peserta);
+        $sp = array_merge($peserta->wawancara?->surat_pernyataan_siswa ?? [], $spSumber['siswa']);
+    @endphp
     @php $tanggalSuratSiswa = $formatTanggalSurat($sp['tanggal_surat'] ?? $peserta->wawancara?->diisi_peserta_pada ?? null); @endphp
     <div class="page">
         <h3>SURAT PERNYATAAN SISWA/I</h3>
@@ -113,7 +117,7 @@
     </div>
 
     {{-- ============ SURAT PERNYATAAN ORANGTUA ============ --}}
-    @php $spo = $peserta->wawancara?->surat_pernyataan_ortu ?? []; @endphp
+    @php $spo = array_merge($peserta->wawancara?->surat_pernyataan_ortu ?? [], $spSumber['ortu']); @endphp
     @php $tanggalSuratOrtu = $formatTanggalSurat($spo['tanggal_surat'] ?? $peserta->wawancara?->diisi_peserta_pada ?? null); @endphp
     <div class="page">
         <h3>SURAT PERNYATAAN ORANGTUA</h3>
