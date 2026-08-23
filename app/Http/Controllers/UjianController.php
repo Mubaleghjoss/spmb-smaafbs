@@ -331,6 +331,13 @@ class UjianController extends Controller
                 ->with('info', 'Waktu ujian telah habis.');
         }
 
+        // Saat peserta MASUK/kembali ke halaman ujian, otomatis lanjutkan (unpause)
+        // agar sisa waktu persis seperti sebelum dia keluar.
+        if ($sesi->sedangDijeda()) {
+            $sesi->lanjutkan();
+            $sesi->refresh();
+        }
+
         // Ambil nomor soal dari request atau posisi terakhir
         $nomorSoal = $request->get('nomor', $sesi->soal_saat_ini);
         
@@ -511,6 +518,28 @@ class UjianController extends Controller
         return response()->json([
             'waktu_tersisa' => $waktuTersisa,
             'selesai' => false,
+        ]);
+    }
+
+    /**
+     * Jeda sesi (AJAX/beacon) — dipanggil saat peserta keluar dari halaman ujian.
+     * Membekukan waktu; sisa waktu dipulihkan persis saat peserta kembali.
+     */
+    public function jedaSesi(SesiTes $sesi): JsonResponse
+    {
+        $peserta = $this->getPeserta();
+
+        if (!$this->sesiMilikPeserta($sesi, $peserta)) {
+            return $this->responseSessionPesertaTidakSesuai();
+        }
+
+        if (!$sesi->sudahSelesai()) {
+            $sesi->jeda();
+        }
+
+        return response()->json([
+            'dijeda' => true,
+            'waktu_tersisa' => $sesi->waktuTersisa(),
         ]);
     }
 

@@ -29,6 +29,7 @@ class SesiTes extends Model
         'peserta_id',
         'token_id',
         'waktu_mulai',
+        'waktu_jeda',
         'waktu_selesai',
         'nilai',
         'status',
@@ -55,6 +56,7 @@ class SesiTes extends Model
     {
         return [
             'waktu_mulai' => 'datetime',
+            'waktu_jeda' => 'datetime',
             'waktu_selesai' => 'datetime',
             'diverifikasi_pada' => 'datetime',
             'permohonan_ulang_pada' => 'datetime',
@@ -182,9 +184,52 @@ class SesiTes extends Model
         }
 
         $waktuBerakhir = $this->waktu_mulai->copy()->addMinutes($durasiMenit);
-        $tersisa = (int) floor(now()->diffInSeconds($waktuBerakhir, false));
-        
+
+        // Jika sesi sedang DIJEDA (peserta keluar), waktu dibekukan pada saat jeda —
+        // hitung sisa relatif terhadap waktu_jeda, bukan sekarang.
+        $acuan = $this->waktu_jeda ?? now();
+        $tersisa = (int) floor($acuan->diffInSeconds($waktuBerakhir, false));
+
         return max(0, $tersisa);
+    }
+
+    /**
+     * Apakah sesi sedang dijeda (peserta keluar dari halaman ujian).
+     */
+    public function sedangDijeda(): bool
+    {
+        return $this->waktu_jeda !== null && !$this->sudahSelesai();
+    }
+
+    /**
+     * Bekukan waktu: catat saat jeda. Idempoten — tidak menimpa jeda yang ada.
+     */
+    public function jeda(): void
+    {
+        if (!$this->sudahSelesai() && $this->waktu_jeda === null) {
+            $this->forceFill(['waktu_jeda' => now()])->save();
+        }
+    }
+
+    /**
+     * Lanjutkan: geser waktu_mulai maju sebesar durasi jeda agar sisa waktu sama
+     * persis seperti sebelum peserta keluar, lalu kosongkan waktu_jeda.
+     */
+    public function lanjutkan(): void
+    {
+        if ($this->sudahSelesai() || $this->waktu_jeda === null) {
+            return;
+        }
+
+        $detikJeda = (int) floor($this->waktu_jeda->diffInSeconds(now(), false));
+        if ($detikJeda < 0) {
+            $detikJeda = 0;
+        }
+
+        $this->forceFill([
+            'waktu_mulai' => $this->waktu_mulai->copy()->addSeconds($detikJeda),
+            'waktu_jeda' => null,
+        ])->save();
     }
 
     public function durasiMenitBulat(): ?int

@@ -17,7 +17,7 @@
                     <span x-text="formatWaktu(waktuTersisa)">{{ gmdate('H:i:s', $statistik['waktu_tersisa']) }}</span>
                 </div>
                 <button type="button" class="btn btn-outline-warning btn-sm" @click="tampilKembali()">
-                    <i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline ms-1">Kembali</span>
+                    <i class="bi bi-box-arrow-left"></i><span class="d-none d-sm-inline ms-1">Keluar</span>
                 </button>
                 <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalSelesai">
                     <i class="bi bi-check-circle"></i><span class="d-none d-sm-inline ms-1">Selesai</span>
@@ -224,31 +224,31 @@
         </div>
     </div>
     <!-- Modal Konfirmasi Kembali -->
-    <div class="modal fade" id="modalKembali" tabindex="-1">
+    <div class="modal fade" id="modalKembali" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">Konfirmasi Kembali</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" @click="lanjutTimer()"></button>
+                    <h5 class="modal-title">Keluar dari Ujian?</h5>
                 </div>
                 <div class="modal-body">
                     <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Waktu akan dijeda!</strong>
+                        <i class="bi bi-pause-circle me-2"></i>
+                        <strong>Waktu akan dijeda (di-pause).</strong>
                     </div>
-                    <p>Anda akan kembali ke halaman pilih tes. Jawaban yang sudah disimpan tidak akan hilang.</p>
-                    <p>Anda bisa melanjutkan ujian nanti selama waktu belum habis.</p>
-                    <div class="alert alert-info py-2">
+                    <p>Jawaban yang sudah disimpan tidak akan hilang. Waktu Anda dibekukan sekarang dan akan <strong>dilanjutkan persis dari sisa ini</strong> saat Anda masuk kembali ke ujian.</p>
+                    <div class="alert alert-info py-2 mb-0">
                         <small>
-                            <i class="bi bi-clock me-1"></i> Waktu tersisa: <strong x-text="formatWaktu(waktuTersisa)"></strong>
+                            <i class="bi bi-clock me-1"></i> Sisa waktu saat dijeda: <strong x-text="formatWaktu(waktuTersisa)"></strong>
                         </small>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" @click="lanjutTimer()">Lanjut Ujian</button>
-                    <a href="{{ route('ujian.index') }}" class="btn btn-warning">
-                        <i class="bi bi-arrow-left me-1"></i> Ya, Kembali
-                    </a>
+                    <button type="button" class="btn btn-secondary" @click="lanjutkanUjian()">
+                        <i class="bi bi-play-fill me-1"></i> Lanjut Ujian
+                    </button>
+                    <button type="button" class="btn btn-warning" @click="keluarUjian()">
+                        <i class="bi bi-box-arrow-left me-1"></i> Ya, Keluar (Pause)
+                    </button>
                 </div>
             </div>
         </div>
@@ -277,9 +277,41 @@ function ujianApp() {
 
         timerPaused: false,
         timerInterval: null,
+        modalKembaliObj: null,
+        navigasiInternal: false,
 
         init() {
+            window.__ujianApp = this;
             this.startTimer();
+
+            // Pindah soal (Sebelumnya/Selanjutnya/nomor) = masih di dalam ujian,
+            // jadi JANGAN dijeda. Tandai navigasi internal supaya handler pagehide
+            // tidak ikut membekukan waktu dan menimbulkan selisih.
+            document.addEventListener('click', (e) => {
+                const a = e.target.closest('a[href]');
+                if (a && a.href.includes('/ujian/sesi/')) {
+                    this.navigasiInternal = true;
+                }
+            }, true);
+
+            // Submit "Selesai" juga bukan aksi keluar — jangan dijeda.
+            document.addEventListener('submit', () => { this.navigasiInternal = true; }, true);
+
+            // Tombol BACK di HP: jangan langsung keluar. Dorong satu state riwayat,
+            // lalu setiap kali peserta menekan back kita tahan dan tampilkan popup
+            // peringatan yang SAMA seperti tombol Keluar (waktu ikut dijeda).
+            history.pushState({ ujian: true }, '', location.href);
+            window.addEventListener('popstate', () => {
+                history.pushState({ ujian: true }, '', location.href);
+                this.tampilKembali();
+            });
+
+            // Halaman ditutup / aplikasi ditinggalkan tanpa menekan tombol apa pun:
+            // tetap bekukan waktu via beacon supaya waktu tidak terus berjalan.
+            window.addEventListener('pagehide', () => {
+                if (this.navigasiInternal) return;
+                if (!this.timerPaused) this.jedaSesi(true);
+            });
         },
 
         startTimer() {
@@ -301,14 +333,50 @@ function ujianApp() {
             }, 1000);
         },
 
+        // Dipakai oleh tombol "Keluar" DAN tombol back HP — alur identik:
+        // bekukan timer di layar + jeda waktu di server + tampilkan popup peringatan.
         tampilKembali() {
             this.timerPaused = true;
-            const modal = new bootstrap.Modal(document.getElementById('modalKembali'));
-            modal.show();
+            this.jedaSesi();
+            const el = document.getElementById('modalKembali');
+            this.modalKembaliObj = bootstrap.Modal.getOrCreateInstance(el);
+            this.modalKembaliObj.show();
         },
 
         lanjutTimer() {
             this.timerPaused = false;
+        },
+
+        // Tombol "Lanjut Ujian" di popup: muat ulang halaman kerjakan. Server otomatis
+        // meng-unpause (lanjutkan) sehingga sisa waktu persis seperti saat dijeda.
+        lanjutkanUjian() {
+            this.navigasiInternal = true;
+            window.location.href = '{{ route("ujian.kerjakan", $sesi) }}';
+        },
+
+        // Tombol "Ya, Keluar": waktu sudah dibekukan saat popup muncul, tinggal keluar.
+        keluarUjian() {
+            this.navigasiInternal = true;
+            window.location.href = '{{ route("ujian.index") }}';
+        },
+
+        // Bekukan waktu di server saat peserta hendak keluar dari halaman ujian.
+        jedaSesi(useBeacon = false) {
+            const url = '{{ route("ujian.jeda", $sesi) }}';
+            const token = '{{ csrf_token() }}';
+            if (useBeacon && navigator.sendBeacon) {
+                const fd = new FormData();
+                fd.append('_token', token);
+                navigator.sendBeacon(url, fd);
+                return;
+            }
+            try {
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': token },
+                    keepalive: true,
+                });
+            } catch (e) { /* abaikan */ }
         },
 
         formatWaktu(detik) {

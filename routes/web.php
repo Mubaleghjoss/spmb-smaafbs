@@ -127,6 +127,7 @@ Route::prefix('ujian')->name('ujian.')->middleware('cek.peserta')->group(functio
     Route::get('/sesi/{sesi}/hasil', [\App\Http\Controllers\UjianController::class, 'hasil'])->name('hasil');
     Route::post('/sesi/{sesi}/permohonan-ulang', [\App\Http\Controllers\UjianController::class, 'ajukanPermohonanUlang'])->name('permohonan-ulang');
     Route::get('/sesi/{sesi}/waktu', [\App\Http\Controllers\UjianController::class, 'waktuTersisa'])->name('waktu-tersisa');
+    Route::post('/sesi/{sesi}/jeda', [\App\Http\Controllers\UjianController::class, 'jedaSesi'])->name('jeda');
     Route::post('/sesi/{sesi}/peringatan', [\App\Http\Controllers\UjianController::class, 'catatPeringatan'])->name('catat-peringatan');
 });
 
