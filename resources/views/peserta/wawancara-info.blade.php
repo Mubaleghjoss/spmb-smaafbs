@@ -15,19 +15,6 @@
         </div>
     </div>
 
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert">
-        <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-        <i class="bi bi-exclamation-circle me-2"></i>{{ session('error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
-
     @if(($peserta->tahapanSpmb?->status_kelulusan === 'lulus') && ($peserta->tahapanSpmb?->tahap_7_selesai ?? false) && (($kelengkapanWawancara['count'] ?? 0) > 0))
         <div class="alert alert-warning border-0 shadow-sm">
             <div class="d-flex gap-3">

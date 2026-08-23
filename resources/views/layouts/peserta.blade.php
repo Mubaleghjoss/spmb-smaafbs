@@ -102,20 +102,8 @@
         </div>
     </nav>
 
-    <!-- Flash Messages -->
-    @if(session('success'))
-    <div class="alert alert-success alert-dismissible fade show m-0 rounded-0" role="alert">
-        <div class="container">{{ session('success') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
-
-    @if(session('error'))
-    <div class="alert alert-danger alert-dismissible fade show m-0 rounded-0" role="alert">
-        <div class="container">{{ session('error') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-    </div>
-    @endif
+    <!-- Flash Messages (melayang, satu tempat) -->
+    @include('partials.flash')
 
     <!-- Main Content -->
     <main>@yield('content')</main>

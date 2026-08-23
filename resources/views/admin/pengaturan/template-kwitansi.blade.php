@@ -17,13 +17,6 @@
         </div>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle me-2"></i>{{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if($errors->any())
         <div class="alert alert-danger">
             <ul class="mb-0">

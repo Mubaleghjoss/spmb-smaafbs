@@ -21,13 +21,6 @@
         </div>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     {{-- Info Filter Aktif --}}
     <div class="card mb-3">
         <div class="card-body py-2">

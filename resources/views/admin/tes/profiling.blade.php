@@ -20,13 +20,6 @@
                 </div>
             </div>
 
-            @if(session('sukses'))
-                <div class="alert alert-success alert-dismissible fade show">
-                    <i class="bi bi-check-circle me-2"></i>{{ session('sukses') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
             {{-- Info Profiling --}}
             <div class="alert alert-info mb-4">
                 <h6 class="alert-heading"><i class="bi bi-info-circle me-2"></i>Tentang Profiling (PiES Self Potency Method)</h6>

@@ -14,13 +14,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="card">
         <div class="card-header">
             <h6 class="mb-0">Esai Belum Dinilai ({{ $esaiBelumDinilai->count() }})</h6>

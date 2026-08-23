@@ -48,27 +48,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle me-2"></i>{{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if($hasPerbedaanPenilaian ?? false)
         <div class="alert alert-warning d-flex justify-content-between align-items-start gap-3">
             <div>
@@ -261,9 +240,9 @@
                             </div>
                             <div class="col-4">
                                 @if($sesi->nilai >= $tes->nilai_lulus)
-                                    <span class="badge bg-success fs-5 py-2 px-3">LULUS</span>
+                                    <span class="badge bg-success d-inline-block text-wrap lh-sm px-2 py-2" style="max-width:100%;font-size:clamp(.7rem,2.6vw,1.1rem);">LULUS</span>
                                 @else
-                                    <span class="badge bg-danger fs-5 py-2 px-3">TIDAK LULUS</span>
+                                    <span class="badge bg-danger d-inline-block text-wrap lh-sm px-2 py-2" style="max-width:100%;font-size:clamp(.7rem,2.6vw,1.1rem);">TIDAK LULUS</span>
                                 @endif
                             </div>
                         </div>

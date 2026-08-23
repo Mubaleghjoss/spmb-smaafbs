@@ -11,13 +11,6 @@
         </a>
     </div>
 
-    @if(session('sukses') || session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('sukses') ?? session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show">
             <div class="fw-bold mb-1">Pengaturan belum bisa disimpan:</div>

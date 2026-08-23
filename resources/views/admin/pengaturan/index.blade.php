@@ -8,19 +8,6 @@
         <h1 class="h3 mb-0"><i class="bi bi-gear me-2"></i>Pengaturan Sistem</h1>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     {{-- ============================================================ --}}
     {{-- GRUP 1: PENGATURAN UMUM --}}
     {{-- ============================================================ --}}

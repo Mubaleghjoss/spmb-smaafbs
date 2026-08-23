@@ -11,20 +11,6 @@
         </a>
     </div>
 
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show">
-            <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="alert alert-info mb-4">
         <i class="bi bi-info-circle me-2"></i>
         Daftar peserta yang <strong>nilai tesnya masih di bawah nilai lulus</strong>. Peserta yang nilainya sudah memenuhi nilai lulus akan otomatis lolos dan tidak masuk daftar ini.

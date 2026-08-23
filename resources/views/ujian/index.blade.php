@@ -10,27 +10,6 @@
     <h1 class="h3 mb-4">Daftar Ujian Tersedia</h1>
     <p class="text-muted mb-4">Pilih ujian yang ingin Anda kerjakan. Anda bebas memilih urutan pengerjaan.</p>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if($errors->any())
         <div class="alert alert-danger alert-dismissible fade show" role="alert">
             <ul class="mb-0">
@@ -38,13 +17,6 @@
                     <li>{{ $error }}</li>
                 @endforeach
             </ul>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('info'))
-        <div class="alert alert-info alert-dismissible fade show" role="alert">
-            {{ session('info') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif

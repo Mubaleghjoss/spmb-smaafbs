@@ -11,20 +11,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="row">
         <div class="col-md-8">
             <form method="POST" action="{{ route('admin.pengaturan.email.simpan') }}">

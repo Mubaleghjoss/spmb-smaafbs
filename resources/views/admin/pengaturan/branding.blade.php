@@ -11,13 +11,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <form method="POST" action="{{ route('admin.pengaturan.branding.simpan') }}" enctype="multipart/form-data">
         @csrf
         

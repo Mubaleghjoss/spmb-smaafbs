@@ -20,13 +20,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     <div class="row">
         <div class="col-lg-8">
             <form action="{{ route('admin.tes.gaya-belajar.simpan', $tes) }}" method="POST">

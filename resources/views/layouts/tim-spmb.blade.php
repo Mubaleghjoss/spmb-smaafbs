@@ -172,19 +172,7 @@
 
         <!-- Main Content -->
         <main class="main-content bg-light flex-grow-1" id="mainContent">
-            @if(session('success') || session('sukses'))
-            <div class="alert alert-success alert-dismissible fade show m-3" role="alert">
-                <i class="bi bi-check-circle me-2"></i>{{ session('success') ?? session('sukses') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
-
-            @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show m-3" role="alert">
-                <i class="bi bi-exclamation-circle me-2"></i>{{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-            @endif
+            @include('partials.flash')
 
             @yield('content')
         </main>

@@ -24,13 +24,6 @@
         @endif
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     {{-- Info Soal --}}
     <div class="card mb-4">
         <div class="card-header bg-info text-white">

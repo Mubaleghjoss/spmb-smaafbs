@@ -36,20 +36,6 @@
                 </div>
             </div>
 
-            @if(session('sukses'))
-                <div class="alert alert-success alert-dismissible fade show">
-                    <i class="bi bi-check-circle me-2"></i>{{ session('sukses') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show">
-                    <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
             @if($errors->any())
                 <div class="alert alert-danger">
                     <div class="fw-semibold mb-1"><i class="bi bi-exclamation-triangle me-2"></i>Data belum bisa disimpan.</div>

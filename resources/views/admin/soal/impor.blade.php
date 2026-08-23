@@ -11,13 +11,6 @@
         </a>
     </div>
 
-    @if(session('sukses'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('sukses') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
     @if(session('errors_impor'))
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <strong>Beberapa soal gagal diimpor:</strong>
