@@ -68,29 +68,61 @@
 
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body py-3">
-            <div class="d-flex justify-content-between align-items-center overflow-auto" style="min-width:600px">
-                @foreach($steps as $num => $s)
-                <div class="text-center flex-fill cursor-pointer step-indicator" data-step="{{ $num }}" onclick="goToStep({{ $num }})">
-                    <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-1
-                        {{ $s['done'] ? 'bg-success text-white' : 'bg-light text-muted border' }}"
-                        style="width:40px;height:40px" id="stepIcon{{ $num }}">
-                        @if($s['done'])
-                            <i class="bi bi-check-lg"></i>
-                        @else
-                            <i class="bi {{ $s['icon'] }}"></i>
-                        @endif
+            {{-- Pembungkus yang men-scroll; isi di dalamnya yang diberi lebar minimum.
+                 (Sebelumnya overflow-auto & min-width dipasang di elemen yang SAMA,
+                 sehingga tidak ada yang bisa di-scroll dan langkah 4-6 terpotong.) --}}
+            <div class="stepper-scroll">
+                <div class="stepper-track d-flex align-items-center">
+                    @foreach($steps as $num => $s)
+                    <div class="text-center cursor-pointer step-indicator" data-step="{{ $num }}" onclick="goToStep({{ $num }})">
+                        <div class="rounded-circle mx-auto d-flex align-items-center justify-content-center mb-1
+                            {{ $s['done'] ? 'bg-success text-white' : 'bg-light text-muted border' }}"
+                            style="width:40px;height:40px" id="stepIcon{{ $num }}">
+                            @if($s['done'])
+                                <i class="bi bi-check-lg"></i>
+                            @else
+                                <i class="bi {{ $s['icon'] }}"></i>
+                            @endif
+                        </div>
+                        <small class="{{ $s['done'] ? 'text-success fw-semibold' : 'text-muted' }}" style="font-size:0.7rem">{{ $s['label'] }}</small>
                     </div>
-                    <small class="{{ $s['done'] ? 'text-success fw-semibold' : 'text-muted' }}" style="font-size:0.7rem">{{ $s['label'] }}</small>
+                    @if($num < 6)
+                    <div class="stepper-line">
+                        <hr class="my-0 {{ $s['done'] ? 'border-success' : '' }}" style="border-width:2px">
+                    </div>
+                    @endif
+                    @endforeach
                 </div>
-                @if($num < 6)
-                <div class="flex-fill" style="max-width:60px">
-                    <hr class="my-0 {{ $s['done'] ? 'border-success' : '' }}" style="border-width:2px">
-                </div>
-                @endif
-                @endforeach
+            </div>
+            <div class="text-center d-lg-none mt-1">
+                <small class="text-muted" style="font-size:.7rem">
+                    <i class="bi bi-arrow-left-right me-1"></i>Geser ke samping untuk melihat 6 langkah
+                </small>
             </div>
         </div>
     </div>
+
+    <style>
+        /* Stepper 6 langkah: bisa digeser ke samping di layar sempit */
+        .stepper-scroll {
+            overflow-x: auto;
+            overflow-y: hidden;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: thin;
+            padding-bottom: .25rem;
+        }
+        .stepper-scroll::-webkit-scrollbar { height: 5px; }
+        .stepper-scroll::-webkit-scrollbar-thumb { background: rgba(0,0,0,.2); border-radius: 3px; }
+        /* JANGAN membungkus — harus tetap satu baris agar scroll berfungsi */
+        .stepper-track {
+            flex-wrap: nowrap !important;
+            min-width: 620px;
+            justify-content: space-between;
+        }
+        .stepper-track .step-indicator { flex: 0 0 auto; width: 72px; }
+        .stepper-track .stepper-line { flex: 1 1 auto; min-width: 24px; max-width: 60px; }
+        .step-indicator.step-active small { text-decoration: underline; }
+    </style>
 
     {{-- =============================== --}}
     {{-- STEP 1: Form Pertanyaan Orang Tua --}}
@@ -169,27 +201,30 @@
                 </div>
                 <div class="card-body">
                     <h5 class="text-center fw-bold mb-4 text-decoration-underline">SURAT PERNYATAAN SISWA/I</h5>
+
+                    @include('peserta.partials.info-data-formulir', ['formulir' => $formulir ?? null])
+
                     <p>Yang bertandatangan di bawah ini,</p>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Lengkap</label>
-                            <input type="text" name="sp_siswa[nama_lengkap]" class="form-control" value="{{ $spSiswa['nama_lengkap'] ?? $peserta->nama ?? '' }}" required>
+                            <input type="text" name="sp_siswa[nama_lengkap]" class="form-control" value="{{ ($spSiswa['nama_lengkap'] ?? '') ?: ($prefillWawancara['siswa']['nama_lengkap'] ?? '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Tempat, Tanggal Lahir</label>
-                            <input type="text" name="sp_siswa[tempat_tgl_lahir]" class="form-control" value="{{ $spSiswa['tempat_tgl_lahir'] ?? '' }}" required>
+                            <input type="text" name="sp_siswa[tempat_tgl_lahir]" class="form-control" value="{{ ($spSiswa['tempat_tgl_lahir'] ?? '') ?: ($prefillWawancara['siswa']['tempat_tgl_lahir'] ?? '') }}" required>
                         </div>
                         <div class="col-md-12">
                             <label class="form-label fw-semibold">Alamat</label>
-                            <input type="text" name="sp_siswa[alamat]" class="form-control" value="{{ $spSiswa['alamat'] ?? '' }}" required>
+                            <input type="text" name="sp_siswa[alamat]" class="form-control" value="{{ ($spSiswa['alamat'] ?? '') ?: ($prefillWawancara['siswa']['alamat'] ?? '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Orangtua/Wali</label>
-                            <input type="text" name="sp_siswa[nama_ortu]" class="form-control" value="{{ $spSiswa['nama_ortu'] ?? '' }}" required>
+                            <input type="text" name="sp_siswa[nama_ortu]" class="form-control" value="{{ ($spSiswa['nama_ortu'] ?? '') ?: ($prefillWawancara['siswa']['nama_ortu'] ?? '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">No.Telp/HP Orang tua/Wali</label>
-                            <input type="text" name="sp_siswa[no_telp_ortu]" class="form-control" value="{{ $spSiswa['no_telp_ortu'] ?? '' }}" required>
+                            <input type="text" name="sp_siswa[no_telp_ortu]" class="form-control" value="{{ ($spSiswa['no_telp_ortu'] ?? '') ?: ($prefillWawancara['siswa']['no_telp_ortu'] ?? '') }}" required>
                         </div>
                     </div>
 
@@ -254,19 +289,22 @@
                 </div>
                 <div class="card-body">
                     <h5 class="text-center fw-bold mb-4 text-decoration-underline">SURAT PERNYATAAN ORANGTUA</h5>
+
+                    @include('peserta.partials.info-data-formulir', ['formulir' => $formulir ?? null])
+
                     <p>Saya yang bertanda tangan di bawah ini:</p>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Nama Lengkap</label>
-                            <input type="text" name="sp_ortu[nama_lengkap]" class="form-control" value="{{ $spOrtu['nama_lengkap'] ?? '' }}" required>
+                            <input type="text" name="sp_ortu[nama_lengkap]" class="form-control" value="{{ ($spOrtu['nama_lengkap'] ?? '') ?: ($prefillWawancara['ortu']['nama_lengkap'] ?? '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Alamat</label>
-                            <input type="text" name="sp_ortu[alamat]" class="form-control" value="{{ $spOrtu['alamat'] ?? '' }}" required>
+                            <input type="text" name="sp_ortu[alamat]" class="form-control" value="{{ ($spOrtu['alamat'] ?? '') ?: ($prefillWawancara['ortu']['alamat'] ?? '') }}" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Kelompok</label>
-                            <input type="text" name="sp_ortu[kelompok]" class="form-control" value="{{ $spOrtu['kelompok'] ?? '' }}">
+                            <input type="text" name="sp_ortu[kelompok]" class="form-control" value="{{ ($spOrtu['kelompok'] ?? '') ?: ($prefillWawancara['ortu']['kelompok'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama KI Kelompok + No. HP</label>
@@ -274,23 +312,23 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Desa</label>
-                            <input type="text" name="sp_ortu[desa]" class="form-control" value="{{ $spOrtu['desa'] ?? '' }}">
+                            <input type="text" name="sp_ortu[desa]" class="form-control" value="{{ ($spOrtu['desa'] ?? '') ?: ($prefillWawancara['ortu']['desa'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Daerah</label>
-                            <input type="text" name="sp_ortu[daerah]" class="form-control" value="{{ $spOrtu['daerah'] ?? '' }}">
+                            <input type="text" name="sp_ortu[daerah]" class="form-control" value="{{ ($spOrtu['daerah'] ?? '') ?: ($prefillWawancara['ortu']['daerah'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">No. HP Orang tua/Wali</label>
-                            <input type="text" name="sp_ortu[no_hp]" class="form-control" value="{{ $spOrtu['no_hp'] ?? '' }}" required>
+                            <input type="text" name="sp_ortu[no_hp]" class="form-control" value="{{ ($spOrtu['no_hp'] ?? '') ?: ($prefillWawancara['ortu']['no_hp'] ?? '') }}" required>
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Nama Siswa</label>
-                            <input type="text" name="sp_ortu[nama_siswa]" class="form-control" value="{{ $spOrtu['nama_siswa'] ?? $peserta->nama ?? '' }}" required>
+                            <input type="text" name="sp_ortu[nama_siswa]" class="form-control" value="{{ ($spOrtu['nama_siswa'] ?? '') ?: ($prefillWawancara['ortu']['nama_siswa'] ?? '') }}" required>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-semibold">Asal Sekolah</label>
-                            <input type="text" name="sp_ortu[asal_sekolah]" class="form-control" value="{{ $spOrtu['asal_sekolah'] ?? '' }}">
+                            <input type="text" name="sp_ortu[asal_sekolah]" class="form-control" value="{{ ($spOrtu['asal_sekolah'] ?? '') ?: ($prefillWawancara['ortu']['asal_sekolah'] ?? '') }}">
                         </div>
                     </div>
 
@@ -545,6 +583,21 @@ function goToStep(step) {
         // Init sig pads when visible
         if (step === 3) initSigPad('sigSiswaStep3', 'sigSiswaStep3Data');
         if (step === 4) initSigPad('sigOrtuStep4', 'sigOrtuStep4Data');
+        sorotStep(step);
+    }
+}
+
+// Tandai langkah aktif dan geser stepper agar langkah itu terlihat
+// (penting untuk langkah 4-6 yang berada di luar layar HP).
+function sorotStep(step) {
+    document.querySelectorAll('.step-indicator').forEach(function (el) {
+        el.classList.toggle('step-active', Number(el.dataset.step) === Number(step));
+    });
+    const aktif = document.querySelector('.step-indicator[data-step="' + step + '"]');
+    const wrap = document.querySelector('.stepper-scroll');
+    if (aktif && wrap) {
+        const geser = aktif.offsetLeft - (wrap.clientWidth / 2) + (aktif.offsetWidth / 2);
+        wrap.scrollTo({ left: Math.max(0, geser), behavior: 'smooth' });
     }
 }
 

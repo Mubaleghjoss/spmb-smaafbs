@@ -146,7 +146,7 @@ class DashboardSpmbController extends Controller
      */
     public function infoWawancara(): View|RedirectResponse
     {
-        $peserta = Peserta::with(['tahapanSpmb', 'wawancara'])->find(session('peserta_id'));
+        $peserta = Peserta::with(['tahapanSpmb', 'wawancara', 'formulirSpmb'])->find(session('peserta_id'));
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $pengaturanTahapan = $pengaturanService->ambilPengaturanTahapan();
         
@@ -163,11 +163,77 @@ class DashboardSpmbController extends Controller
         $spOrtuPoin = \App\Models\Wawancara::suratPernyataanOrtuPoin();
         $wawancara = $peserta->wawancara;
         $kelengkapanWawancara = $this->hitungKelengkapanWawancara($wawancara);
+
+        // Nilai otomatis dari formulir biodata (Tahap 2) untuk surat pernyataan.
+        $formulir = $peserta->formulirSpmb;
+        $prefillWawancara = $this->siapkanPrefillWawancara($peserta, $formulir);
         
         return view('peserta.wawancara-info', compact(
             'peserta', 'infoWawancara', 'pertanyaanOrtu', 'pertanyaanSiswa',
-            'spSiswaPoin', 'spOrtuPoin', 'wawancara', 'kelengkapanWawancara'
+            'spSiswaPoin', 'spOrtuPoin', 'wawancara', 'kelengkapanWawancara',
+            'formulir', 'prefillWawancara'
         ));
+    }
+
+    /**
+     * Susun nilai otomatis surat pernyataan dari data formulir biodata.
+     * Hasil dipakai sebagai nilai awal input bila peserta belum pernah mengisi,
+     * sehingga nama/tanggal lahir/orang tua tidak perlu ditulis ulang.
+     *
+     * @return array{siswa: array<string,string>, ortu: array<string,string>}
+     */
+    private function siapkanPrefillWawancara(Peserta $peserta, ?\App\Models\FormulirSpmb $formulir): array
+    {
+        $rapikan = fn (?string $v): string => trim((string) $v);
+
+        // Alamat lengkap dirangkai dari bagian-bagian yang terisi saja.
+        $bagianAlamat = array_filter([
+            $formulir?->alamat,
+            $formulir?->alamat_kelurahan,
+            $formulir?->alamat_kecamatan,
+            $formulir?->alamat_kota,
+            $formulir?->alamat_provinsi,
+        ], fn ($v) => $rapikan($v) !== '');
+        $alamatLengkap = implode(', ', array_map($rapikan, $bagianAlamat));
+        if ($alamatLengkap === '') {
+            $alamatLengkap = $rapikan($peserta->alamat);
+        }
+
+        // "Kota, 1 Januari 2010"
+        $tempatTglLahir = collect([
+            $rapikan($formulir?->tempat_lahir),
+            $formulir?->tanggal_lahir
+                ? $formulir->tanggal_lahir->locale('id')->translatedFormat('d F Y')
+                : '',
+        ])->filter()->implode(', ');
+
+        $namaOrtu = $rapikan($formulir?->nama_ayah) ?: $rapikan($formulir?->nama_ibu);
+        $telpOrtu = $rapikan($formulir?->telepon_ayah)
+            ?: $rapikan($formulir?->telepon_ibu)
+            ?: $rapikan($formulir?->telp_rumah)
+            ?: $rapikan($peserta->telepon);
+        $namaSiswa = $rapikan($formulir?->nama_lengkap) ?: $rapikan($peserta->nama);
+        $asalSekolah = $rapikan($formulir?->asal_sekolah) ?: $rapikan($peserta->asal_sekolah);
+
+        return [
+            'siswa' => [
+                'nama_lengkap' => $namaSiswa,
+                'tempat_tgl_lahir' => $tempatTglLahir,
+                'alamat' => $alamatLengkap,
+                'nama_ortu' => $namaOrtu,
+                'no_telp_ortu' => $telpOrtu,
+            ],
+            'ortu' => [
+                'nama_lengkap' => $namaOrtu,
+                'alamat' => $alamatLengkap,
+                'kelompok' => $rapikan($formulir?->kelompok),
+                'desa' => $rapikan($formulir?->desa),
+                'daerah' => $rapikan($formulir?->daerah),
+                'no_hp' => $telpOrtu,
+                'nama_siswa' => $namaSiswa,
+                'asal_sekolah' => $asalSekolah,
+            ],
+        ];
     }
 
     /**
