@@ -153,6 +153,7 @@ class MonitoringUjianService
         // Ini efektif menambah durasi tersisa
         $sesi->update([
             'waktu_mulai' => $sesi->waktu_mulai->addMinutes($menitTambahan),
+            'waktu_jeda' => null,
         ]);
 
         return $sesi->fresh();
@@ -173,6 +174,7 @@ class MonitoringUjianService
             // Reset sesi
             $sesi->update([
                 'waktu_mulai' => now(),
+                'waktu_jeda' => null,
                 'waktu_selesai' => null,
                 'status' => 'berlangsung',
                 'nilai' => null,
@@ -214,6 +216,7 @@ class MonitoringUjianService
 
             $sesi->update([
                 'waktu_mulai' => $waktuMulaiBaru,
+                'waktu_jeda' => null,
                 'waktu_selesai' => null,
                 'status' => 'berlangsung',
                 'nilai' => null,

@@ -532,9 +532,10 @@ class VerifikasiSpmbController extends Controller
             'catatan' => 'nullable|string|max:500',
         ]);
 
-        if (!$sesi->permohonanUlangPending()) {
-            return redirect()->route('admin.verifikasi.hasil-tes')
-                ->with('error', 'Permohonan ini sudah diproses atau belum diajukan.');
+        // Sesi yang waktunya habis boleh ditambah waktu oleh admin, baik peserta
+        // sudah mengajukan permohonan maupun belum (inisiatif admin).
+        if ($sesi->status !== 'timeout') {
+            return $this->kembaliVerifikasi($request, 'error', 'Hanya sesi yang waktunya habis yang bisa ditambah waktu di sini.');
         }
 
         try {
@@ -545,10 +546,9 @@ class VerifikasiSpmbController extends Controller
                 $request->catatan
             );
 
-            return redirect()->route('admin.verifikasi.hasil-tes')
-                ->with('success', "Perpanjangan {$request->menit} menit untuk {$sesi->peserta?->nama} disetujui.");
+            return $this->kembaliVerifikasi($request, 'success', "Perpanjangan {$request->menit} menit untuk {$sesi->peserta?->nama} disetujui. Peserta bisa melanjutkan tes.");
         } catch (\Exception $e) {
-            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+            return $this->kembaliVerifikasi($request, 'error', $e->getMessage());
         }
     }
 
@@ -558,9 +558,8 @@ class VerifikasiSpmbController extends Controller
             'catatan' => 'nullable|string|max:500',
         ]);
 
-        if (!$sesi->permohonanUlangPending()) {
-            return redirect()->route('admin.verifikasi.hasil-tes')
-                ->with('error', 'Permohonan ini sudah diproses atau belum diajukan.');
+        if ($sesi->status !== 'timeout') {
+            return $this->kembaliVerifikasi($request, 'error', 'Hanya sesi yang waktunya habis yang bisa diulang dari awal di sini.');
         }
 
         try {
@@ -570,31 +569,42 @@ class VerifikasiSpmbController extends Controller
                 $request->catatan
             );
 
-            return redirect()->route('admin.verifikasi.hasil-tes')
-                ->with('success', "Permohonan ulang dari 0 untuk {$sesi->peserta?->nama} disetujui.");
+            return $this->kembaliVerifikasi($request, 'success', "Permohonan ulang dari 0 untuk {$sesi->peserta?->nama} disetujui.");
         } catch (\Exception $e) {
-            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+            return $this->kembaliVerifikasi($request, 'error', $e->getMessage());
         }
     }
 
     public function tolakPermohonanTimeout(Request $request, SesiTes $sesi): RedirectResponse
     {
         $request->validate([
-            'catatan' => 'required|string|max:500',
+            'catatan' => 'nullable|string|max:500',
         ]);
 
         try {
             app(MonitoringUjianService::class)->tolakPermohonanTimeout(
                 $sesi,
                 auth('pengguna')->id(),
-                $request->catatan
+                $request->catatan ?: 'Ditolak oleh admin'
             );
 
-            return redirect()->route('admin.verifikasi.hasil-tes')
-                ->with('success', "Permohonan timeout {$sesi->peserta?->nama} ditolak.");
+            return $this->kembaliVerifikasi($request, 'success', "Permohonan {$sesi->peserta?->nama} ditolak.");
         } catch (\Exception $e) {
-            return redirect()->route('admin.verifikasi.hasil-tes')->with('error', $e->getMessage());
+            return $this->kembaliVerifikasi($request, 'error', $e->getMessage());
         }
+    }
+
+    /**
+     * Kembali ke halaman asal aksi: monitoring ujian (jika dipicu dari sana)
+     * atau halaman verifikasi hasil tes.
+     */
+    private function kembaliVerifikasi(Request $request, string $tipe, string $pesan): RedirectResponse
+    {
+        if ($request->filled('kembali_ke')) {
+            return redirect()->to($request->kembali_ke)->with($tipe, $pesan);
+        }
+
+        return redirect()->route('admin.verifikasi.hasil-tes')->with($tipe, $pesan);
     }
 
     /**

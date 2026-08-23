@@ -347,6 +347,87 @@
                                                     </div>
 
                                                 @elseif(in_array($sesi->status, ['selesai', 'timeout']))
+                                                    @if($sesi->status === 'timeout')
+                                                        {{-- Permohonan peserta (waktu habis): tampilkan alasan + aksi admin --}}
+                                                        @if($sesi->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_PENDING)
+                                                            <div class="alert alert-warning text-start py-1 px-2 mb-2" style="font-size:.75rem;">
+                                                                <div class="fw-bold mb-1">
+                                                                    <i class="bi bi-envelope-exclamation me-1"></i>Permohonan: {{ $sesi->labelPermohonanUlangTipe() }}
+                                                                </div>
+                                                                <div class="mb-1"><em>"{{ $sesi->permohonan_ulang_alasan }}"</em></div>
+                                                                @if($sesi->permohonan_ulang_pada)
+                                                                    <div class="text-muted">Diajukan {{ $sesi->permohonan_ulang_pada->format('d/m/Y H:i') }}</div>
+                                                                @endif
+                                                            </div>
+                                                            <button class="btn btn-primary btn-sm py-0 px-2 mb-1" title="Setujui & Tambah Waktu"
+                                                                    data-bs-toggle="modal" data-bs-target="#modalTambahWaktu{{ $sesi->id }}">
+                                                                <i class="bi bi-clock-history me-1"></i>Setujui +Waktu
+                                                            </button>
+                                                            <form action="{{ route('admin.verifikasi.hasil-tes.setujui-ulang-timeout', $sesi) }}" method="POST" class="d-inline"
+                                                                  onsubmit="return confirm('Setujui {{ $peserta->nama }} mengulang tes ini dari awal? Semua jawaban direset.')">
+                                                                @csrf
+                                                                <input type="hidden" name="kembali_ke" value="{{ request()->fullUrl() }}">
+                                                                <button type="submit" class="btn btn-outline-warning btn-sm py-0 px-2 mb-1" title="Setujui Ulang dari Awal">
+                                                                    <i class="bi bi-arrow-repeat me-1"></i>Ulang Awal
+                                                                </button>
+                                                            </form>
+                                                            <form action="{{ route('admin.verifikasi.hasil-tes.tolak-permohonan-timeout', $sesi) }}" method="POST" class="d-inline"
+                                                                  onsubmit="return confirm('Tolak permohonan {{ $peserta->nama }}?')">
+                                                                @csrf
+                                                                <input type="hidden" name="kembali_ke" value="{{ request()->fullUrl() }}">
+                                                                <button type="submit" class="btn btn-outline-secondary btn-sm py-0 px-2 mb-1" title="Tolak Permohonan">
+                                                                    <i class="bi bi-x-lg me-1"></i>Tolak
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            {{-- Waktu habis tanpa permohonan pending: admin tetap bisa menambah waktu --}}
+                                                            <button class="btn btn-primary btn-sm py-0 px-2 mb-1" title="Tambah Waktu"
+                                                                    data-bs-toggle="modal" data-bs-target="#modalTambahWaktu{{ $sesi->id }}">
+                                                                <i class="bi bi-clock-history me-1"></i>+Waktu
+                                                            </button>
+                                                            @if($sesi->permohonan_ulang_status)
+                                                                <span class="badge bg-{{ $sesi->permohonan_ulang_status === \App\Models\SesiTes::PERMOHONAN_ULANG_DISETUJUI ? 'success' : 'secondary' }} py-1 px-2 mb-1">
+                                                                    Permohonan {{ $sesi->permohonan_ulang_status }}
+                                                                </span>
+                                                            @endif
+                                                        @endif
+
+                                                        {{-- Modal Tambah Waktu untuk sesi TIMEOUT (memakai alur setujui perpanjangan) --}}
+                                                        <div class="modal fade" id="modalTambahWaktu{{ $sesi->id }}" tabindex="-1">
+                                                            <div class="modal-dialog modal-sm">
+                                                                <div class="modal-content">
+                                                                    <form action="{{ route('admin.verifikasi.hasil-tes.setujui-perpanjangan', $sesi) }}" method="POST">
+                                                                        @csrf
+                                                                        <input type="hidden" name="kembali_ke" value="{{ request()->fullUrl() }}">
+                                                                        <div class="modal-header py-2">
+                                                                            <h6 class="modal-title">Tambah Waktu (Waktu Habis)</h6>
+                                                                            <button type="button" class="btn-close btn-close-sm" data-bs-dismiss="modal"></button>
+                                                                        </div>
+                                                                        <div class="modal-body text-start">
+                                                                            <p class="small text-muted mb-2">Peserta: <strong>{{ $peserta->nama }}</strong><br>Tes: <strong>{{ $sesi->tes->nama ?? '-' }}</strong></p>
+                                                                            @if($sesi->permohonan_ulang_alasan)
+                                                                                <p class="small mb-2">Alasan peserta:<br><em>"{{ $sesi->permohonan_ulang_alasan }}"</em></p>
+                                                                            @endif
+                                                                            <label class="form-label small mb-1">Waktu diberikan</label>
+                                                                            <div class="input-group input-group-sm mb-2">
+                                                                                <input type="number" name="menit" class="form-control" min="1" max="{{ $sesi->tes->durasi_menit ?? 120 }}" value="15" required>
+                                                                                <span class="input-group-text">menit</span>
+                                                                            </div>
+                                                                            <label class="form-label small mb-1">Catatan (opsional)</label>
+                                                                            <textarea name="catatan" class="form-control form-control-sm" rows="2" maxlength="500"></textarea>
+                                                                            <div class="form-text" style="font-size:.7rem;">Sesi dibuka kembali sebagai "berlangsung". Jawaban sebelumnya dipertahankan, nilai lama dihapus.</div>
+                                                                        </div>
+                                                                        <div class="modal-footer py-2">
+                                                                            <button type="submit" class="btn btn-primary btn-sm w-100">
+                                                                                <i class="bi bi-clock-history me-1"></i>Setujui &amp; Buka Kembali
+                                                                            </button>
+                                                                        </div>
+                                                                    </form>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endif
+
                                                     {{-- Reset Sesi --}}
                                                     <form action="{{ route('admin.monitoring-ujian.reset', $sesi) }}" method="POST" class="d-inline"
                                                           onsubmit="return confirm('Reset tes {{ $peserta->nama }}? Semua jawaban & waktu direset ulang!')">
