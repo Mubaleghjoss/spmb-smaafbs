@@ -571,9 +571,11 @@
                                 @endif
                             </div>
                         @elseif($item['status'] === 'menunggu')
-                            <button class="btn btn-warning w-100" disabled>
-                                <i class="bi bi-hourglass-split me-1"></i> Menunggu Keputusan Admin
-                            </button>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('ujian.hasil', $item['sesi_selesai']) }}" class="btn btn-warning flex-grow-1">
+                                    <i class="bi bi-hourglass-split me-1"></i> Menunggu Verifikasi — Lihat &amp; Hubungi Admin
+                                </a>
+                            </div>
                         @elseif($item['status'] === 'kerjakan_ulang')
                             <a href="{{ route('ujian.konfirmasi', $item['tes']) }}" class="btn btn-info w-100">
                                 <i class="bi bi-arrow-repeat me-1"></i> Kerjakan Ulang
