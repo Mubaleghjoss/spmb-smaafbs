@@ -72,4 +72,50 @@
     .accordion-button:not(.collapsed) { background: var(--tk-green-soft); color: var(--tk-ink); box-shadow: none; }
     .accordion-button:focus { box-shadow: none; }
     .progress-bar.bg-success { background: linear-gradient(135deg, var(--tk-primary), var(--tk-secondary)) !important; }
+
+    /* ===== PENYESUAIAN LAYAR HP =====
+       Backend banyak memakai pola:
+         <div class="d-flex justify-content-between align-items-center"> judul + tombol
+       yang di layar sempit memaksa tombol melebihi lebar layar. Aturan di bawah
+       membuat baris seperti itu membungkus dan mengecilkan tombol secara global,
+       tanpa perlu mengubah puluhan view satu per satu. */
+    @media (max-width: 575.98px) {
+        /* Tombol besar diturunkan ke ukuran normal agar tidak memakan layar */
+        .btn-lg {
+            padding: .5rem .9rem;
+            font-size: 1rem;
+            border-radius: .7rem;
+        }
+        /* Tombol ukuran normal sedikit dirapatkan */
+        .btn:not(.btn-sm):not(.btn-close) {
+            padding: .38rem .7rem;
+            font-size: .9rem;
+        }
+        .btn-sm { padding: .28rem .55rem; font-size: .8rem; }
+
+        /* Baris "judul di kiri, tombol di kanan" ada di puluhan halaman dengan
+           kedalaman berbeda. Di layar HP semuanya diizinkan membungkus agar
+           tombol tidak terdorong keluar layar. */
+        .d-flex.justify-content-between {
+            flex-wrap: wrap;
+            gap: .5rem;
+        }
+        /* Kecuali header saat mengerjakan ujian — sudah dirancang satu baris
+           (judul dipotong, timer + tombol tetap sejajar). */
+        .ujian-header .ujian-header-row { flex-wrap: nowrap; }
+        /* Grup tombol berjejer ikut membungkus */
+        .btn-group:not(.btn-group-vertical) { flex-wrap: wrap; }
+
+        /* Judul halaman tidak melebar keluar layar */
+        h1, h2, h3, h4, h5 { overflow-wrap: anywhere; }
+        h1.h3, h1.h4, h4 { font-size: 1.15rem; }
+
+        /* Modal & tabel lebih pas di layar sempit */
+        .modal-footer { flex-wrap: wrap; gap: .4rem; }
+        .modal-footer > .btn { flex: 1 1 auto; }
+        .table-responsive { -webkit-overflow-scrolling: touch; }
+
+        /* Badge panjang tidak memotong layout */
+        .badge { white-space: normal; overflow-wrap: anywhere; }
+    }
 </style>

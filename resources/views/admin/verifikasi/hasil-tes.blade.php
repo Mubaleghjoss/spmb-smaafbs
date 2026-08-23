@@ -4,10 +4,10 @@
 
 @section('content')
 <div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h4 class="mb-0"><i class="bi bi-journal-check me-2"></i>Verifikasi Hasil Tes</h4>
-        <a href="{{ route('admin.verifikasi.index') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Kembali
+        <a href="{{ route('admin.verifikasi.index') }}" class="btn btn-sm btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>Kembali
         </a>
     </div>
 
@@ -196,18 +196,18 @@
     </div>
 
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+        <div class="card-header bg-warning text-dark d-flex flex-wrap justify-content-between align-items-center gap-2">
             <h6 class="mb-0"><i class="bi bi-hourglass-split me-2"></i>Menunggu Keputusan Admin</h6>
             @if(!$sesiMenunggu->isEmpty())
-            <div class="d-flex gap-2">
+            <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-sm btn-success" id="btnLoloskanTerpilih" disabled data-bs-toggle="modal" data-bs-target="#modalLoloskanBatch">
-                    <i class="bi bi-check-lg me-1"></i>Loloskan Terpilih (<span id="countTerpilih">0</span>)
+                    <i class="bi bi-check-lg me-1"></i>Loloskan<span class="d-none d-sm-inline"> Terpilih</span> (<span id="countTerpilih">0</span>)
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-success" data-bs-toggle="modal" data-bs-target="#modalLoloskanSemua">
                     <i class="bi bi-check-all me-1"></i>Loloskan Semua
                 </button>
                 <button type="button" class="btn btn-sm btn-warning text-dark" id="btnUlangiTerpilih" disabled data-bs-toggle="modal" data-bs-target="#modalUlangiBatch">
-                    <i class="bi bi-arrow-repeat me-1"></i>Ulangi Terpilih
+                    <i class="bi bi-arrow-repeat me-1"></i>Ulangi<span class="d-none d-sm-inline"> Terpilih</span>
                 </button>
             </div>
             @endif

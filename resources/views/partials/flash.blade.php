@@ -73,7 +73,17 @@
         transition: opacity .25s ease, transform .25s ease;
         word-break: break-word;
         overflow-wrap: anywhere;
+        /* Latar SOLID (bukan transparan) agar teks tidak menyatu dengan isi halaman */
+        border-width: 1px;
+        border-style: solid;
+        box-shadow: 0 .5rem 1.5rem rgba(0, 0, 0, .18), 0 .125rem .35rem rgba(0, 0, 0, .12);
+        backdrop-filter: none;
     }
+    /* Warna solid per tipe — menimpa alert-* Bootstrap yang memakai warna lembut/tembus */
+    .hf-flash.alert-success { background-color: #eaf7ef !important; border-color: #198754 !important; color: #0f5132 !important; }
+    .hf-flash.alert-danger  { background-color: #fdecec !important; border-color: #dc3545 !important; color: #842029 !important; }
+    .hf-flash.alert-warning { background-color: #fff6e5 !important; border-color: #ffc107 !important; color: #664d03 !important; }
+    .hf-flash.alert-info    { background-color: #e9f4fb !important; border-color: #0dcaf0 !important; color: #055160 !important; }
     .hf-flash.hf-show { opacity: 1; transform: translateY(0); }
     .hf-flash.hf-hide { opacity: 0; transform: translateY(-.5rem); }
     .hf-flash-icon { flex-shrink: 0; margin-top: .1rem; }
