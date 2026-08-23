@@ -93,6 +93,16 @@ class Tes extends Model
     }
 
     /**
+     * Relasi ke tahun ajaran (periode) tempat tes ini ditugaskan.
+     * Kosong = tes berlaku untuk SEMUA periode (aturan fallback).
+     */
+    public function tahunAjaran(): BelongsToMany
+    {
+        return $this->belongsToMany(TahunAjaran::class, 'tes_tahun_ajaran')
+            ->withTimestamps();
+    }
+
+    /**
      * Hitung jumlah grup yang di-assign ke tes
      * Kebutuhan: 5.1
      */

@@ -22,12 +22,21 @@ class MonitoringUjianService
     public function ambilStatistikDashboard(): array
     {
         $today = Carbon::today();
+        $tahunAjaranId = app(\App\Services\PeriodeContextService::class)->tahunAjaranId();
+
+        // Query tes disaring ke periode aktif (fallback: tes tanpa penugasan tetap dihitung).
+        $tesQuery = fn () => Tes::query()->when($tahunAjaranId !== null, function ($q) use ($tahunAjaranId) {
+            $q->where(function ($sub) use ($tahunAjaranId) {
+                $sub->whereDoesntHave('tahunAjaran')
+                    ->orWhereHas('tahunAjaran', fn ($t) => $t->where('tahun_ajaran.id', $tahunAjaranId));
+            });
+        });
 
         return [
-            'tes_aktif' => Tes::where('status', 'aktif')->count(),
-            'tes_draft' => Tes::where('status', 'draft')->count(),
-            'tes_selesai' => Tes::where('status', 'selesai')->count(),
-            'total_tes' => Tes::count(),
+            'tes_aktif' => $tesQuery()->where('status', 'aktif')->count(),
+            'tes_draft' => $tesQuery()->where('status', 'draft')->count(),
+            'tes_selesai' => $tesQuery()->where('status', 'selesai')->count(),
+            'total_tes' => $tesQuery()->count(),
             'peserta_online' => SesiTes::where('status', 'berlangsung')->whereHas('peserta')->count(),
             'sesi_hari_ini' => SesiTes::whereDate('waktu_mulai', $today)->whereHas('peserta')->count(),
             'sesi_selesai_hari_ini' => SesiTes::whereDate('waktu_selesai', $today)
@@ -45,10 +54,20 @@ class MonitoringUjianService
      * Ambil daftar tes aktif dengan statistik
      * Kebutuhan: 7.1
      * Hanya menghitung sesi milik peserta pada periode aktif (PeriodeScope).
+     * Daftar tes disaring ke tes yang ditugaskan pada tahun ajaran aktif
+     * (fallback: tes tanpa penugasan tahun ajaran ikut tampil di semua periode).
      */
     public function ambilTesAktif(): Collection
     {
+        $tahunAjaranId = app(\App\Services\PeriodeContextService::class)->tahunAjaranId();
+
         return Tes::where('status', 'aktif')
+            ->when($tahunAjaranId !== null, function ($q) use ($tahunAjaranId) {
+                $q->where(function ($sub) use ($tahunAjaranId) {
+                    $sub->whereDoesntHave('tahunAjaran')
+                        ->orWhereHas('tahunAjaran', fn ($t) => $t->where('tahun_ajaran.id', $tahunAjaranId));
+                });
+            })
             ->withCount([
                 'sesiTes as peserta_online' => function ($q) {
                     $q->where('status', 'berlangsung')->whereHas('peserta');

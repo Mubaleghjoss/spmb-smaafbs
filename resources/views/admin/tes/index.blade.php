@@ -161,6 +161,10 @@
                                            class="btn btn-sm btn-info text-white">
                                             <i class="bi bi-eye me-1"></i>Detail
                                         </a>
+                                        <a href="{{ route('admin.tes.periode', $tes) }}" 
+                                           class="btn btn-sm btn-outline-primary" title="Atur periode/tahun ajaran pemakai tes">
+                                            <i class="bi bi-calendar-range me-1"></i>Periode
+                                        </a>
                                         <a href="{{ route('admin.tes.edit', $tes) }}" 
                                            class="btn btn-sm btn-warning">
                                             <i class="bi bi-pencil me-1"></i>Edit

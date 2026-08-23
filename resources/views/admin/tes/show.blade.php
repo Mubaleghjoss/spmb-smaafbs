@@ -318,6 +318,35 @@
                 </div>
             </div>
 
+            <!-- Periode (Tahun Ajaran) -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">Periode Tes</h5>
+                    <a href="{{ route('admin.tes.periode', $tes) }}" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-calendar-range me-1"></i> Atur Periode
+                    </a>
+                </div>
+                <div class="card-body">
+                    @php
+                        $tahunTes = $tes->tahunAjaran;
+                    @endphp
+                    @if($tahunTes->count() > 0)
+                        <p class="small text-muted mb-2">Tes ini hanya muncul untuk peserta tahun ajaran:</p>
+                        <ul class="list-group list-group-flush mb-0">
+                            @foreach($tahunTes as $ta)
+                                <li class="list-group-item px-0">{{ $ta->nama }}</li>
+                            @endforeach
+                        </ul>
+                    @else
+                        <div class="text-center text-muted">
+                            <i class="bi bi-globe fs-3 d-block mb-2"></i>
+                            <p class="mb-0">Berlaku untuk semua periode</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+
+
             <!-- Psikotes Kepribadian -->
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center bg-info bg-opacity-10">

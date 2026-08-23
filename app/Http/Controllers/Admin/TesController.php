@@ -503,4 +503,40 @@ class TesController extends Controller
 
         return back()->with('success', "{$sukses} tes berhasil diatur grupnya.");
     }
+
+    /**
+     * Halaman atur PERIODE (tahun ajaran) untuk sebuah tes.
+     * Admin menentukan tes ini dipakai di tahun ajaran mana saja.
+     */
+    public function periodeTes(Tes $tes): View
+    {
+        $tahunTerpilih = $tes->tahunAjaran()->pluck('tahun_ajaran.id')->all();
+        $semuaTahun = \App\Models\TahunAjaran::orderByDesc('default')
+            ->orderByDesc('nama')
+            ->get();
+
+        return view('admin.tes.periode', [
+            'tes' => $tes,
+            'tahunTerpilih' => $tahunTerpilih,
+            'semuaTahun' => $semuaTahun,
+        ]);
+    }
+
+    /**
+     * Simpan penugasan periode (tahun ajaran) untuk tes.
+     * Kosong = tes berlaku untuk semua periode (fallback).
+     */
+    public function simpanPeriodeTes(Request $request, Tes $tes): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tahun_ajaran_ids' => 'nullable|array',
+            'tahun_ajaran_ids.*' => 'exists:tahun_ajaran,id',
+        ]);
+
+        $tes->tahunAjaran()->sync($validated['tahun_ajaran_ids'] ?? []);
+
+        return redirect()
+            ->route('admin.tes.show', $tes)
+            ->with('success', 'Penugasan periode tes berhasil disimpan.');
+    }
 }
