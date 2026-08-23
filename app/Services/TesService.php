@@ -440,9 +440,10 @@ class TesService
     public function ambilTesTersediaUntukPeserta(\App\Models\Peserta $peserta): Collection
     {
         $grupIds = $peserta->grup()->pluck('grup.id')->toArray();
-        $tahunAjaranId = $peserta->tahun_ajaran_id;
 
-        // Ambil semua tes dengan status aktif
+        // Semua tes AKTIF tersedia (bank tes global). Periode/pemilihan tes TIDAK
+        // lagi manual: kapan tes bisa diakses diatur OTOMATIS oleh jadwal Tahap 4
+        // (Alur & Jadwal) pada periode peserta. Grup tetap membatasi antar-kelompok.
         return Tes::where('status', 'aktif')
             ->withCount('soal')
             ->where(function ($query) use ($grupIds) {
@@ -453,18 +454,6 @@ class TesService
                 if (!empty($grupIds)) {
                     $query->orWhereHas('grup', function ($q) use ($grupIds) {
                         $q->whereIn('grup.id', $grupIds);
-                    });
-                }
-            })
-            // Filter PERIODE (tahun ajaran): tampilkan tes yang ditugaskan ke
-            // tahun ajaran peserta. FALLBACK: tes yang belum ditugaskan ke tahun
-            // ajaran mana pun dianggap berlaku untuk semua periode.
-            ->where(function ($query) use ($tahunAjaranId) {
-                $query->whereDoesntHave('tahunAjaran');
-
-                if (!empty($tahunAjaranId)) {
-                    $query->orWhereHas('tahunAjaran', function ($q) use ($tahunAjaranId) {
-                        $q->where('tahun_ajaran.id', $tahunAjaranId);
                     });
                 }
             })

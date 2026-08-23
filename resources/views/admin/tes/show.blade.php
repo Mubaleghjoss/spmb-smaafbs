@@ -320,29 +320,14 @@
 
             <!-- Periode (Tahun Ajaran) -->
             <div class="card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">Periode Tes</h5>
-                    <a href="{{ route('admin.tes.periode', $tes) }}" class="btn btn-outline-primary btn-sm">
-                        <i class="bi bi-calendar-range me-1"></i> Atur Periode
-                    </a>
+                <div class="card-header">
+                    <h5 class="mb-0">Jadwal Tes Online</h5>
                 </div>
-                <div class="card-body">
-                    @php
-                        $tahunTes = $tes->tahunAjaran;
-                    @endphp
-                    @if($tahunTes->count() > 0)
-                        <p class="small text-muted mb-2">Tes ini hanya muncul untuk peserta tahun ajaran:</p>
-                        <ul class="list-group list-group-flush mb-0">
-                            @foreach($tahunTes as $ta)
-                                <li class="list-group-item px-0">{{ $ta->nama }}</li>
-                            @endforeach
-                        </ul>
-                    @else
-                        <div class="text-center text-muted">
-                            <i class="bi bi-globe fs-3 d-block mb-2"></i>
-                            <p class="mb-0">Berlaku untuk semua periode</p>
-                        </div>
-                    @endif
+                <div class="card-body text-center text-muted">
+                    <i class="bi bi-calendar-check fs-3 d-block mb-2 text-info"></i>
+                    <p class="mb-1">Kapan tes bisa diakses <strong>otomatis</strong> mengikuti</p>
+                    <a href="{{ route('admin.alur-jadwal.index') }}" class="fw-semibold">Tahap 4. Tes Online di Alur &amp; Jadwal</a>
+                    <p class="small mb-0 mt-1">sesuai periode yang sedang dibuka.</p>
                 </div>
             </div>
 

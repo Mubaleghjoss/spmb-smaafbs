@@ -246,49 +246,25 @@ class TesController extends Controller
             'tes_ids' => 'required|string',
             'ubah_durasi' => 'nullable',
             'durasi_menit' => 'nullable|integer|min:1|max:300',
-            'ubah_jadwal' => 'nullable',
-            'mulai' => 'nullable|date',
-            'selesai' => 'nullable|date|after_or_equal:mulai',
         ]);
 
         $tesIds = json_decode($validated['tes_ids'], true);
         $sukses = 0;
-        $perubahanList = [];
 
-        foreach ($tesIds as $tesId) {
-            $tes = Tes::find($tesId);
-            if ($tes) {
-                $data = [];
-                
-                // Update durasi jika dicentang
-                if ($request->has('ubah_durasi') && !empty($validated['durasi_menit'])) {
-                    $data['durasi_menit'] = $validated['durasi_menit'];
-                }
-                
-                // Update jadwal jika dicentang
-                if ($request->has('ubah_jadwal')) {
-                    $data['mulai'] = $validated['mulai'] ?: null;
-                    $data['selesai'] = $validated['selesai'] ?: null;
-                }
-                
-                if (!empty($data)) {
-                    $tes->update($data);
+        // Hanya durasi pengerjaan. Jadwal buka/tutup tes online OTOMATIS mengikuti
+        // Tahap 4 (Alur & Jadwal) per periode — tidak lagi diset manual di sini.
+        if ($request->has('ubah_durasi') && !empty($validated['durasi_menit'])) {
+            foreach ($tesIds as $tesId) {
+                $tes = Tes::find($tesId);
+                if ($tes) {
+                    $tes->update(['durasi_menit' => $validated['durasi_menit']]);
                     $sukses++;
                 }
             }
+            return back()->with('success', "{$sukses} tes berhasil diubah durasinya menjadi {$validated['durasi_menit']} menit.");
         }
 
-        // Buat pesan sukses
-        $pesan = [];
-        if ($request->has('ubah_durasi') && !empty($validated['durasi_menit'])) {
-            $pesan[] = "durasi {$validated['durasi_menit']} menit";
-        }
-        if ($request->has('ubah_jadwal')) {
-            $pesan[] = "jadwal";
-        }
-
-        $pesanGabung = implode(' dan ', $pesan);
-        return back()->with('success', "{$sukses} tes berhasil diubah ({$pesanGabung}).");
+        return back()->with('success', 'Tidak ada perubahan durasi.');
     }
 
     /**
