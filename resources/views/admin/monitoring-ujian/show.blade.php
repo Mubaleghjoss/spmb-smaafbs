@@ -123,6 +123,7 @@
                         </thead>
                         <tbody>
                             @foreach($pesertaOnline as $data)
+                                @continue(empty($data['peserta']))
                                 <tr>
                                     <td>
                                         <strong>{{ $data['peserta']->nama }}</strong>

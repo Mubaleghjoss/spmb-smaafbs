@@ -92,11 +92,11 @@ class MonitoringUjianController extends Controller
         ];
         $pilarList = \App\Models\ProfilingConfig::pilarList();
 
-        // Stats
+        // Stats — hanya sesi milik peserta pada periode aktif (PeriodeScope via whereHas)
         $totalPeserta = \App\Models\Peserta::count();
-        $sudahTes = SesiTes::distinct('peserta_id')->count('peserta_id');
-        $sedangTes = SesiTes::where('status', 'berlangsung')->count();
-        $selesaiTes = SesiTes::whereIn('status', ['selesai', 'timeout'])->distinct('peserta_id')->count('peserta_id');
+        $sudahTes = SesiTes::whereHas('peserta')->distinct('peserta_id')->count('peserta_id');
+        $sedangTes = SesiTes::where('status', 'berlangsung')->whereHas('peserta')->count();
+        $selesaiTes = SesiTes::whereIn('status', ['selesai', 'timeout'])->whereHas('peserta')->distinct('peserta_id')->count('peserta_id');
 
         $stats = compact('totalPeserta', 'sudahTes', 'sedangTes', 'selesaiTes');
 

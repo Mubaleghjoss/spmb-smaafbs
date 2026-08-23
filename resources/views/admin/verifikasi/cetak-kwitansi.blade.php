@@ -210,40 +210,46 @@
         /* Print Styles */
         @media print {
             html, body {
-                width: 210mm;
-                height: 297mm;
+                width: auto;
+                height: auto;
                 margin: 0;
                 padding: 0;
                 background: #fff;
             }
-            
+
             .kwitansi-container {
-                width: 190mm;
-                max-height: 270mm;
-                margin: 10mm auto;
+                width: auto;
+                max-height: none;
+                margin: 0 auto;
                 padding: 8mm 12mm;
                 border: 2px solid #333;
                 box-shadow: none;
                 page-break-inside: avoid;
                 page-break-after: avoid;
+                page-break-before: avoid;
+                overflow: hidden;
             }
-            
+
             .no-print {
                 display: none !important;
             }
-            
+
             @page {
                 size: A4 portrait;
-                margin: 5mm;
+                margin: 8mm;
             }
         }
         
         /* Action Buttons */
         .action-buttons {
-            text-align: center;
-            margin: 20px 0;
+            width: 180mm;
+            max-width: 100%;
+            margin: 20px auto 0;
             padding: 15px;
             background: #f0f0f0;
+            text-align: center;
+            border-radius: 6px;
+            box-sizing: border-box;
         }
         
         .action-buttons button {

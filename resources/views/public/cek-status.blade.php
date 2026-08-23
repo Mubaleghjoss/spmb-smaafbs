@@ -38,6 +38,7 @@
 
                 {{-- Hasil --}}
                 @if($hasil !== null)
+                <div id="hasil-cek-status">
                     @if($hasil['ditemukan'])
                         {{-- Status Card --}}
                         @php
@@ -96,7 +97,7 @@
                                 </div>
 
                                 {{-- Steps Visual --}}
-                                <div class="d-flex justify-content-between mt-3">
+                                <div class="d-flex justify-content-between mt-3 langkah-row">
                                     @for($i = 1; $i <= 7; $i++)
                                     <div class="text-center">
                                         <div class="rounded-circle d-inline-flex align-items-center justify-content-center {{ $i <= $hasil['tahap'] ? 'bg-'.$c['bg'].' text-white' : 'bg-light text-muted' }}" 
@@ -143,6 +144,7 @@
                             </div>
                         </div>
                     @endif
+                </div>{{-- /#hasil-cek-status --}}
                 @endif
             </div>
         </div>
@@ -161,6 +163,13 @@
         transform: translateY(0);
     }
 }
+/* Pastikan hasil pengecekan mengalir normal & tidak menimpa footer */
+#hasil-cek-status { position: relative; z-index: 0; }
+#hasil-cek-status .card { position: relative; overflow: hidden; }
+/* Deretan 7 langkah: boleh membungkus di layar sempit, tidak melebar */
+#hasil-cek-status .langkah-row { flex-wrap: wrap; gap: .35rem; }
+#hasil-cek-status table { table-layout: fixed; width: 100%; }
+#hasil-cek-status td { overflow-wrap: anywhere; word-break: break-word; }
 </style>
 @endpush
 

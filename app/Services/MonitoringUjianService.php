@@ -28,13 +28,15 @@ class MonitoringUjianService
             'tes_draft' => Tes::where('status', 'draft')->count(),
             'tes_selesai' => Tes::where('status', 'selesai')->count(),
             'total_tes' => Tes::count(),
-            'peserta_online' => SesiTes::where('status', 'berlangsung')->count(),
-            'sesi_hari_ini' => SesiTes::whereDate('waktu_mulai', $today)->count(),
+            'peserta_online' => SesiTes::where('status', 'berlangsung')->whereHas('peserta')->count(),
+            'sesi_hari_ini' => SesiTes::whereDate('waktu_mulai', $today)->whereHas('peserta')->count(),
             'sesi_selesai_hari_ini' => SesiTes::whereDate('waktu_selesai', $today)
                 ->whereIn('status', ['selesai', 'timeout'])
+                ->whereHas('peserta')
                 ->count(),
             'rata_rata_nilai_hari_ini' => SesiTes::whereDate('waktu_selesai', $today)
                 ->whereIn('status', ['selesai', 'timeout'])
+                ->whereHas('peserta')
                 ->avg('nilai') ?? 0,
         ];
     }
@@ -42,16 +44,17 @@ class MonitoringUjianService
     /**
      * Ambil daftar tes aktif dengan statistik
      * Kebutuhan: 7.1
+     * Hanya menghitung sesi milik peserta pada periode aktif (PeriodeScope).
      */
     public function ambilTesAktif(): Collection
     {
         return Tes::where('status', 'aktif')
             ->withCount([
                 'sesiTes as peserta_online' => function ($q) {
-                    $q->where('status', 'berlangsung');
+                    $q->where('status', 'berlangsung')->whereHas('peserta');
                 },
                 'sesiTes as peserta_selesai' => function ($q) {
-                    $q->whereIn('status', ['selesai', 'timeout']);
+                    $q->whereIn('status', ['selesai', 'timeout'])->whereHas('peserta');
                 },
             ])
             ->get();
@@ -60,13 +63,16 @@ class MonitoringUjianService
     /**
      * Ambil peserta online untuk tes tertentu
      * Kebutuhan: 7.2
+     * whereHas('peserta') memastikan hanya sesi periode aktif (hindari peserta null).
      */
     public function ambilPesertaOnline(Tes $tes): Collection
     {
         return SesiTes::where('tes_id', $tes->id)
             ->where('status', 'berlangsung')
+            ->whereHas('peserta')
             ->with('peserta')
             ->get()
+            ->filter(fn ($sesi) => $sesi->peserta !== null)
             ->map(function ($sesi) {
                 $totalSoal = count($sesi->urutan_soal ?? []);
                 $dijawab = $sesi->jawabanPeserta()
@@ -96,6 +102,7 @@ class MonitoringUjianService
     public function ambilRiwayatSesi(Tes $tes, array $filter = []): Collection
     {
         $query = SesiTes::where('tes_id', $tes->id)
+            ->whereHas('peserta')
             ->with('peserta')
             ->orderBy('waktu_mulai', 'desc');
 
@@ -299,6 +306,7 @@ class MonitoringUjianService
     {
         $sesiList = $tes->sesiTes()
             ->whereIn('status', ['selesai', 'timeout'])
+            ->whereHas('peserta')
             ->get();
 
         if ($sesiList->isEmpty()) {
