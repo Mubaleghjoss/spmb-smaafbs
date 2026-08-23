@@ -6,21 +6,21 @@
 <div class="ujian-container" x-data="ujianApp()">
     <!-- Header dengan Timer -->
     <div class="ujian-header bg-dark text-white py-2 px-3 sticky-top">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <strong>{{ $tes->nama }}</strong>
-                <span class="ms-3 badge bg-secondary">Soal {{ $dataSoal['nomor'] }} / {{ $dataSoal['total_soal'] }}</span>
+        <div class="ujian-header-row d-flex justify-content-between align-items-center gap-2">
+            <div class="ujian-header-title text-truncate">
+                <strong class="d-block text-truncate">{{ $tes->nama }}</strong>
+                <span class="badge bg-secondary">Soal {{ $dataSoal['nomor'] }} / {{ $dataSoal['total_soal'] }}</span>
             </div>
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 flex-shrink-0">
                 <div class="timer" :class="{ 'text-danger': waktuTersisa < 300 }">
                     <i class="bi bi-clock me-1"></i>
                     <span x-text="formatWaktu(waktuTersisa)">{{ gmdate('H:i:s', $statistik['waktu_tersisa']) }}</span>
                 </div>
                 <button type="button" class="btn btn-outline-warning btn-sm" @click="tampilKembali()">
-                    <i class="bi bi-arrow-left me-1"></i> Kembali
+                    <i class="bi bi-arrow-left"></i><span class="d-none d-sm-inline ms-1">Kembali</span>
                 </button>
                 <button type="button" class="btn btn-outline-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalSelesai">
-                    <i class="bi bi-check-circle me-1"></i> Selesai
+                    <i class="bi bi-check-circle"></i><span class="d-none d-sm-inline ms-1">Selesai</span>
                 </button>
             </div>
         </div>
@@ -141,8 +141,8 @@
             </div>
 
             <!-- Sidebar Navigasi -->
-            <div class="col-lg-3">
-                <div class="card sticky-top" style="top: 70px;">
+            <div class="col-lg-3 mt-3 mt-lg-0">
+                <div class="card ujian-nav-card sticky-top" style="top: 70px;">
                     <div class="card-header">
                         <h6 class="mb-0">Navigasi Soal</h6>
                     </div>

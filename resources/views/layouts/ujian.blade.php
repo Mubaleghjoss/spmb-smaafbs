@@ -37,11 +37,39 @@
             max-width: 100%;
             height: auto;
         }
+        /* Cegah konten meluber di layar sempit (tabel/gambar/kode dalam soal & jawaban) */
+        .ujian-container { overflow-x: hidden; }
+        .pertanyaan-text, .soal-jawaban .form-check-label {
+            overflow-wrap: anywhere;
+            word-break: break-word;
+        }
+        .pertanyaan-text table, .soal-jawaban table {
+            display: block;
+            max-width: 100%;
+            overflow-x: auto;
+        }
+        .pertanyaan-text pre, .soal-jawaban pre {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .pertanyaan-text img, .soal-jawaban img { max-width: 100%; height: auto; }
         .form-check-label {
             cursor: pointer;
         }
         .soal-jawaban .form-check:hover {
             background-color: #f8f9fa;
+        }
+        /* Header responsif: judul tes tidak mendorong timer/tombol keluar layar */
+        .ujian-header-title { min-width: 0; }
+        .ujian-header-title strong { font-size: .95rem; }
+        @media (max-width: 575.98px) {
+            .timer { font-size: 1rem; }
+            .ujian-header .btn-sm { padding: .2rem .4rem; }
+            .ujian-header-title strong { font-size: .85rem; }
+        }
+        /* Kartu navigasi soal jangan lengket di HP (mengganggu saat scroll) */
+        @media (max-width: 991.98px) {
+            .ujian-nav-card.sticky-top { position: static !important; }
         }
         /* Disable text selection untuk anti-cheat */
         .ujian-container {
