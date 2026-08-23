@@ -4,13 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soal Tes Pegon - {{ $peserta->nama ?? '' }} - {{ $branding['nama_singkat'] ?? 'SPMB' }}</title>
-    @if(!empty($branding['favicon']))
+    @if(!empty($branding['favicon']) && !($isPdf ?? false))
     <link rel="icon" href="{{ asset('storage/' . $branding['favicon']) }}" type="image/x-icon">
     @endif
     <style>
         @page { size: A4 portrait; margin: 10mm 12mm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        @if(!($isPdf ?? false))
         html { width: 210mm; }
+        @endif
         body {
             font-family: 'Times New Roman', Times, serif;
             font-size: 12px;
@@ -19,21 +21,21 @@
             background: #fff;
         }
         .header-fields { margin-bottom: 10px; }
-        .header-fields table { width: 50%; }
-        .header-fields td { padding: 1px 0; font-weight: bold; }
+        .header-fields table { width: 60%; }
+        .header-fields td { padding: 1px 0; font-weight: bold; vertical-align: bottom; }
         .header-fields td:first-child { width: 135px; }
         .header-fields td:nth-child(2) { width: 10px; text-align: center; }
-        .header-fields input {
-            border: none; border-bottom: 1px dotted #000;
-            width: 100%; font-size: 12px; font-family: inherit;
-            padding: 1px 4px; background: transparent;
+        .header-fields .isian {
+            border-bottom: 1px dotted #000;
+            min-height: 16px;
+            padding: 1px 4px;
+            font-weight: normal;
         }
         h2 { text-align: center; font-size: 14px; margin-bottom: 8px; text-decoration: underline; }
         .soal-section { margin-bottom: 8px; }
         .soal-section p { margin-bottom: 4px; }
-        .soal-arabic { font-size: 14px; margin: 3px 0 3px 24px; }
-        .soal-list { margin-left: 20px; }
-        .soal-list li { margin-bottom: 2px; }
+        .soal-list { margin-left: 30px; }
+        .soal-list li { margin-bottom: 3px; }
         .soal-list li b { font-weight: 900; }
         .jawaban-section { margin-top: 10px; }
         .jawaban-section h3 { font-size: 13px; font-weight: bold; margin-bottom: 5px; }
@@ -43,47 +45,52 @@
             margin-bottom: 2px;
         }
         @media print {
-            body { width: 186mm; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             .no-print { display: none !important; }
         }
-        .print-btn {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 12px 24px; background: #198754; color: #fff;
-            border: none; border-radius: 8px; font-size: 16px; cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        .toolbar {
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: flex; gap: 8px;
         }
-        .print-btn:hover { background: #146c43; }
-        .print-btn svg { width: 18px; height: 18px; flex: 0 0 auto; }
+        .toolbar a, .toolbar button {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 18px; color: #fff; text-decoration: none;
+            border: none; border-radius: 8px; font-size: 14px; cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            font-family: system-ui, -apple-system, "Segoe UI", sans-serif; font-weight: 600;
+        }
+        .btn-pdf { background: #dc3545; }
+        .btn-print { background: #198754; }
     </style>
 </head>
 <body>
-    <button class="print-btn no-print" onclick="window.print()" type="button">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path d="M6 9V3h12v6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M6 14h12v7H6z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M18 12h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-        </svg>
-        <span>Cetak / Print</span>
-    </button>
+    @if(!($isPdf ?? false))
+    <div class="toolbar no-print">
+        <a href="{{ route('peserta.wawancara.download-pegon.pdf') }}" class="btn-pdf">
+            &#128196; Download PDF
+        </a>
+        <button class="btn-print" onclick="window.print()" type="button">
+            &#128424; Cetak
+        </button>
+    </div>
+    @endif
 
     <div class="header-fields">
         <table>
             <tr>
                 <td>NAMA LENGKAP</td>
                 <td>:</td>
-                <td><input type="text" value="{{ $peserta->nama ?? '' }}"></td>
+                <td><div class="isian">{{ $peserta->nama ?? '' }}</div></td>
             </tr>
             <tr>
                 <td>KELOMPOK / DESA</td>
                 <td>:</td>
-                <td><input type="text"></td>
+                <td><div class="isian">{{ $kelompokDesa ?? '' }}</div></td>
             </tr>
             <tr>
                 <td>NO. HP</td>
                 <td>:</td>
-                <td><input type="text"></td>
+                <td><div class="isian">{{ $noHp ?? '' }}</div></td>
             </tr>
         </table>
     </div>
@@ -91,7 +98,7 @@
     <h2>UBAHLAH KALIMAT DIBAWAH INI MENJADI PEGON</h2>
 
     <div class="soal-section">
-        <ol class="soal-list" style="margin-left:30px">
+        <ol class="soal-list">
             @foreach($teksPegon as $teks)
             <li><b>{{ $teks }}</b></li>
             @endforeach

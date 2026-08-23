@@ -309,6 +309,59 @@
                                         @endif
                                     @endif
                                     
+                                    {{-- Tahap 5 (Wawancara): jelaskan progres 6 langkah & apa yang ditunggu --}}
+                                    @if($nomor == 5 && !$item['selesai'] && $item['dibuka'])
+                                        @php
+                                            $w5 = $peserta->wawancara;
+                                            $langkah5 = [
+                                                'Form Ortu' => !empty($w5?->jawaban_ortu),
+                                                'Form Siswa' => !empty($w5?->jawaban_siswa),
+                                                'Surat Siswa' => !empty($w5?->surat_pernyataan_siswa),
+                                                'Surat Ortu' => !empty($w5?->surat_pernyataan_ortu),
+                                                'Tes Pegon' => !empty($w5?->file_tes_pegon),
+                                                'Bacaan Quran' => !empty($w5?->file_voice_quran),
+                                            ];
+                                            $sudah5 = count(array_filter($langkah5));
+                                            $hasil5 = $w5?->hasil_wawancara ?? 'menunggu';
+                                        @endphp
+                                        <div class="alert {{ $sudah5 === 6 ? 'alert-success' : 'alert-info' }} mt-2 mb-0 py-2 px-3 small">
+                                            <div class="fw-semibold mb-1">
+                                                <i class="bi bi-list-check me-1"></i>Kelengkapan data: {{ $sudah5 }} dari 6 langkah
+                                            </div>
+                                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                                @foreach($langkah5 as $namaLangkah => $ok)
+                                                    <span class="badge {{ $ok ? 'bg-success' : 'bg-secondary' }}">
+                                                        <i class="bi bi-{{ $ok ? 'check' : 'dash' }} me-1"></i>{{ $namaLangkah }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                            @if($sudah5 === 6)
+                                                @if($hasil5 === 'tidak_lulus')
+                                                    <div class="text-danger">
+                                                        <i class="bi bi-x-circle me-1"></i>Hasil wawancara: <strong>Tidak lulus</strong>.
+                                                        {{ $w5?->catatan_interviewer ? 'Catatan: '.$w5->catatan_interviewer : 'Silakan hubungi Tim SPMB untuk penjelasan.' }}
+                                                    </div>
+                                                @else
+                                                    <i class="bi bi-hourglass-split me-1"></i>
+                                                    Data Anda <strong>sudah lengkap</strong>. Tahap ini selesai setelah <strong>wawancara dilaksanakan</strong>
+                                                    dan Tim SPMB menyatakan Anda lulus. Data di atas dipakai sebagai rujukan saat wawancara.
+                                                    Tahap 6 terbuka otomatis setelah itu.
+                                                @endif
+                                            @else
+                                                <i class="bi bi-pencil-square me-1"></i>
+                                                Lengkapi langkah yang masih abu-abu, lalu tunggu jadwal wawancara dari Tim SPMB.
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    {{-- Tahap 6 terkunci karena menunggu hasil wawancara --}}
+                                    @if($nomor == 6 && !$item['selesai'] && !($peserta->tahapanSpmb?->tahap_5_selesai ?? false))
+                                        <div class="alert alert-light border mt-2 mb-0 py-2 px-3 small">
+                                            <i class="bi bi-lock me-1"></i>
+                                            Terbuka otomatis setelah <strong>Tahap 5 (Wawancara)</strong> dinyatakan lulus oleh Tim SPMB.
+                                        </div>
+                                    @endif
+
                                     @if($nomor == 7 && $statusKelulusan === 'tidak_lulus')
                                         <span class="badge bg-danger"><i class="bi bi-x-circle me-1"></i>Tidak Lulus</span>
                                     @elseif($nomor == 7 && $statusKelulusan === 'lulus' && ($tahapan->tahap_7_selesai ?? false))

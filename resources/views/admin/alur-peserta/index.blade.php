@@ -143,9 +143,15 @@
                                 @endif
                             </td>
                             <td>
-                                <a href="{{ route('admin.peserta.show', $p) }}" class="btn btn-sm btn-action-view" title="Detail">
-                                    <i class="bi bi-eye me-1"></i>Detail
-                                </a>
+                                <div class="d-flex gap-1 flex-nowrap">
+                                    <a href="{{ route('admin.peserta.show', $p) }}" class="btn btn-sm btn-action-view" title="Detail">
+                                        <i class="bi bi-eye"></i><span class="d-none d-lg-inline ms-1">Detail</span>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-primary" title="Ubah Tahapan Manual"
+                                            data-bs-toggle="modal" data-bs-target="#modalTahap{{ $p->id }}">
+                                        <i class="bi bi-sliders"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         @empty
@@ -183,6 +189,67 @@
         @endif
     </div>
 </div>
+
+{{-- Modal koreksi tahapan manual — diletakkan DI LUAR <table> agar HTML valid
+     (elemen non-baris di dalam <tbody> dipindahkan browser & merusak tabel). --}}
+@foreach($peserta as $p)
+<div class="modal fade" id="modalTahap{{ $p->id }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h6 class="modal-title"><i class="bi bi-sliders me-2"></i>Ubah Tahapan — {{ $p->nama }}</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p class="small text-muted">
+                    Normalnya tahapan berpindah otomatis setelah verifikasi Tim SPMB.
+                    Gunakan ini untuk <strong>koreksi manual</strong> — misalnya peserta sudah diwawancara
+                    secara offline sehingga Tahap 5 perlu ditandai selesai agar Tahap 6 terbuka.
+                </p>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <tbody>
+                        @for($t = 1; $t <= 7; $t++)
+                            @php
+                                $kol = "tahap_{$t}_selesai";
+                                $sudah = $p->tahapanSpmb?->$kol ?? false;
+                            @endphp
+                            <tr>
+                                <td class="text-nowrap">
+                                    <span class="badge rounded-pill" style="background: {{ $tahapColors[$t] ?? '#6b7280' }}">{{ $t }}</span>
+                                    <span class="ms-1">{{ $tahapLabels[$t] ?? '?' }}</span>
+                                </td>
+                                <td>
+                                    @if($sudah)
+                                        <span class="badge bg-success">Selesai</span>
+                                    @else
+                                        <span class="badge bg-secondary">Belum</span>
+                                    @endif
+                                </td>
+                                <td class="text-end">
+                                    <form action="{{ route('admin.alur-peserta.ubah-tahapan', $p) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        <input type="hidden" name="tahap" value="{{ $t }}">
+                                        <input type="hidden" name="aksi" value="{{ $sudah ? 'batalkan' : 'selesaikan' }}">
+                                        <button type="submit" class="btn btn-sm {{ $sudah ? 'btn-outline-danger' : 'btn-outline-success' }}"
+                                                onclick="return confirm('{{ $sudah ? 'Batalkan' : 'Tandai selesai' }} Tahap {{ $t }} untuk {{ $p->nama }}?')">
+                                            <i class="bi bi-{{ $sudah ? 'x-lg' : 'check-lg' }} me-1"></i>{{ $sudah ? 'Batalkan' : 'Tandai Selesai' }}
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endfor
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+@endforeach
 
 <style>
     .pipeline-scroll {

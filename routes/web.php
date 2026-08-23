@@ -107,6 +107,7 @@ Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(fun
     Route::get('/wawancara/info', [DashboardSpmbController::class, 'infoWawancara'])->name('wawancara.info');
     Route::post('/wawancara/simpan', [DashboardSpmbController::class, 'simpanWawancara'])->name('wawancara.simpan');
     Route::get('/wawancara/download-pegon', [DashboardSpmbController::class, 'downloadTesPegon'])->name('wawancara.download-pegon');
+    Route::get('/wawancara/download-pegon/pdf', [DashboardSpmbController::class, 'downloadTesPegonPdf'])->name('wawancara.download-pegon.pdf');
     Route::get('/wawancara/surat-pernyataan/pdf', [DashboardSpmbController::class, 'downloadSuratPernyataanPdf'])->name('wawancara.surat-pernyataan.pdf');
     Route::get('/wawancara/surat-pernyataan/cetak', [DashboardSpmbController::class, 'cetakSuratPernyataan'])->name('wawancara.surat-pernyataan.cetak');
 });
@@ -143,6 +144,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     // Alur Peserta (Pipeline SPMB)
     Route::get('/alur-peserta', [\App\Http\Controllers\Admin\AlurPesertaController::class, 'index'])->name('alur-peserta.index');
     Route::get('/alur-peserta/ekspor', [\App\Http\Controllers\Admin\AlurPesertaController::class, 'eksporCsv'])->name('alur-peserta.ekspor');
+    Route::post('/alur-peserta/{peserta}/ubah-tahapan', [\App\Http\Controllers\Admin\AlurPesertaController::class, 'ubahTahapan'])->name('alur-peserta.ubah-tahapan');
     
     // Verifikasi SPMB
     Route::get('/verifikasi', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'index'])->name('verifikasi.index');

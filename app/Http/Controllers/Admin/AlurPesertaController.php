@@ -109,6 +109,33 @@ class AlurPesertaController extends Controller
     }
 
     /**
+     * Ubah status suatu tahapan peserta secara MANUAL (koreksi admin).
+     * Dipakai bila peserta terhambat karena verifikasi belum dilakukan,
+     * atau admin ingin mengembalikan peserta ke tahap sebelumnya.
+     */
+    public function ubahTahapan(Request $request, Peserta $peserta): \Illuminate\Http\RedirectResponse
+    {
+        $data = $request->validate([
+            'tahap' => 'required|integer|min:1|max:7',
+            'aksi' => 'required|in:selesaikan,batalkan',
+        ]);
+
+        $admin = auth('pengguna')->user();
+        $spmb = app(\App\Services\SpmbService::class);
+        $tahap = (int) $data['tahap'];
+
+        if ($data['aksi'] === 'selesaikan') {
+            $spmb->selesaikanTahapan($peserta, $tahap, $admin?->id);
+            $pesan = "Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") untuk {$peserta->nama} ditandai SELESAI.";
+        } else {
+            $spmb->batalkanTahapan($peserta, $tahap, $admin?->id);
+            $pesan = "Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") untuk {$peserta->nama} dibatalkan (belum selesai).";
+        }
+
+        return back()->with('success', $pesan);
+    }
+
+    /**
      * Ekspor data peserta ke CSV
      */
     public function eksporCsv(Request $request): StreamedResponse

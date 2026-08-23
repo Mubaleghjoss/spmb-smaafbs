@@ -5,30 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Surat Pernyataan - {{ $peserta->nama }}</title>
     <style>
-        @page { size: A4; margin: 2cm; }
+        @page { size: A4; margin: 1.4cm 1.6cm; }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 13px; line-height: 1.5; color: #000; background: #fff; }
-        .page { max-width: 210mm; margin: 0 auto; padding: 2cm; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: {{ ($isPdf ?? false) ? '11px' : '13px' }}; line-height: {{ ($isPdf ?? false) ? '1.35' : '1.5' }}; color: #000; background: #fff; }
+        /* PENTING: saat PDF, padding halaman DIHILANGKAN karena margin sudah
+           diatur oleh @page. Dulu @page margin 2cm + padding 2cm = 4cm, membuat
+           tiap surat meluber jadi 2 halaman (total 4 halaman). */
+        .page { max-width: 210mm; margin: 0 auto; padding: {{ ($isPdf ?? false) ? '0' : '2cm' }}; }
         .page + .page { page-break-before: always; }
-        h3 { text-align: center; text-decoration: underline; font-size: 15px; margin-bottom: 20px; }
-        .field-row { margin-bottom: 3px; display: flex; }
-        .field-label { width: 200px; font-weight: bold; }
+        h3 { text-align: center; text-decoration: underline; font-size: {{ ($isPdf ?? false) ? '13px' : '15px' }}; margin-bottom: {{ ($isPdf ?? false) ? '10px' : '20px' }}; }
+        .field-row { margin-bottom: {{ ($isPdf ?? false) ? '2px' : '3px' }}; display: flex; }
+        .field-label { width: {{ ($isPdf ?? false) ? '170px' : '200px' }}; font-weight: bold; }
         .field-sep { width: 15px; text-align: center; }
-        .field-value { flex: 1; border-bottom: 1px dotted #000; min-height: 20px; }
-        .content { margin-top: 15px; }
-        .content ol { margin-left: 20px; }
-        .content ol li { margin-bottom: 6px; }
-        .content ol ol { margin-top: 4px; }
-        .content ol ol li { margin-bottom: 3px; }
-        .closing { margin-top: 20px; }
-        .signature-area { text-align: right; margin-top: 20px; }
+        .field-value { flex: 1; border-bottom: 1px dotted #000; min-height: {{ ($isPdf ?? false) ? '15px' : '20px' }}; }
+        .content { margin-top: {{ ($isPdf ?? false) ? '8px' : '15px' }}; }
+        .content ol { margin-left: {{ ($isPdf ?? false) ? '16px' : '20px' }}; }
+        .content ol li { margin-bottom: {{ ($isPdf ?? false) ? '2px' : '6px' }}; }
+        .content ol ol { margin-top: {{ ($isPdf ?? false) ? '1px' : '4px' }}; }
+        .content ol ol li { margin-bottom: {{ ($isPdf ?? false) ? '1px' : '3px' }}; }
+        .content p { margin-bottom: {{ ($isPdf ?? false) ? '4px' : '8px' }}; }
+        .closing { margin-top: {{ ($isPdf ?? false) ? '8px' : '20px' }}; }
+        .signature-area { text-align: right; margin-top: {{ ($isPdf ?? false) ? '8px' : '20px' }}; }
         .signature-area .ttd-box { display: inline-block; text-align: center; }
-        .signature-area img { max-width: 200px; max-height: 80px; display: block; margin: 5px auto; }
+        .signature-area img { max-width: {{ ($isPdf ?? false) ? '140px' : '200px' }}; max-height: {{ ($isPdf ?? false) ? '55px' : '80px' }}; display: block; margin: {{ ($isPdf ?? false) ? '2px' : '5px' }} auto; }
         .no-print { position: fixed; top: 15px; right: 15px; z-index: 999; }
         .no-print button { padding: 10px 20px; background: #198754; color: #fff; border: none; border-radius: 8px; font-size: 14px; cursor: pointer; margin-left: 5px; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
         .no-print button:hover { opacity: .85; }
         .no-print .btn-wa { background: #25D366; }
-        @media print { .no-print { display: none !important; } }
+        @media print {
+            .no-print { display: none !important; }
+            /* Saat dicetak dari browser, margin juga dari @page — hindari 2x margin */
+            .page { padding: 0 !important; }
+        }
     </style>
 </head>
 <body>

@@ -169,11 +169,14 @@ class DashboardSpmbController extends Controller
         $formulir = $peserta->formulirSpmb;
         $prefillWawancara = app(\App\Services\DataSuratPernyataanService::class)
             ->untukSurat($peserta, $formulir);
+
+        // Kontak Tim SPMB untuk tombol "Tanya Jadwal Wawancara"
+        $kontakTimSpmb = $pengaturanService->ambilKontakTimSpmb();
         
         return view('peserta.wawancara-info', compact(
             'peserta', 'infoWawancara', 'pertanyaanOrtu', 'pertanyaanSiswa',
             'spSiswaPoin', 'spOrtuPoin', 'wawancara', 'kelengkapanWawancara',
-            'formulir', 'prefillWawancara'
+            'formulir', 'prefillWawancara', 'kontakTimSpmb'
         ));
     }
 
@@ -287,13 +290,62 @@ class DashboardSpmbController extends Controller
     }
 
     /**
-     * Download soal tes pegon (halaman A4 printable)
+     * Halaman pratinjau soal tes pegon (A4, bisa dicetak dari browser)
      */
     public function downloadTesPegon(): View
     {
-        $peserta = Peserta::find(session('peserta_id'));
-        $teksPegon = \App\Models\Wawancara::teksPegon();
-        return view('peserta.tes-pegon', compact('peserta', 'teksPegon'));
+        $peserta = Peserta::with('formulirSpmb')->find(session('peserta_id'));
+
+        return view('peserta.tes-pegon', array_merge(
+            ['peserta' => $peserta, 'teksPegon' => \App\Models\Wawancara::teksPegon()],
+            $this->dataIsianPegon($peserta)
+        ));
+    }
+
+    /**
+     * Unduh soal tes pegon langsung sebagai PDF (tanpa harus lewat dialog cetak).
+     */
+    public function downloadTesPegonPdf()
+    {
+        $peserta = Peserta::with('formulirSpmb')->find(session('peserta_id'));
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('peserta.tes-pegon', array_merge(
+            [
+                'peserta' => $peserta,
+                'teksPegon' => \App\Models\Wawancara::teksPegon(),
+                'isPdf' => true,
+            ],
+            $this->dataIsianPegon($peserta)
+        ));
+
+        $pdf->setPaper('a4', 'portrait');
+
+        $nama = Str::upper(Str::slug($peserta->nama ?? 'peserta', '-'));
+
+        return $pdf->download("Soal-Tes-Pegon-{$nama}.pdf");
+    }
+
+    /**
+     * Isian kepala soal pegon, diambil dari formulir biodata bila tersedia.
+     *
+     * @return array{kelompokDesa: string, noHp: string}
+     */
+    private function dataIsianPegon(?Peserta $peserta): array
+    {
+        $formulir = $peserta?->formulirSpmb;
+
+        $kelompokDesa = collect([
+            trim((string) ($formulir->kelompok ?? '')),
+            trim((string) ($formulir->desa ?? '')),
+        ])->filter()->implode(' / ');
+
+        $noHp = trim((string) ($formulir->telepon ?? ''))
+            ?: trim((string) ($peserta->telepon ?? ''));
+
+        return [
+            'kelompokDesa' => $kelompokDesa,
+            'noHp' => $noHp,
+        ];
     }
 
     /**

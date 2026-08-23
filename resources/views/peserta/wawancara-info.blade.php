@@ -32,6 +32,72 @@
         </div>
     @endif
 
+    {{-- ===== PENJELASAN ALUR TAHAP 5 ===== --}}
+    @php
+        $wawancaraSelesaiSemua = !empty($wawancara?->jawaban_ortu)
+            && !empty($wawancara?->jawaban_siswa)
+            && !empty($wawancara?->surat_pernyataan_siswa)
+            && !empty($wawancara?->surat_pernyataan_ortu)
+            && !empty($wawancara?->file_tes_pegon)
+            && !empty($wawancara?->file_voice_quran);
+        $hasilWawancara = $wawancara?->hasil_wawancara ?? 'menunggu';
+        $tahap5Selesai = $peserta->tahapanSpmb?->tahap_5_selesai ?? false;
+    @endphp
+
+    <div class="card border-0 shadow-sm mb-4 border-start border-4 {{ $tahap5Selesai ? 'border-success' : ($wawancaraSelesaiSemua ? 'border-warning' : 'border-info') }}">
+        <div class="card-body">
+            <h6 class="fw-bold mb-2">
+                <i class="bi bi-info-circle me-1"></i>Cara Tahap 5 dinyatakan selesai
+            </h6>
+            <p class="small mb-2">
+                Data yang Anda isi di 6 langkah ini adalah <strong>bahan rujukan Tim SPMB saat wawancara tatap muka</strong>.
+                Karena itu Tahap 5 baru ditandai selesai <strong>setelah wawancara dilaksanakan dan Tim SPMB meluluskan Anda</strong> —
+                bukan otomatis begitu 6 langkah terisi.
+            </p>
+            <ol class="small mb-2 ps-3">
+                <li>Anda melengkapi 6 langkah di bawah <span class="badge {{ $wawancaraSelesaiSemua ? 'bg-success' : 'bg-secondary' }}">{{ $wawancaraSelesaiSemua ? 'Selesai' : 'Sedang berjalan' }}</span></li>
+                <li>Tim SPMB melakukan wawancara (tatap muka/online) memakai data Anda sebagai rujukan</li>
+                <li>Tim SPMB menyatakan hasil wawancara
+                    <span class="badge {{ $hasilWawancara === 'lulus' ? 'bg-success' : ($hasilWawancara === 'tidak_lulus' ? 'bg-danger' : 'bg-warning text-dark') }}">
+                        {{ $hasilWawancara === 'lulus' ? 'Lulus' : ($hasilWawancara === 'tidak_lulus' ? 'Tidak Lulus' : 'Menunggu wawancara') }}
+                    </span>
+                </li>
+                <li>Setelah dinyatakan lulus, <strong>Tahap 6 (Upload Bukti Pembayaran Pertama) otomatis terbuka</strong></li>
+            </ol>
+
+            @if($wawancaraSelesaiSemua && !$tahap5Selesai)
+                <div class="alert alert-success py-2 px-3 mb-0 small">
+                    <i class="bi bi-check2-all me-1"></i>
+                    <strong>Semua 6 langkah sudah lengkap — tidak ada lagi yang perlu Anda kerjakan di sini.</strong>
+                    Silakan tunggu jadwal wawancara dari Tim SPMB. Tahap 6 akan terbuka setelah Tim SPMB menyatakan Anda lulus wawancara.
+                    @php
+                        $timListW = collect($kontakTimSpmb ?? [])->filter(fn($k) => !empty($k['whatsapp']))->values();
+                        $pesanW = "Assalamu'alaikum, saya *".($peserta->nama)."* nomor pendaftaran *".($peserta->nomor_pendaftaran)."*. Saya sudah melengkapi semua data Tahap 5 (Wawancara). Mohon informasi jadwal wawancara. Terima kasih.";
+                    @endphp
+                    @if($timListW->isNotEmpty())
+                    <div class="d-flex flex-wrap gap-2 mt-2">
+                        @foreach($timListW as $tim)
+                            @php
+                                $d = preg_replace('/[^0-9]/', '', $tim['whatsapp'] ?? '');
+                                if (str_starts_with($d, '62')) { $d = substr($d, 2); }
+                                $d = ltrim($d, '0');
+                            @endphp
+                            <a href="https://wa.me/62{{ $d }}?text={{ urlencode($pesanW) }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
+                                <i class="bi bi-whatsapp me-1"></i>Tanya Jadwal ke {{ $tim['nama'] ?? 'Tim SPMB' }}
+                            </a>
+                        @endforeach
+                    </div>
+                    @endif
+                </div>
+            @elseif($tahap5Selesai)
+                <div class="alert alert-success py-2 px-3 mb-0 small">
+                    <i class="bi bi-check-circle me-1"></i>
+                    <strong>Tahap 5 selesai.</strong> Anda sudah dinyatakan lulus wawancara dan dapat melanjutkan ke Tahap 6.
+                </div>
+            @endif
+        </div>
+    </div>
+
     {{-- ===== STEPPER BAR ===== --}}
     @php
         $steps = [
@@ -388,54 +454,99 @@
                 <h5 class="mb-0"><i class="bi bi-pencil-square me-2"></i>Langkah 5: Tes Pegon</h5>
             </div>
             <div class="card-body">
-                {{-- Instruksi --}}
+                @php $pegonSudah = !empty($wawancara?->file_tes_pegon); @endphp
+
+                {{-- Status jelas: sudah terkirim atau belum --}}
+                @if($pegonSudah)
+                    <div class="alert alert-success d-flex flex-wrap align-items-center gap-2">
+                        <i class="bi bi-check-circle-fill fs-5"></i>
+                        <div class="flex-grow-1">
+                            <strong>Jawaban Tes Pegon sudah terkirim.</strong>
+                            <div class="small">Langkah ini sudah hijau. Anda masih boleh mengganti file bila ingin memperbaiki jawaban.</div>
+                        </div>
+                        <a href="{{ asset('storage/' . $wawancara->file_tes_pegon) }}" target="_blank" class="btn btn-sm btn-outline-success">
+                            <i class="bi bi-eye me-1"></i>Lihat File Terkirim
+                        </a>
+                    </div>
+                @else
+                    <div class="alert alert-warning d-flex align-items-start gap-2">
+                        <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+                        <div>
+                            <strong>Belum ada jawaban yang dikirim.</strong>
+                            <div class="small">Langkah ini menjadi hijau setelah Anda mengunggah foto/scan jawaban di bawah.</div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Instruksi bertahap --}}
                 <div class="alert alert-info">
-                    <h6 class="fw-bold mb-2"><i class="bi bi-info-circle me-1"></i>Instruksi:</h6>
-                    <ol class="mb-0">
-                        <li><strong>Download</strong> soal Tes Pegon di bawah ini (format A4 siap cetak)</li>
-                        <li><strong>Cetak / print</strong> soal tersebut</li>
-                        <li><strong>Kerjakan</strong> soal dengan menulis jawaban di kolom yang tersedia</li>
-                        <li><strong>Foto / scan</strong> hasil jawaban Anda</li>
-                        <li><strong>Upload</strong> foto jawaban di kolom di bawah</li>
+                    <h6 class="fw-bold mb-2"><i class="bi bi-list-ol me-1"></i>Langkah Pengerjaan:</h6>
+                    <ol class="mb-0 ps-3">
+                        <li><strong>Unduh soal</strong> — tekan tombol <em>Download PDF Soal</em> di bawah. File PDF langsung tersimpan di HP Anda.</li>
+                        <li><strong>Cetak</strong> soal tersebut (atau tulis jawaban di kertas biasa bila tidak ada printer).</li>
+                        <li><strong>Kerjakan</strong> — ubah kalimat menjadi tulisan Pegon pada kolom jawaban.</li>
+                        <li><strong>Foto hasilnya</strong> — tekan <em>Ambil Foto</em> (kamera HP akan terbuka, bisa ganti kamera depan/belakang), atau <em>Pilih File</em> bila sudah ada foto/scan-nya.</li>
+                        <li><strong>Kirim</strong> — tekan tombol <em>Kirim Jawaban</em>. Pastikan tulisan terbaca jelas dan tidak terpotong.</li>
                     </ol>
                 </div>
 
                 <div class="row g-4">
                     <div class="col-md-6">
                         <div class="border rounded p-4 text-center h-100">
-                            <i class="bi bi-file-earmark-arrow-down fs-1 text-primary d-block mb-2"></i>
-                            <h6 class="fw-bold">Download Soal</h6>
-                            <p class="text-muted small">Soal Tes Pegon dalam format A4</p>
-                            <a href="{{ route('peserta.wawancara.download-pegon') }}" class="btn btn-primary" target="_blank">
-                                <i class="bi bi-download me-1"></i>Download Soal Pegon
+                            <i class="bi bi-file-earmark-pdf fs-1 text-danger d-block mb-2"></i>
+                            <h6 class="fw-bold">1. Unduh Soal</h6>
+                            <p class="text-muted small mb-3">Soal Tes Pegon format A4, siap dicetak.</p>
+                            <a href="{{ route('peserta.wawancara.download-pegon.pdf') }}" class="btn btn-danger w-100 mb-2">
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i>Download PDF Soal
+                            </a>
+                            <a href="{{ route('peserta.wawancara.download-pegon') }}" class="btn btn-outline-secondary btn-sm w-100" target="_blank">
+                                <i class="bi bi-eye me-1"></i>Lihat dulu di layar
                             </a>
                         </div>
                     </div>
                     <div class="col-md-6">
-                        <div class="border rounded p-4 text-center h-100">
-                            <i class="bi bi-cloud-arrow-up fs-1 text-success d-block mb-2"></i>
-                            <h6 class="fw-bold">Upload Jawaban</h6>
-                            <p class="text-muted small">Upload foto/scan jawaban Anda (JPG/PNG/PDF, maks 5MB)</p>
-                            <form action="{{ route('peserta.wawancara.simpan') }}" method="POST" enctype="multipart/form-data">
+                        <div class="border rounded p-4 h-100">
+                            <div class="text-center">
+                                <i class="bi bi-camera fs-1 text-success d-block mb-2"></i>
+                                <h6 class="fw-bold">2. {{ $pegonSudah ? 'Ganti Jawaban' : 'Kirim Jawaban' }}</h6>
+                                <p class="text-muted small">Foto/scan jawaban — JPG, PNG, atau PDF (maks 5MB).</p>
+                            </div>
+
+                            <form action="{{ route('peserta.wawancara.simpan') }}" method="POST" enctype="multipart/form-data" id="formPegon">
                                 @csrf
                                 <input type="hidden" name="step" value="5">
-                                <div class="mb-2">
-                                    <input type="file" name="file_tes_pegon" class="form-control form-control-sm" accept="image/*,.pdf" required>
+
+                                {{-- Dua cara memilih berkas: kamera langsung atau file tersimpan --}}
+                                <input type="file" name="file_tes_pegon" id="pegonKamera"
+                                       accept="image/*" capture="environment" class="d-none">
+                                <input type="file" name="file_tes_pegon" id="pegonFile"
+                                       accept="image/*,application/pdf" class="d-none">
+
+                                <div class="d-grid gap-2 mb-2">
+                                    <button type="button" class="btn btn-success" onclick="pilihSumberPegon('kamera')">
+                                        <i class="bi bi-camera-fill me-1"></i>Ambil Foto (Kamera)
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary" onclick="pilihSumberPegon('file')">
+                                        <i class="bi bi-folder2-open me-1"></i>Pilih File / Galeri
+                                    </button>
                                 </div>
-                                <button type="submit" class="btn btn-success btn-sm">
-                                    <i class="bi bi-upload me-1"></i>Upload Jawaban
+
+                                <div class="form-text mb-2">
+                                    <i class="bi bi-arrow-repeat me-1"></i>Kamera terbuka pada kamera belakang. Untuk berganti ke kamera depan, gunakan tombol putar kamera di aplikasi kamera HP Anda.
+                                </div>
+
+                                {{-- Pratinjau sebelum dikirim --}}
+                                <div id="pegonPreviewWrap" class="d-none text-center mb-2">
+                                    <div class="border rounded p-2 bg-light">
+                                        <img id="pegonPreview" alt="Pratinjau jawaban" class="img-fluid rounded" style="max-height:180px">
+                                        <div id="pegonNamaFile" class="small text-muted mt-1"></div>
+                                    </div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary w-100" id="btnKirimPegon" disabled>
+                                    <i class="bi bi-send me-1"></i>{{ $pegonSudah ? 'Kirim Jawaban Baru (Ganti)' : 'Kirim Jawaban' }}
                                 </button>
                             </form>
-
-                            @if($wawancara?->file_tes_pegon)
-                            <div class="mt-3 p-2 bg-success bg-opacity-10 rounded">
-                                <small class="text-success"><i class="bi bi-check-circle me-1"></i>File sudah diupload</small>
-                                <br>
-                                <a href="{{ asset('storage/' . $wawancara->file_tes_pegon) }}" target="_blank" class="btn btn-sm btn-outline-success mt-1">
-                                    <i class="bi bi-eye me-1"></i>Lihat File
-                                </a>
-                            </div>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -613,6 +724,55 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!empty($wawancara?->file_voice_quran)) $autoStep = 6;
     @endphp
     goToStep({{ $autoStep }});
+});
+
+// ========================
+// UPLOAD JAWABAN TES PEGON (kamera / file)
+// ========================
+// Dua input file dipakai agar tombol "Ambil Foto" langsung membuka kamera
+// (atribut capture) sementara "Pilih File" membuka galeri/berkas. Input yang
+// tidak terpakai DIMATIKAN supaya tidak ikut terkirim sebagai nilai kosong.
+function pilihSumberPegon(sumber) {
+    const kamera = document.getElementById('pegonKamera');
+    const berkas = document.getElementById('pegonFile');
+    if (!kamera || !berkas) return;
+    (sumber === 'kamera' ? kamera : berkas).click();
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+    const kamera = document.getElementById('pegonKamera');
+    const berkas = document.getElementById('pegonFile');
+    const tombol = document.getElementById('btnKirimPegon');
+    const wrap = document.getElementById('pegonPreviewWrap');
+    const img = document.getElementById('pegonPreview');
+    const nama = document.getElementById('pegonNamaFile');
+    if (!kamera || !berkas || !tombol) return;
+
+    function terapkan(dipilih, lainnya) {
+        const file = dipilih.files && dipilih.files[0];
+        if (!file) return;
+
+        // Hanya satu input yang aktif saat submit
+        lainnya.value = '';
+        lainnya.disabled = true;
+        dipilih.disabled = false;
+
+        tombol.disabled = false;
+        if (nama) nama.textContent = file.name + ' (' + (file.size / 1048576).toFixed(2) + ' MB)';
+
+        if (wrap && img) {
+            if (file.type && file.type.startsWith('image/')) {
+                img.src = URL.createObjectURL(file);
+                img.classList.remove('d-none');
+            } else {
+                img.classList.add('d-none'); // PDF: tampilkan nama saja
+            }
+            wrap.classList.remove('d-none');
+        }
+    }
+
+    kamera.addEventListener('change', () => terapkan(kamera, berkas));
+    berkas.addEventListener('change', () => terapkan(berkas, kamera));
 });
 
 // ========================

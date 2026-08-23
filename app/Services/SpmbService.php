@@ -142,6 +142,42 @@ class SpmbService
     }
 
     /**
+     * Batalkan status selesai suatu tahapan (koreksi manual oleh admin).
+     * Tahap saat ini dikembalikan ke tahap tersebut agar peserta mengerjakannya lagi.
+     */
+    public function batalkanTahapan(Peserta $peserta, int $tahap, ?int $adminId = null): void
+    {
+        $tahapan = $peserta->tahapanSpmb;
+
+        if (!$tahapan) {
+            $tahapan = $this->buatTahapanAwal($peserta);
+        }
+
+        $kolom = "tahap_{$tahap}_selesai";
+        $statusLama = $tahapan->$kolom;
+
+        DB::transaction(function () use ($tahapan, $kolom, $tahap, $peserta, $adminId, $statusLama) {
+            $tahapan->$kolom = false;
+
+            // Kembalikan posisi peserta ke tahap ini bila sebelumnya sudah maju
+            if ($tahapan->tahap_saat_ini > $tahap) {
+                $tahapan->tahap_saat_ini = $tahap;
+            }
+
+            $tahapan->save();
+
+            LogTahapanSpmb::create([
+                'peserta_id' => $peserta->id,
+                'tahap' => $tahap,
+                'aksi' => 'manual_update',
+                'status_lama' => $statusLama ?? false,
+                'status_baru' => false,
+                'admin_id' => $adminId,
+            ]);
+        });
+    }
+
+    /**
      * Ambil informasi detail tahapan
      * Urutan: 1. Buat Akun, 2. Isi Formulir, 3. Bayar Formulir, 4. Tes Online, 5. Wawancara, 6. Bayar Pertama, 7. Diterima
      */
