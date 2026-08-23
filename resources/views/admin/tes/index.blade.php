@@ -4,14 +4,14 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
         <h1 class="h3 mb-0">Manajemen Tes</h1>
-        <div class="d-flex gap-2">
-            <a href="{{ route('admin.token-global.index') }}" class="btn btn-success">
-                <i class="bi bi-key me-1"></i> Token Global
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('admin.token-global.index') }}" class="btn btn-sm btn-success">
+                <i class="bi bi-key"></i><span class="ms-1">Token Global</span>
             </a>
-            <a href="{{ route('admin.tes.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-lg me-1"></i> Tambah Tes
+            <a href="{{ route('admin.tes.create') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-lg"></i><span class="ms-1">Tambah Tes</span>
             </a>
         </div>
     </div>
@@ -68,16 +68,16 @@
     </div>
 
     <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <div class="d-flex gap-2">
+        <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <div class="d-flex flex-wrap gap-2">
                 <button type="button" class="btn btn-success btn-sm" id="btnBulkAktifkan" disabled>
-                    <i class="bi bi-play-fill me-1"></i> Aktifkan Terpilih
+                    <i class="bi bi-play-fill"></i><span class="d-none d-sm-inline ms-1">Aktifkan Terpilih</span><span class="d-sm-none ms-1">Aktifkan</span>
                 </button>
                 <button type="button" class="btn btn-warning btn-sm" id="btnBulkStop" disabled>
-                    <i class="bi bi-stop-fill me-1"></i> Stop Terpilih
+                    <i class="bi bi-stop-fill"></i><span class="d-none d-sm-inline ms-1">Stop Terpilih</span><span class="d-sm-none ms-1">Stop</span>
                 </button>
                 <button type="button" class="btn btn-info btn-sm" id="btnBulkDurasi" disabled data-bs-toggle="modal" data-bs-target="#modalDurasiJadwal">
-                    <i class="bi bi-clock me-1"></i> Atur Durasi
+                    <i class="bi bi-clock"></i><span class="ms-1">Atur Durasi</span>
                 </button>
             </div>
             <small class="text-muted"><span id="selectedCount">0</span> tes dipilih</small>
@@ -102,7 +102,7 @@
                             <th>Jadwal Tes Online</th>
                             <th class="text-center">Status</th>
                             <th class="text-center">Peserta</th>
-                            <th width="150">Aksi</th>
+                            <th class="text-center" style="min-width:120px;">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -149,19 +149,19 @@
                                 </td>
                                 <td class="text-center">{{ $tes->sesi_tes_count }}</td>
                                 <td>
-                                    <div class="d-flex gap-1 flex-wrap">
+                                    <div class="d-flex gap-1 flex-nowrap">
                                         <a href="{{ route('admin.tes.show', $tes) }}" 
-                                           class="btn btn-sm btn-info text-white">
-                                            <i class="bi bi-eye me-1"></i>Detail
+                                           class="btn btn-sm btn-info text-white" title="Detail">
+                                            <i class="bi bi-eye"></i><span class="d-none d-lg-inline ms-1">Detail</span>
                                         </a>
                                         <a href="{{ route('admin.tes.edit', $tes) }}" 
-                                           class="btn btn-sm btn-warning">
-                                            <i class="bi bi-pencil me-1"></i>Edit
+                                           class="btn btn-sm btn-warning" title="Edit">
+                                            <i class="bi bi-pencil"></i><span class="d-none d-lg-inline ms-1">Edit</span>
                                         </a>
-                                        <button type="button" class="btn btn-sm btn-danger" 
+                                        <button type="button" class="btn btn-sm btn-danger" title="Hapus"
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#modalHapus{{ $tes->id }}">
-                                            <i class="bi bi-trash me-1"></i>Hapus
+                                            <i class="bi bi-trash"></i><span class="d-none d-lg-inline ms-1">Hapus</span>
                                         </button>
                                     </div>
                                 </td>

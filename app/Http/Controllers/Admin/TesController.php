@@ -63,19 +63,45 @@ class TesController extends Controller
             'acak_jawaban' => 'boolean',
             'tampilkan_nilai' => 'boolean',
             'tampilkan_pembahasan' => 'boolean',
+            'mode_pembahasan' => 'nullable|in:off,lulus,semua',
         ]);
 
         $validated['acak_soal'] = $request->boolean('acak_soal');
         $validated['acak_jawaban'] = $request->boolean('acak_jawaban');
         $validated['tampilkan_nilai'] = $request->boolean('tampilkan_nilai');
-        $validated['tampilkan_pembahasan'] = $request->boolean('tampilkan_pembahasan');
-        $validated['pembahasan_hanya_lulus'] = $request->boolean('pembahasan_hanya_lulus');
+        [$validated['tampilkan_pembahasan'], $validated['pembahasan_hanya_lulus']] = $this->terjemahkanModePembahasan($request);
+        unset($validated['mode_pembahasan']);
 
         $tes = $this->tesService->buat($validated);
 
         return redirect()
             ->route('admin.tes.show', $tes)
             ->with('success', 'Tes berhasil dibuat.');
+    }
+
+    /**
+     * Terjemahkan pilihan "Pembahasan Soal" (satu pilihan) menjadi dua kolom DB.
+     * off   -> tidak tampil
+     * lulus -> tampil, hanya untuk peserta lulus
+     * semua -> tampil untuk semua peserta
+     * Mendukung juga payload lama (tampilkan_pembahasan/pembahasan_hanya_lulus).
+     *
+     * @return array{0:bool,1:bool} [tampilkan_pembahasan, pembahasan_hanya_lulus]
+     */
+    private function terjemahkanModePembahasan(Request $request): array
+    {
+        if ($request->filled('mode_pembahasan')) {
+            return match ($request->input('mode_pembahasan')) {
+                'semua' => [true, false],
+                'lulus' => [true, true],
+                default => [false, true],
+            };
+        }
+
+        return [
+            $request->boolean('tampilkan_pembahasan'),
+            $request->boolean('pembahasan_hanya_lulus'),
+        ];
     }
 
     /**
@@ -120,13 +146,14 @@ class TesController extends Controller
             'acak_jawaban' => 'boolean',
             'tampilkan_nilai' => 'boolean',
             'tampilkan_pembahasan' => 'boolean',
+            'mode_pembahasan' => 'nullable|in:off,lulus,semua',
         ]);
 
         $validated['acak_soal'] = $request->boolean('acak_soal');
         $validated['acak_jawaban'] = $request->boolean('acak_jawaban');
         $validated['tampilkan_nilai'] = $request->boolean('tampilkan_nilai');
-        $validated['tampilkan_pembahasan'] = $request->boolean('tampilkan_pembahasan');
-        $validated['pembahasan_hanya_lulus'] = $request->boolean('pembahasan_hanya_lulus');
+        [$validated['tampilkan_pembahasan'], $validated['pembahasan_hanya_lulus']] = $this->terjemahkanModePembahasan($request);
+        unset($validated['mode_pembahasan']);
 
         $this->tesService->update($tes, $validated);
 

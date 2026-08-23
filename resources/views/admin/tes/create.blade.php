@@ -96,21 +96,21 @@
                         </div>
 
                         <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="tampilkan_pembahasan" 
-                                       name="tampilkan_pembahasan" value="1" {{ old('tampilkan_pembahasan') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="tampilkan_pembahasan">Tampilkan Pembahasan</label>
+                            <label class="form-label fw-medium">Pembahasan Soal</label>
+                            @php $modePbh = old('mode_pembahasan', 'lulus'); @endphp
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mode_pembahasan" id="pbh_off" value="off" {{ $modePbh === 'off' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="pbh_off">Tidak ditampilkan ke peserta</label>
                             </div>
-                            <div class="form-text">Peserta dapat melihat pembahasan soal</div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="pembahasan_hanya_lulus" 
-                                       name="pembahasan_hanya_lulus" value="1" {{ old('pembahasan_hanya_lulus', true) ? 'checked' : '' }}>
-                                <label class="form-check-label" for="pembahasan_hanya_lulus">Pembahasan Hanya untuk yang Lulus</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mode_pembahasan" id="pbh_lulus" value="lulus" {{ $modePbh === 'lulus' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="pbh_lulus">Hanya untuk peserta yang LULUS</label>
                             </div>
-                            <div class="form-text">Jika aktif, pembahasan hanya muncul bagi peserta yang memenuhi syarat (lulus). Yang belum memenuhi syarat tidak melihat pembahasan.</div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="mode_pembahasan" id="pbh_semua" value="semua" {{ $modePbh === 'semua' ? 'checked' : '' }}>
+                                <label class="form-check-label" for="pbh_semua">Untuk semua peserta (lulus maupun tidak)</label>
+                            </div>
+                            <div class="form-text">Pilih satu. "Hanya untuk yang lulus" berarti peserta yang belum memenuhi syarat tidak melihat pembahasan.</div>
                         </div>
                     </div>
                 </div>

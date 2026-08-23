@@ -4,25 +4,25 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">{{ $tes->nama }}</h1>
-        <div class="btn-group">
+    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mb-4">
+        <h1 class="h3 mb-0 text-break">{{ $tes->nama }}</h1>
+        <div class="d-flex flex-wrap gap-2 w-100 w-sm-auto justify-content-start justify-content-sm-end">
             @if($tes->soal->count() > 0)
-            <a href="{{ route('admin.soal.preview', ['tes_id' => $tes->id]) }}" class="btn btn-outline-info">
-                <i class="bi bi-eye me-1"></i> Preview Soal
+            <a href="{{ route('admin.soal.preview', ['tes_id' => $tes->id]) }}" class="btn btn-sm btn-outline-info">
+                <i class="bi bi-eye"></i><span class="d-none d-md-inline ms-1">Preview Soal</span><span class="d-md-none ms-1">Preview</span>
             </a>
             @endif
-            <a href="{{ route('admin.tes.edit', $tes) }}" class="btn btn-outline-primary">
-                <i class="bi bi-pencil me-1"></i> Edit
+            <a href="{{ route('admin.tes.edit', $tes) }}" class="btn btn-sm btn-outline-primary">
+                <i class="bi bi-pencil"></i><span class="ms-1">Edit</span>
             </a>
             <form action="{{ route('admin.tes.duplikat', $tes) }}" method="POST" class="d-inline">
                 @csrf
-                <button type="submit" class="btn btn-outline-secondary">
-                    <i class="bi bi-copy me-1"></i> Duplikat
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-copy"></i><span class="ms-1">Duplikat</span>
                 </button>
             </form>
-            <a href="{{ route('admin.tes.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-1"></i> Kembali
+            <a href="{{ route('admin.tes.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left"></i><span class="ms-1">Kembali</span>
             </a>
         </div>
     </div>
@@ -121,12 +121,14 @@
                                     </td>
                                 </tr>
                                 <tr>
-                                    <td class="text-muted">Tampilkan Pembahasan</td>
+                                    <td class="text-muted">Pembahasan</td>
                                     <td>
-                                        @if($tes->tampilkan_pembahasan)
-                                            <i class="bi bi-check-circle text-success"></i> Ya
+                                        @if(!$tes->tampilkan_pembahasan)
+                                            <i class="bi bi-x-circle text-muted"></i> Tidak ditampilkan
+                                        @elseif($tes->pembahasan_hanya_lulus)
+                                            <i class="bi bi-check-circle text-success"></i> Hanya yang lulus
                                         @else
-                                            <i class="bi bi-x-circle text-muted"></i> Tidak
+                                            <i class="bi bi-check-circle text-success"></i> Semua peserta
                                         @endif
                                     </td>
                                 </tr>
