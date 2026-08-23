@@ -69,6 +69,7 @@ class TesController extends Controller
         $validated['acak_jawaban'] = $request->boolean('acak_jawaban');
         $validated['tampilkan_nilai'] = $request->boolean('tampilkan_nilai');
         $validated['tampilkan_pembahasan'] = $request->boolean('tampilkan_pembahasan');
+        $validated['pembahasan_hanya_lulus'] = $request->boolean('pembahasan_hanya_lulus');
 
         $tes = $this->tesService->buat($validated);
 
@@ -125,6 +126,7 @@ class TesController extends Controller
         $validated['acak_jawaban'] = $request->boolean('acak_jawaban');
         $validated['tampilkan_nilai'] = $request->boolean('tampilkan_nilai');
         $validated['tampilkan_pembahasan'] = $request->boolean('tampilkan_pembahasan');
+        $validated['pembahasan_hanya_lulus'] = $request->boolean('pembahasan_hanya_lulus');
 
         $this->tesService->update($tes, $validated);
 

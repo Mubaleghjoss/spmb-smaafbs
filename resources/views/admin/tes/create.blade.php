@@ -103,6 +103,15 @@
                             </div>
                             <div class="form-text">Peserta dapat melihat pembahasan soal</div>
                         </div>
+
+                        <div class="mb-3">
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="pembahasan_hanya_lulus" 
+                                       name="pembahasan_hanya_lulus" value="1" {{ old('pembahasan_hanya_lulus', true) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="pembahasan_hanya_lulus">Pembahasan Hanya untuk yang Lulus</label>
+                            </div>
+                            <div class="form-text">Jika aktif, pembahasan hanya muncul bagi peserta yang memenuhi syarat (lulus). Yang belum memenuhi syarat tidak melihat pembahasan.</div>
+                        </div>
                     </div>
                 </div>
 

@@ -821,7 +821,7 @@
                         </div>
                     @endif
 
-                    @if($tes->tampilkan_pembahasan && isset($hasil['detail_jawaban']) && !($hasil['is_psikotes'] ?? false) && !($hasil['is_gaya_belajar'] ?? false) && !($hasil['is_mbti'] ?? false))
+                    @if($tes->tampilkan_pembahasan && (!($tes->pembahasan_hanya_lulus ?? true) || ($hasil['lulus'] ?? false)) && isset($hasil['detail_jawaban']) && !($hasil['is_psikotes'] ?? false) && !($hasil['is_gaya_belajar'] ?? false) && !($hasil['is_mbti'] ?? false))
                         <hr>
                         <h5 class="mb-3">Pembahasan</h5>
                         @foreach($hasil['detail_jawaban'] as $index => $detail)

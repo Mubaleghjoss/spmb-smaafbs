@@ -84,6 +84,7 @@ class TesService
                 'acak_jawaban' => $data['acak_jawaban'] ?? false,
                 'tampilkan_nilai' => $data['tampilkan_nilai'] ?? true,
                 'tampilkan_pembahasan' => $data['tampilkan_pembahasan'] ?? false,
+                'pembahasan_hanya_lulus' => $data['pembahasan_hanya_lulus'] ?? true,
                 'status' => $data['status'] ?? 'draft',
             ]);
 
@@ -113,6 +114,7 @@ class TesService
                 'acak_jawaban' => $data['acak_jawaban'] ?? $tes->acak_jawaban,
                 'tampilkan_nilai' => $data['tampilkan_nilai'] ?? $tes->tampilkan_nilai,
                 'tampilkan_pembahasan' => $data['tampilkan_pembahasan'] ?? $tes->tampilkan_pembahasan,
+                'pembahasan_hanya_lulus' => $data['pembahasan_hanya_lulus'] ?? $tes->pembahasan_hanya_lulus,
                 'status' => $data['status'] ?? $tes->status,
             ]);
 
