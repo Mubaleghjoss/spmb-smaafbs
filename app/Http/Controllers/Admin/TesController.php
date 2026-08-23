@@ -539,4 +539,43 @@ class TesController extends Controller
             ->route('admin.tes.show', $tes)
             ->with('success', 'Penugasan periode tes berhasil disimpan.');
     }
+
+    /**
+     * Bulk: atur penugasan periode (tahun ajaran) untuk beberapa tes sekaligus.
+     * Mode 'ganti' = timpa penugasan; 'tambah' = tambahkan tanpa menghapus yang ada.
+     * tahun_ajaran_ids kosong + mode 'ganti' = jadikan berlaku semua periode (fallback).
+     */
+    public function bulkAssignPeriode(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'tes_ids' => 'required|string',
+            'tahun_ajaran_ids' => 'nullable|array',
+            'tahun_ajaran_ids.*' => 'exists:tahun_ajaran,id',
+            'mode' => 'nullable|in:ganti,tambah',
+        ]);
+
+        $tesIds = json_decode($validated['tes_ids'], true) ?: [];
+        $tahunIds = $validated['tahun_ajaran_ids'] ?? [];
+        $mode = $validated['mode'] ?? 'ganti';
+        $sukses = 0;
+
+        foreach ($tesIds as $tesId) {
+            $tes = Tes::find($tesId);
+            if (! $tes) {
+                continue;
+            }
+            if ($mode === 'tambah') {
+                $tes->tahunAjaran()->syncWithoutDetaching($tahunIds);
+            } else {
+                $tes->tahunAjaran()->sync($tahunIds);
+            }
+            $sukses++;
+        }
+
+        $pesan = $tahunIds === [] && $mode === 'ganti'
+            ? "{$sukses} tes disetel berlaku untuk semua periode."
+            : "{$sukses} tes berhasil diatur periodenya.";
+
+        return back()->with('success', $pesan);
+    }
 }

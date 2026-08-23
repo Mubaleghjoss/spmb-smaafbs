@@ -325,6 +325,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::post('/tes/{tes}/grup', [\App\Http\Controllers\Admin\TesController::class, 'simpanGrupTes'])->name('tes.simpan-grup');
     Route::get('/tes/{tes}/periode', [\App\Http\Controllers\Admin\TesController::class, 'periodeTes'])->name('tes.periode');
     Route::post('/tes/{tes}/periode', [\App\Http\Controllers\Admin\TesController::class, 'simpanPeriodeTes'])->name('tes.simpan-periode');
+    Route::post('/tes/bulk-periode', [\App\Http\Controllers\Admin\TesController::class, 'bulkAssignPeriode'])->name('tes.bulk-periode');
     
     // Pengaturan Soal Tes
     Route::get('/tes/{tes}/soal', [\App\Http\Controllers\Admin\TesController::class, 'soal'])->name('tes.soal');

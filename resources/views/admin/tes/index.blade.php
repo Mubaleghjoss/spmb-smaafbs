@@ -79,6 +79,9 @@
                 <button type="button" class="btn btn-info btn-sm" id="btnBulkDurasi" disabled data-bs-toggle="modal" data-bs-target="#modalDurasiJadwal">
                     <i class="bi bi-clock me-1"></i> Atur Durasi & Jadwal
                 </button>
+                <button type="button" class="btn btn-primary btn-sm" id="btnBulkPeriode" disabled data-bs-toggle="modal" data-bs-target="#modalPeriode">
+                    <i class="bi bi-calendar-range me-1"></i> Atur Periode
+                </button>
             </div>
             <small class="text-muted"><span id="selectedCount">0</span> tes dipilih</small>
         </div>
@@ -296,6 +299,74 @@
     </div>
 </div>
 
+{{-- Modal Atur Periode (Bulk) --}}
+<div class="modal fade" id="modalPeriode" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="bi bi-calendar-range me-2"></i>Atur Periode Tes</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formPeriode" action="{{ route('admin.tes.bulk-periode') }}" method="POST">
+                @csrf
+                <input type="hidden" name="tes_ids" id="periodeTesIds">
+                <div class="modal-body">
+                    <p class="text-muted mb-3">Tentukan tahun ajaran pemakai untuk <strong><span id="periodeSelectedCount">0</span> tes</strong> yang dipilih.</p>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold mb-2">Tahun Ajaran</label>
+                        @php $daftarTahun = \App\Models\TahunAjaran::orderByDesc('default')->orderByDesc('nama')->get(); @endphp
+                        @if($daftarTahun->count() > 0)
+                            <div class="border rounded p-3" style="max-height: 260px; overflow-y: auto;">
+                                @foreach($daftarTahun as $tahun)
+                                    <div class="form-check mb-2">
+                                        <input class="form-check-input" type="checkbox" name="tahun_ajaran_ids[]"
+                                               value="{{ $tahun->id }}" id="bulkTahun{{ $tahun->id }}">
+                                        <label class="form-check-label" for="bulkTahun{{ $tahun->id }}">
+                                            {{ $tahun->nama }}
+                                            @if($tahun->default)<span class="badge bg-primary ms-1">Default</span>@endif
+                                            @if($tahun->aktif)<span class="badge bg-success ms-1">Aktif</span>@endif
+                                        </label>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="text-muted small">Belum ada tahun ajaran.</div>
+                        @endif
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold mb-1">Mode</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" value="ganti" id="modeGanti" checked>
+                            <label class="form-check-label" for="modeGanti">
+                                Ganti — timpa penugasan lama dengan pilihan di atas
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mode" value="tambah" id="modeTambah">
+                            <label class="form-check-label" for="modeTambah">
+                                Tambah — tambahkan pilihan tanpa menghapus penugasan lama
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        <small>Jika <strong>tidak ada</strong> yang dicentang dengan mode <strong>Ganti</strong>, tes menjadi berlaku untuk <strong>semua periode</strong>.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check-lg me-1"></i>Simpan Periode
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
@@ -304,11 +375,14 @@ document.addEventListener('DOMContentLoaded', function() {
     const btnAktifkan = document.getElementById('btnBulkAktifkan');
     const btnStop = document.getElementById('btnBulkStop');
     const btnDurasi = document.getElementById('btnBulkDurasi');
+    const btnPeriode = document.getElementById('btnBulkPeriode');
     const selectedCount = document.getElementById('selectedCount');
     const formBulkAction = document.getElementById('formBulkAction');
     const bulkAction = document.getElementById('bulkAction');
     const tesIds = document.getElementById('tesIds');
     const durasiTesIds = document.getElementById('durasiTesIds');
+    const periodeTesIds = document.getElementById('periodeTesIds');
+    const periodeSelectedCount = document.getElementById('periodeSelectedCount');
     const durasiSelectedCount = document.getElementById('durasiSelectedCount');
 
     // Toggle input durasi
@@ -335,10 +409,13 @@ document.addEventListener('DOMContentLoaded', function() {
         btnAktifkan.disabled = count === 0;
         btnStop.disabled = count === 0;
         btnDurasi.disabled = count === 0;
+        if (btnPeriode) btnPeriode.disabled = count === 0;
         
         // Update hidden input for durasi form
         const ids = Array.from(checked).map(cb => cb.value);
         durasiTesIds.value = JSON.stringify(ids);
+        if (periodeTesIds) periodeTesIds.value = JSON.stringify(ids);
+        if (periodeSelectedCount) periodeSelectedCount.textContent = count;
     }
 
     checkAll.addEventListener('change', function() {
