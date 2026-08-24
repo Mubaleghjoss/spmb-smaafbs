@@ -97,6 +97,16 @@
                                                           x-text="tahunAjaranId===tahun.id?'Dipilih':'Pilih'"></span>
                                                 </div>
                                                 <div class="small text-muted mt-1" x-text="ringkasanGelombangTahun(tahun)"></div>
+                                                <div class="small mt-1 d-flex flex-wrap gap-2 align-items-center">
+                                                    <span class="badge bg-light text-dark border">
+                                                        <i class="bi bi-people me-1"></i>Kuota <span x-text="tahun.kuota.kuota_label"></span>
+                                                    </span>
+                                                    <span class="badge"
+                                                          :class="tahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success-subtle text-success border border-success-subtle'">
+                                                        <template x-if="tahun.kuota.penuh"><span>Kuota penuh — Waiting List</span></template>
+                                                        <template x-if="!tahun.kuota.penuh"><span>Sisa <span x-text="tahun.kuota.sisa_label"></span></span></template>
+                                                    </span>
+                                                </div>
                                             </button>
                                         </div>
                                     </template>
@@ -104,6 +114,85 @@
 
                                 <template x-if="selectedTahun">
                                     <div class="mb-3">
+                                        {{-- Rincian kuota periode terpilih: total & per jenis kelamin --}}
+                                        <div class="border rounded-3 p-3 mb-3 bg-light">
+                                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                                <span class="small fw-semibold">
+                                                    <i class="bi bi-clipboard-data me-1"></i>Kuota Penerimaan
+                                                </span>
+                                                <span class="badge"
+                                                      :class="selectedTahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success'">
+                                                    <template x-if="selectedTahun.kuota.penuh"><span>Penuh</span></template>
+                                                    <template x-if="!selectedTahun.kuota.penuh"><span>Tersedia</span></template>
+                                                </span>
+                                            </div>
+
+                                            <div class="row g-2 text-center mb-2">
+                                                <div class="col-4">
+                                                    <div class="bg-white border rounded py-2">
+                                                        <div class="fw-bold" x-text="selectedTahun.kuota.kuota_label"></div>
+                                                        <div class="text-muted" style="font-size:.7rem">Kuota</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-white border rounded py-2">
+                                                        <div class="fw-bold text-success" x-text="selectedTahun.kuota.dalam_kuota"></div>
+                                                        <div class="text-muted" style="font-size:.7rem">Terisi</div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-4">
+                                                    <div class="bg-white border rounded py-2">
+                                                        <div class="fw-bold" x-text="selectedTahun.kuota.sisa_label"></div>
+                                                        <div class="text-muted" style="font-size:.7rem">Sisa</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {{-- Per jenis kelamin --}}
+                                            <div class="row g-2">
+                                                <div class="col-6">
+                                                    <div class="bg-white border rounded p-2">
+                                                        <div class="d-flex justify-content-between small">
+                                                            <span><i class="bi bi-gender-male me-1 text-primary"></i>Laki-laki</span>
+                                                            <span class="fw-semibold">
+                                                                <span x-text="selectedTahun.kuota.laki_laki.dalam_kuota"></span>/<span x-text="selectedTahun.kuota.kuota_laki_laki_label"></span>
+                                                            </span>
+                                                        </div>
+                                                        <div class="progress mt-1" style="height:5px">
+                                                            <div class="progress-bar bg-primary"
+                                                                 :style="'width:' + persenKuota(selectedTahun.kuota.laki_laki.dalam_kuota, selectedTahun.kuota.kuota_laki_laki) + '%'"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                <div class="col-6">
+                                                    <div class="bg-white border rounded p-2">
+                                                        <div class="d-flex justify-content-between small">
+                                                            <span><i class="bi bi-gender-female me-1 text-danger"></i>Perempuan</span>
+                                                            <span class="fw-semibold">
+                                                                <span x-text="selectedTahun.kuota.perempuan.dalam_kuota"></span>/<span x-text="selectedTahun.kuota.kuota_perempuan_label"></span>
+                                                            </span>
+                                                        </div>
+                                                        <div class="progress mt-1" style="height:5px">
+                                                            <div class="progress-bar bg-danger"
+                                                                 :style="'width:' + persenKuota(selectedTahun.kuota.perempuan.dalam_kuota, selectedTahun.kuota.kuota_perempuan) + '%'"></div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <template x-if="selectedTahun.kuota.penuh">
+                                                <div class="alert alert-warning py-2 px-2 small mt-2 mb-0">
+                                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                                    Kuota periode ini sudah penuh. Pendaftaran tetap diterima dan masuk <strong>Waiting List</strong>.
+                                                </div>
+                                            </template>
+
+                                            <div class="text-muted mt-2" style="font-size:.72rem">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Pendaftaran menempati kuota setelah Formulir Biodata lengkap dan Pembayaran Pendaftaran (Tahap 3) diverifikasi Tim SPMB.
+                                            </div>
+                                        </div>
+
                                         <label class="form-label small text-muted">Gelombang</label>
                                         <div class="row g-2">
                                             <template x-for="g in gelombangTersedia" :key="g.id">
@@ -326,6 +415,13 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
         ringkasanGelombangTahun(t){
             const n = (t.gelombang ?? []).filter(g => g.dibuka).length;
             return n === 0 ? 'Belum ada gelombang terbuka' : (n===1 ? '1 gelombang terbuka' : n+' gelombang terbuka');
+        },
+        // Persen terisi untuk progress bar kuota per jenis kelamin.
+        // Kuota 0 = tidak dibatasi -> bar dibiarkan kosong agar tidak menyesatkan.
+        persenKuota(terisi, kuota){
+            const k = Number(kuota) || 0;
+            if (k <= 0) return 0;
+            return Math.min(100, Math.round((Number(terisi) || 0) / k * 100));
         },
         pilihTahunId(id){ this.tahunAjaranId = id; this.pilihTahun(); },
         pilihTahun(keep=false){

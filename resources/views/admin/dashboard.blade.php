@@ -150,5 +150,145 @@
             </div>
         </div>
     </div>
+
+    {{-- ================= KUOTA PENERIMAAN SPMB ================= --}}
+    @php $k = $ringkasanKuota['kuota'] ?? null; @endphp
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <div>
+                <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Kuota Penerimaan SPMB</h5>
+                <small class="text-muted">Periode {{ $ringkasanKuota['periode_label'] }}</small>
+            </div>
+            <a href="{{ route('admin.peserta.index') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-people me-1"></i>Lihat Peserta
+            </a>
+        </div>
+        <div class="card-body">
+            @if($semuaPeriode ?? false)
+                <div class="alert alert-info mb-0">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Saat ini menampilkan <strong>Semua Periode</strong>. Kuota hanya bermakna per periode —
+                    pilih satu tahun ajaran pada pemilih periode di atas untuk melihat angka kuotanya.
+                </div>
+            @else
+                {{-- Angka utama --}}
+                <div class="row g-3 mb-4">
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small">Kuota Periode</div>
+                            <div class="h4 mb-0">{{ $k['kuota_label'] ?? '-' }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded-3 p-3 h-100 border-success">
+                            <div class="text-muted small">Dalam Kuota</div>
+                            <div class="h4 mb-0 text-success">{{ number_format($k['dalam_kuota'] ?? 0) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded-3 p-3 h-100 border-warning">
+                            <div class="text-muted small">Waiting List</div>
+                            <div class="h4 mb-0 text-warning">{{ number_format($k['waiting_list'] ?? 0) }}</div>
+                        </div>
+                    </div>
+                    <div class="col-6 col-lg-3">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="text-muted small">Sisa Kursi</div>
+                            <div class="h4 mb-0">{{ $k['sisa_label'] ?? '-' }}</div>
+                            @if($k['penuh'] ?? false)
+                                <span class="badge bg-warning text-dark mt-1">Kuota Penuh</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Rincian jenis kelamin --}}
+                <div class="row g-3 mb-4">
+                    @php
+                        $genderRows = [
+                            ['L', 'Laki-laki', 'primary', 'gender-male', $k['laki_laki'] ?? [], (int) ($k['kuota_laki_laki'] ?? 0), $k['kuota_laki_laki_label'] ?? '-'],
+                            ['P', 'Perempuan', 'danger', 'gender-female', $k['perempuan'] ?? [], (int) ($k['kuota_perempuan'] ?? 0), $k['kuota_perempuan_label'] ?? '-'],
+                        ];
+                    @endphp
+                    @foreach($genderRows as [$kode, $label, $warna, $ikon, $data, $kuotaG, $kuotaGLabel])
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <span class="fw-semibold">
+                                    <i class="bi bi-{{ $ikon }} text-{{ $warna }} me-1"></i>{{ $label }}
+                                </span>
+                                <span class="badge bg-{{ $warna }}">
+                                    {{ number_format($data['dalam_kuota'] ?? 0) }} / {{ $kuotaGLabel }}
+                                </span>
+                            </div>
+                            <div class="progress" style="height:8px">
+                                <div class="progress-bar bg-{{ $warna }}"
+                                     style="width: {{ $kuotaG > 0 ? min(100, round(($data['dalam_kuota'] ?? 0) / $kuotaG * 100)) : 0 }}%"></div>
+                            </div>
+                            <div class="d-flex flex-wrap gap-3 mt-2 small text-muted">
+                                <span>Total: {{ number_format($data['total'] ?? 0) }}</span>
+                                <span>Waiting: {{ number_format($data['waiting_list'] ?? 0) }}</span>
+                                @if($kuotaG > 0)
+                                    <span>Sisa: {{ max(0, $kuotaG - ($data['dalam_kuota'] ?? 0)) }}</span>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+
+                @if(($k['belum_isi_gender']['total'] ?? 0) > 0)
+                <div class="alert alert-warning py-2 small">
+                    <i class="bi bi-exclamation-triangle me-1"></i>
+                    {{ $k['belum_isi_gender']['total'] }} peserta belum mengisi jenis kelamin di formulir,
+                    sehingga belum terhitung pada rincian laki-laki/perempuan.
+                </div>
+                @endif
+
+                {{-- Rekap asal SMP / kelompok / desa / daerah --}}
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h6 class="mb-0">Rincian Peserta Periode Ini</h6>
+                    <span class="badge bg-light text-dark border">Top 10 per kelompok</span>
+                </div>
+                <div class="row g-3">
+                    @foreach(($ringkasanKuota['rekap'] ?? []) as $bagian)
+                    <div class="col-12 col-lg-6 col-xl-3">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-header bg-white d-flex justify-content-between align-items-start gap-2">
+                                <div class="min-w-0">
+                                    <h6 class="mb-0 text-truncate">
+                                        <i class="bi bi-{{ $bagian['ikon'] }} me-1"></i>{{ $bagian['label'] }}
+                                    </h6>
+                                    <small class="text-muted">{{ $bagian['total_grup'] }} kategori</small>
+                                </div>
+                                <span class="badge bg-primary">{{ number_format($bagian['total_peserta']) }}</span>
+                            </div>
+                            <div class="list-group list-group-flush">
+                                @forelse($bagian['items'] as $item)
+                                    <a href="{{ route('admin.peserta.index', [$bagian['param'] => $item->filter_value]) }}"
+                                       class="list-group-item list-group-item-action py-2">
+                                        <div class="d-flex justify-content-between align-items-start gap-2">
+                                            <div class="min-w-0">
+                                                <div class="text-truncate" title="{{ $item->nama }}">{{ $item->nama }}</div>
+                                                <small class="text-muted">
+                                                    L {{ (int) $item->laki_laki }} &middot; P {{ (int) $item->perempuan }}
+                                                    &middot; Kuota {{ (int) $item->dalam_kuota }}
+                                                    &middot; WL {{ (int) $item->waiting_list }}
+                                                </small>
+                                            </div>
+                                            <span class="badge bg-success rounded-pill">{{ (int) $item->jumlah }}</span>
+                                        </div>
+                                    </a>
+                                @empty
+                                    <div class="list-group-item text-muted small py-3">Belum ada data.</div>
+                                @endforelse
+                            </div>
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+            @endif
+        </div>
+    </div>
 </div>
 @endsection
