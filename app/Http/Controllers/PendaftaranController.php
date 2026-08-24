@@ -78,7 +78,11 @@ class PendaftaranController extends Controller
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
             'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
             'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
-            'kelas_tujuan' => 'required|integer|in:10,11',
+            // Kelas mengikuti jalur: siswa baru = 10; pindahan = 10 atau 11
+            // (kelas 12 belum dibuka). Sumber tunggal: JalurContextService.
+            'kelas_tujuan' => \App\Services\JalurContextService::aturanKelas(
+                $request->input('jenis_pendaftaran')
+            ),
             'setuju' => 'required|accepted',
             // Biodata inti
             'tanggal_lahir' => 'nullable|date|before:today',

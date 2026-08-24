@@ -40,7 +40,15 @@
     @endphp
 
     <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3 mb-4">
-        <h1 class="h3 mb-0">Manajemen Peserta</h1>
+        <h1 class="h3 mb-0">
+            Manajemen Peserta
+            @if(!empty($jalurAktifJenis))
+                <span class="badge bg-{{ $jalurAktifJenis === 'pindahan' ? 'primary' : 'success' }} align-middle ms-1"
+                      style="font-size:.6em">
+                    <i class="bi bi-{{ $jalurAktifJenis === 'pindahan' ? 'arrow-left-right' : 'person-plus' }} me-1"></i>{{ $jalurAktifLabel }}
+                </span>
+            @endif
+        </h1>
         <div class="d-flex flex-wrap gap-2">
             <a href="{{ route('admin.peserta.download-akun') }}" class="btn btn-sm btn-outline-info">
                 <i class="bi bi-download"></i> <span class="d-none d-sm-inline">Download</span> Akun
@@ -145,20 +153,15 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label class="form-label">Jenis</label>
-                    <select name="jenis_pendaftaran" class="form-select">
-                        <option value="">Semua Jenis</option>
-                        <option value="siswa_baru" {{ $filter['jenis_pendaftaran'] === 'siswa_baru' ? 'selected' : '' }}>Siswa Baru</option>
-                        <option value="pindahan" {{ $filter['jenis_pendaftaran'] === 'pindahan' ? 'selected' : '' }}>Pindahan</option>
-                    </select>
-                </div>
+                {{-- Filter "Jenis" DIHAPUS: jalur ditentukan switcher di header
+                     (satu sumber kebenaran). Kelas mengikuti jalur aktif. --}}
                 <div class="col-md-2">
                     <label class="form-label">Kelas</label>
                     <select name="kelas_tujuan" class="form-select">
                         <option value="">Semua Kelas</option>
-                        <option value="10" {{ (string) $filter['kelas_tujuan'] === '10' ? 'selected' : '' }}>Kelas 10</option>
-                        <option value="11" {{ (string) $filter['kelas_tujuan'] === '11' ? 'selected' : '' }}>Kelas 11</option>
+                        @foreach(\App\Services\JalurContextService::kelasDiizinkan($jalurAktifJenis ?? null) as $kls)
+                            <option value="{{ $kls }}" {{ (string) $filter['kelas_tujuan'] === (string) $kls ? 'selected' : '' }}>Kelas {{ $kls }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="col-md-2">

@@ -38,6 +38,12 @@ class PesertaController extends Controller
      */
     public function index(Request $request): View
     {
+        // Jalur pendaftaran wajib dipilih — data siswa baru & pindahan tidak
+        // pernah ditampilkan bercampur di halaman kerja.
+        if (app(\App\Services\JalurContextService::class)->belumMemilih()) {
+            return view('admin.peserta.index-pilih-jalur');
+        }
+
         $filter = [
             'grup_id' => $request->get('grup_id'),
             'tahap' => $request->get('tahap'),
@@ -45,7 +51,9 @@ class PesertaController extends Controller
             'dengan_dihapus' => $request->boolean('dengan_dihapus'),
             'tahun_ajaran_id' => $request->get('tahun_ajaran_id'),
             'gelombang_pendaftaran_id' => $request->get('gelombang_pendaftaran_id'),
-            'jenis_pendaftaran' => $request->get('jenis_pendaftaran'),
+            // jenis_pendaftaran TIDAK lagi dari request: ditentukan switcher jalur
+            // (satu sumber kebenaran) agar tidak ada dua filter yang bertentangan.
+            'jenis_pendaftaran' => null,
             'kelas_tujuan' => $request->get('kelas_tujuan'),
             'status_kuota' => $request->get('status_kuota'),
             'asal_sekolah_smp' => $request->get('asal_sekolah_smp'),
@@ -106,7 +114,9 @@ class PesertaController extends Controller
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
             'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
             'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
-            'kelas_tujuan' => 'required|integer|in:10,11',
+            'kelas_tujuan' => \App\Services\JalurContextService::aturanKelas(
+                $request->input('jenis_pendaftaran')
+            ),
         ]);
 
         $validated = [
@@ -181,7 +191,9 @@ class PesertaController extends Controller
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
             'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
             'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
-            'kelas_tujuan' => 'required|integer|in:10,11',
+            'kelas_tujuan' => \App\Services\JalurContextService::aturanKelas(
+                $request->input('jenis_pendaftaran')
+            ),
         ]);
 
         $validated = [
@@ -487,7 +499,9 @@ class PesertaController extends Controller
             'tahun_ajaran_id' => 'required|integer|exists:tahun_ajaran,id',
             'gelombang_pendaftaran_id' => 'required|integer|exists:gelombang_pendaftaran,id',
             'jenis_pendaftaran' => 'required|in:siswa_baru,pindahan',
-            'kelas_tujuan' => 'required|integer|in:10,11',
+            'kelas_tujuan' => \App\Services\JalurContextService::aturanKelas(
+                $request->input('jenis_pendaftaran')
+            ),
         ]);
         $kategori = $this->periodePendaftaranService->validasiKategori($validated);
         $count = $this->pesertaService->bulkPerbaruiKategori(

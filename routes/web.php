@@ -472,6 +472,8 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
 
     // Ganti periode aktif (tahun ajaran) untuk seluruh konteks admin
     Route::post('/periode-aktif', [\App\Http\Controllers\Admin\PeriodeAktifController::class, 'ganti'])->name('periode-aktif.ganti');
+    // Ganti jalur pendaftaran aktif (siswa baru / pindahan)
+    Route::post('/jalur-aktif', [\App\Http\Controllers\Admin\JalurAktifController::class, 'ganti'])->name('jalur-aktif.ganti');
 
     // Satu halaman terpusat: Alur & Jadwal SPMB per tahap, per periode
     Route::get('/alur-jadwal', [\App\Http\Controllers\Admin\AlurJadwalController::class, 'index'])->name('alur-jadwal.index');

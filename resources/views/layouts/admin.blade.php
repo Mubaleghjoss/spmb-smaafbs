@@ -631,7 +631,8 @@
 
             {{-- ===== SWITCHER PERIODE AKTIF (Tahun Ajaran) ===== --}}
             @isset($periodePilihan)
-            <div class="ms-auto dropdown periode-switcher">
+            <div class="ms-auto d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+            <div class="dropdown periode-switcher">
                 <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false"
                         title="Periode data yang sedang ditampilkan">
@@ -673,6 +674,55 @@
                         </form>
                     </li>
                 </ul>
+            </div>
+
+            {{-- ===== SWITCHER JALUR PENDAFTARAN (Siswa Baru / Pindahan) =====
+                 Tidak ada opsi "Semua Jalur": data kedua jalur tidak dicampur.
+                 Keadaan awal = belum memilih, ditandai tombol berwarna peringatan. --}}
+            @isset($jalurPilihan)
+            <div class="dropdown jalur-switcher">
+                <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2 {{ !empty($jalurBelumMemilih) ? 'btn-warning' : 'btn-success' }}"
+                        type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                        title="Jalur pendaftaran yang sedang ditampilkan">
+                    <i class="bi bi-{{ !empty($jalurBelumMemilih) ? 'signpost-2' : ($jalurAktifJenis === 'pindahan' ? 'arrow-left-right' : 'person-plus') }}"></i>
+                    <span class="d-none d-sm-inline small opacity-75">Jalur:</span>
+                    <span class="fw-semibold">{{ $jalurAktifLabel ?? 'Pilih Jalur Pendaftaran' }}</span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" style="min-width: 250px;">
+                    <li><h6 class="dropdown-header"><i class="bi bi-signpost-split me-1"></i>Pilih jalur pendaftaran</h6></li>
+                    @foreach($jalurPilihan as $jl)
+                    <li>
+                        <form action="{{ route('admin.jalur-aktif.ganti') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="jenis_pendaftaran" value="{{ $jl['nilai'] }}">
+                            <button type="submit" class="dropdown-item d-flex align-items-center {{ ($jalurAktifJenis ?? null) === $jl['nilai'] ? 'active' : '' }}">
+                                <span class="badge bg-light text-dark border me-2">{{ $jl['nomor'] }}</span>
+                                <i class="bi bi-{{ $jl['ikon'] }} me-2"></i>{{ $jl['label'] }}
+                            </button>
+                        </form>
+                    </li>
+                    @endforeach
+                    @if(empty($jalurBelumMemilih))
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                        <form action="{{ route('admin.jalur-aktif.ganti') }}" method="POST" class="d-inline">
+                            @csrf
+                            <input type="hidden" name="jenis_pendaftaran" value="">
+                            <button type="submit" class="dropdown-item d-flex align-items-center text-muted">
+                                <i class="bi bi-x-circle me-2"></i>Batalkan pilihan
+                            </button>
+                        </form>
+                    </li>
+                    @endif
+                    <li><hr class="dropdown-divider"></li>
+                    <li class="px-3 pb-2">
+                        <small class="text-muted">
+                            Jalur pindahan hanya tersedia untuk <strong>Kelas 10 &amp; 11</strong>.
+                        </small>
+                    </li>
+                </ul>
+            </div>
+            @endisset
             </div>
             @endisset
         </div>

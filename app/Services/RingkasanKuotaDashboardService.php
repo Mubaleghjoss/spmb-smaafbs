@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Peserta;
 use App\Models\TahunAjaran;
+use App\Services\JalurContextService;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -26,12 +27,74 @@ class RingkasanKuotaDashboardService
     public function untukPeriode(int|string|null $tahunAjaranId): array
     {
         $tahun = $tahunAjaranId ? TahunAjaran::find($tahunAjaranId) : null;
+        $kuotaSvc = app(KuotaPendaftaranService::class);
 
         return [
             'periode' => $tahun,
             'periode_label' => $tahun?->nama ?? 'Semua Periode',
-            'kuota' => app(KuotaPendaftaranService::class)->ringkasanTahun($tahun),
+            'kuota' => $kuotaSvc->ringkasanTahun($tahun),
             'rekap' => $this->rekap($tahun?->id),
+
+            // Dashboard adalah SATU-SATUNYA halaman lintas jalur: pecahan per
+            // jalur ditampilkan berdampingan agar admin tetap melihat gambaran
+            // menyeluruh tanpa perlu mode "semua jalur" di halaman kerja.
+            'per_jalur' => $this->perJalur($tahun?->id),
+        ];
+    }
+
+    /**
+     * Hitungan pendaftar & status kuota per jalur (siswa baru / pindahan),
+     * termasuk pecahan kelas tujuan untuk jalur pindahan (kelas 10 & 11).
+     *
+     * @return array<string, array<string,mixed>>
+     */
+    private function perJalur(?int $tahunAjaranId): array
+    {
+        $hitung = function (?string $jenis, ?int $kelas = null) use ($tahunAjaranId): array {
+            $q = Peserta::query();
+
+            if ($tahunAjaranId) {
+                $q->where('tahun_ajaran_id', $tahunAjaranId);
+            }
+            if ($jenis) {
+                $q->where('jenis_pendaftaran', $jenis);
+            }
+            if ($kelas) {
+                $q->where('kelas_tujuan', $kelas);
+            }
+
+            $rows = (clone $q)
+                ->selectRaw('status_kuota, COUNT(*) as n')
+                ->groupBy('status_kuota')
+                ->pluck('n', 'status_kuota');
+
+            return [
+                'total' => (int) $rows->sum(),
+                'dalam_kuota' => (int) ($rows[Peserta::STATUS_KUOTA_DALAM] ?? 0),
+                'waiting_list' => (int) ($rows[Peserta::STATUS_KUOTA_WAITING] ?? 0),
+                'belum_lengkap' => (int) ($rows[Peserta::STATUS_KUOTA_BELUM_LENGKAP] ?? 0),
+            ];
+        };
+
+        return [
+            'siswa_baru' => [
+                'label' => 'Siswa Baru',
+                'ikon' => 'person-plus',
+                'warna' => 'success',
+                'keterangan' => 'Kelas 10',
+                'angka' => $hitung(JalurContextService::SISWA_BARU),
+            ],
+            'pindahan' => [
+                'label' => 'Siswa Pindahan',
+                'ikon' => 'arrow-left-right',
+                'warna' => 'primary',
+                'keterangan' => 'Kelas 10 & 11',
+                'angka' => $hitung(JalurContextService::PINDAHAN),
+                'kelas' => [
+                    10 => $hitung(JalurContextService::PINDAHAN, 10),
+                    11 => $hitung(JalurContextService::PINDAHAN, 11),
+                ],
+            ],
         ];
     }
 
@@ -41,7 +104,7 @@ class RingkasanKuotaDashboardService
      *
      * @return array<string, array<string,mixed>>
      */
-    private function rekap(?int $tahunAjaranId): array
+    private function rekap(?int $tahunAjaranId, ?string $jenisPendaftaran = null): array
     {
         $configs = [
             'asal_sekolah_smp' => [
@@ -82,6 +145,10 @@ class RingkasanKuotaDashboardService
 
             if ($tahunAjaranId) {
                 $base->where('peserta.tahun_ajaran_id', $tahunAjaranId);
+            }
+
+            if ($jenisPendaftaran) {
+                $base->where('peserta.jenis_pendaftaran', $jenisPendaftaran);
             }
 
             $items = DB::query()

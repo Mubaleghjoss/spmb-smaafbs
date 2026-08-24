@@ -268,6 +268,72 @@
                 </div>
                 @endif
 
+                {{-- Pecahan per JALUR: dashboard satu-satunya halaman lintas jalur --}}
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                    <h6 class="mb-0"><i class="bi bi-signpost-split me-1"></i>Pendaftar per Jalur</h6>
+                    <span class="badge bg-light text-dark border">Halaman kerja lain hanya menampilkan satu jalur</span>
+                </div>
+                <div class="row g-3 mb-4">
+                    @foreach(($ringkasanKuota['per_jalur'] ?? []) as $kunci => $jalur)
+                    @php $a = $jalur['angka']; @endphp
+                    <div class="col-md-6">
+                        <div class="border rounded-3 p-3 h-100 border-{{ $jalur['warna'] }}">
+                            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                                <span class="fw-semibold">
+                                    <i class="bi bi-{{ $jalur['ikon'] }} text-{{ $jalur['warna'] }} me-1"></i>{{ $jalur['label'] }}
+                                    <span class="text-muted small ms-1">({{ $jalur['keterangan'] }})</span>
+                                </span>
+                                <form action="{{ route('admin.jalur-aktif.ganti') }}" method="POST">
+                                    @csrf
+                                    <input type="hidden" name="jenis_pendaftaran" value="{{ $kunci }}">
+                                    <button type="submit" class="btn btn-sm btn-outline-{{ $jalur['warna'] }} py-0">
+                                        Kelola <i class="bi bi-arrow-right"></i>
+                                    </button>
+                                </form>
+                            </div>
+
+                            <div class="row g-2 text-center">
+                                <div class="col-3">
+                                    <div class="bg-light rounded py-2">
+                                        <div class="fw-bold">{{ number_format($a['total']) }}</div>
+                                        <div class="text-muted" style="font-size:.68rem">Pendaftar</div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="bg-light rounded py-2">
+                                        <div class="fw-bold text-success">{{ number_format($a['dalam_kuota']) }}</div>
+                                        <div class="text-muted" style="font-size:.68rem">Kuota</div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="bg-light rounded py-2">
+                                        <div class="fw-bold text-warning">{{ number_format($a['waiting_list']) }}</div>
+                                        <div class="text-muted" style="font-size:.68rem">Waiting</div>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="bg-light rounded py-2">
+                                        <div class="fw-bold text-secondary">{{ number_format($a['belum_lengkap']) }}</div>
+                                        <div class="text-muted" style="font-size:.68rem">Blm lengkap</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            @if(!empty($jalur['kelas']))
+                            <div class="d-flex flex-wrap gap-2 mt-2">
+                                @foreach($jalur['kelas'] as $kls => $ak)
+                                <span class="badge bg-light text-dark border">
+                                    Kelas {{ $kls }}: {{ $ak['total'] }} pendaftar
+                                    &middot; {{ $ak['dalam_kuota'] }} kuota
+                                </span>
+                                @endforeach
+                            </div>
+                            @endif
+                        </div>
+                    </div>
+                    @endforeach
+                </div>
+
                 {{-- Rekap asal SMP / kelompok / desa / daerah --}}
                 <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                     <h6 class="mb-0">Rincian Peserta Periode Ini</h6>

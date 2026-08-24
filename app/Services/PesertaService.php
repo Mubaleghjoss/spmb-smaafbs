@@ -51,6 +51,11 @@ class PesertaService
 
         if (!empty($filter['jenis_pendaftaran'])) {
             $query->where('jenis_pendaftaran', $filter['jenis_pendaftaran']);
+        } else {
+            // Hormati konteks jalur admin (siswa baru / pindahan) sebagai sumber
+            // tunggal; filter eksplisit di atas hanya dipakai oleh pemanggil
+            // non-admin (mis. ekspor terprogram).
+            app(\App\Services\JalurContextService::class)->terapkan($query);
         }
 
         if (!empty($filter['kelas_tujuan'])) {
@@ -211,6 +216,12 @@ class PesertaService
             if (!empty($filter[$field])) {
                 $query->where("peserta.{$field}", $filter[$field]);
             }
+        }
+
+        // Konteks jalur admin bila filter jenis tidak diberikan eksplisit.
+        if (empty($filter['jenis_pendaftaran'])) {
+            app(\App\Services\JalurContextService::class)
+                ->terapkan($query, 'peserta.jenis_pendaftaran');
         }
 
         if (!empty($filter['asal_sekolah_smp'])) {

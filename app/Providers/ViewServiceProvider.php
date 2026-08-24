@@ -49,6 +49,13 @@ class ViewServiceProvider extends ServiceProvider
                     $view->with('periodeAktifSemua', $periode->semuaPeriode());
                     $view->with('periodeAktifId', $periode->tahunAjaranId());
                     $view->with('periodePilihan', $periode->pilihanTahunAjaran());
+
+                    // Konteks JALUR (siswa baru / pindahan). Tidak ada mode "semua".
+                    $jalur = app(\App\Services\JalurContextService::class);
+                    $view->with('jalurAktifLabel', $jalur->label());
+                    $view->with('jalurAktifJenis', $jalur->jenis());
+                    $view->with('jalurBelumMemilih', $jalur->belumMemilih());
+                    $view->with('jalurPilihan', $jalur->pilihan());
                 }
             } catch (\Throwable $e) {
                 // Abaikan bila DB belum siap.
