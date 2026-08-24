@@ -132,6 +132,17 @@ class AlurPesertaController extends Controller
             $pesan = "Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") untuk {$peserta->nama} dibatalkan (belum selesai).";
         }
 
+        app(\App\Services\LogAktivitasService::class)->catat(
+            aksi: 'tahapan.' . $data['aksi'] . '_manual',
+            kategori: \App\Models\LogAktivitas::KAT_PESERTA,
+            keterangan: $data['aksi'] === 'selesaikan'
+                ? "Menandai Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") SELESAI secara manual untuk {$peserta->nama}"
+                : "Membatalkan status selesai Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") untuk {$peserta->nama}",
+            subjek: $peserta,
+            data: ['tahap' => $tahap, 'label' => self::TAHAP_LABELS[$tahap] ?? null, 'aksi' => $data['aksi']],
+            tahunAjaranId: $peserta->tahun_ajaran_id,
+        );
+
         return back()->with('success', $pesan);
     }
 

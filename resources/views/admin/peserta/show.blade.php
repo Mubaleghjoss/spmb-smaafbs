@@ -4,18 +4,25 @@
 
 @section('content')
 <div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h1 class="h3 mb-0">Detail Peserta</h1>
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
             @if($peserta->formulirSpmb)
-            <button class="btn btn-success" onclick="copyToWA()">
+            <button class="btn btn-success btn-sm" onclick="copyToWA()">
                 <i class="bi bi-whatsapp me-1"></i>Copy ke WA
             </button>
             @endif
-            <a href="{{ route('admin.peserta.edit', $peserta) }}" class="btn btn-primary">
+            <a href="{{ route('admin.peserta.edit', $peserta) }}" class="btn btn-primary btn-sm">
                 <i class="bi bi-pencil me-1"></i>Edit
             </a>
-            <a href="{{ route('admin.peserta.index') }}" class="btn btn-outline-secondary">
+            @if(auth('pengguna')->user()?->peran === 'admin')
+            <button type="button" class="btn btn-outline-danger btn-sm"
+                    data-hapus-permanen data-id="{{ $peserta->id }}"
+                    title="Hapus permanen beserta seluruh berkas">
+                <i class="bi bi-trash3-fill me-1"></i>Hapus Permanen
+            </button>
+            @endif
+            <a href="{{ route('admin.peserta.index') }}" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-arrow-left me-1"></i>Kembali
             </a>
         </div>
@@ -720,6 +727,8 @@
 No. Pendaftaran: {{ $peserta->nomor_pendaftaran }}
 </textarea>
 @endif
+
+@include('admin.peserta.partials.modal-hapus-permanen')
 @endsection
 
 @push('scripts')

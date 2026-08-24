@@ -581,6 +581,12 @@
                 <i class="bi bi-person-fill-gear"></i>Pengguna
             </a>
             @endif
+
+            @if($pengguna->bisaAkses('log_aktivitas'))
+            <a class="nav-link {{ request()->routeIs('admin.log-aktivitas.*') ? 'active' : '' }}" href="{{ route('admin.log-aktivitas.index') }}">
+                <i class="bi bi-clock-history"></i>Log Aktivitas
+            </a>
+            @endif
         </div>
 
         <!-- Footer / User -->
@@ -696,6 +702,7 @@
             ['route' => 'admin.hasil.index',       'match' => 'admin.hasil.*',       'icon' => 'bar-chart-fill',       'label' => 'Hasil Ujian',  'akses' => 'hasil'],
             ['route' => 'admin.pengaturan.index',  'match' => 'admin.pengaturan.*',  'icon' => 'gear-fill',            'label' => 'Pengaturan',   'akses' => 'pengaturan'],
             ['route' => 'admin.pengguna.index',    'match' => 'admin.pengguna.*',    'icon' => 'person-fill-gear',     'label' => 'Pengguna',     'akses' => 'pengguna'],
+            ['route' => 'admin.log-aktivitas.index','match' => 'admin.log-aktivitas.*','icon' => 'clock-history',       'label' => 'Log Aktivitas','akses' => 'log_aktivitas'],
         ];
         $bolehTampil = fn($akses) => $akses === null || (isset($pengguna) && $pengguna->bisaAkses($akses));
     @endphp

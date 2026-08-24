@@ -103,6 +103,12 @@ class Pengguna extends Authenticatable
                 'route' => 'admin.pengguna.index',
                 'route_prefix' => 'admin.pengguna.',
             ],
+            'log_aktivitas' => [
+                'label' => 'Log Aktivitas',
+                'icon' => 'bi-clock-history',
+                'route' => 'admin.log-aktivitas.index',
+                'route_prefix' => 'admin.log-aktivitas.',
+            ],
         ];
     }
 

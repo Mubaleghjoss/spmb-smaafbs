@@ -376,6 +376,13 @@
                 <button type="button" id="bulkTahapBtn" class="btn btn-sm btn-primary" disabled onclick="submitBulkTahap()">
                     <i class="bi bi-signpost-split me-1"></i>Update Tahap
                 </button>
+                @if(auth('pengguna')->user()?->peran === 'admin')
+                <span class="vr d-none d-md-inline-block"></span>
+                <button type="button" id="bulkHapusPermanenBtn" class="btn btn-sm btn-outline-danger" disabled
+                        onclick="bukaHapusMassal()" title="Hapus permanen peserta terpilih beserta berkasnya">
+                    <i class="bi bi-trash3-fill me-1"></i>Hapus Permanen
+                </button>
+                @endif
             </div>
         </div>
         <div class="card-body">
@@ -462,13 +469,24 @@
                                     <span class="badge bg-primary">Tahap {{ $p->tahap_saat_ini }}</span>
                                 </td>
                                 <td>
+                                    @php $bolehHapusPermanen = auth('pengguna')->user()?->peran === 'admin'; @endphp
                                     @if($p->trashed())
-                                        <form action="{{ route('admin.peserta.restore', $p->id) }}" method="POST" class="d-inline">
-                                            @csrf
-                                            <button type="submit" class="btn btn-sm btn-success">
-                                                <i class="bi bi-arrow-counterclockwise me-1"></i>Pulihkan
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            <form action="{{ route('admin.peserta.restore', $p->id) }}" method="POST" class="d-inline">
+                                                @csrf
+                                                <button type="submit" class="btn btn-sm btn-success">
+                                                    <i class="bi bi-arrow-counterclockwise me-1"></i>Pulihkan
+                                                </button>
+                                            </form>
+                                            @if($bolehHapusPermanen)
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-hapus-permanen data-id="{{ $p->id }}"
+                                                    title="Hapus permanen beserta berkas">
+                                                <i class="bi bi-trash3-fill"></i>
+                                                <span class="d-none d-lg-inline ms-1">Hapus Permanen</span>
                                             </button>
-                                        </form>
+                                            @endif
+                                        </div>
                                     @else
                                         <div class="d-flex gap-1 flex-wrap">
                                             <a href="{{ route('admin.peserta.show', $p) }}" class="btn btn-sm btn-info text-white">
@@ -485,6 +503,13 @@
                                                     <i class="bi bi-trash me-1"></i>Hapus
                                                 </button>
                                             </form>
+                                            @if($bolehHapusPermanen)
+                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                    data-hapus-permanen data-id="{{ $p->id }}"
+                                                    title="Hapus permanen beserta berkas (tidak bisa dibatalkan)">
+                                                <i class="bi bi-trash3-fill"></i>
+                                            </button>
+                                            @endif
                                         </div>
                                     @endif
                                 </td>
@@ -513,6 +538,9 @@
                 <span class="ms-3"><i class="bi bi-pencil text-warning"></i> Edit</span>
                 <span class="ms-3"><i class="bi bi-trash text-danger"></i> Hapus</span>
                 <span class="ms-3"><i class="bi bi-arrow-counterclockwise text-success"></i> Pulihkan</span>
+                @if(auth('pengguna')->user()?->peran === 'admin')
+                <span class="ms-3"><i class="bi bi-trash3-fill text-danger"></i> Hapus Permanen (berkas ikut dibersihkan)</span>
+                @endif
             </small>
         </div>
     </div>
@@ -553,19 +581,22 @@ function updateSelectedCount() {
     const tahapSelect = document.getElementById('bulkTahapSelect');
     const tahapBtn = document.getElementById('bulkTahapBtn');
     const kategoriBtn = document.getElementById('bulkKategoriBtn');
-    
+    const hapusPermanenBtn = document.getElementById('bulkHapusPermanenBtn');
+
     if (count > 0) {
         grupSelect.disabled = false;
         assignBtn.disabled = false;
         tahapSelect.disabled = false;
         tahapBtn.disabled = false;
         kategoriBtn.disabled = false;
+        if (hapusPermanenBtn) hapusPermanenBtn.disabled = false;
     } else {
         grupSelect.disabled = true;
         assignBtn.disabled = true;
         tahapSelect.disabled = true;
         tahapBtn.disabled = true;
         kategoriBtn.disabled = true;
+        if (hapusPermanenBtn) hapusPermanenBtn.disabled = true;
         tahapSelect.value = '';
         document.getElementById('bulkLuluskanFinal').checked = false;
     }
@@ -715,6 +746,97 @@ function submitBulkTahap() {
     appendSelectedPesertaIds('selectedPesertaIdsTahap');
     document.getElementById('bulkTahapForm').submit();
 }
+
+// ==========================================================
+// HAPUS PERMANEN MASSAL (hanya admin)
+// ==========================================================
+function bukaHapusMassal() {
+    const checkboxes = selectedPesertaCheckboxes();
+    if (checkboxes.length === 0) return;
+
+    const daftar = Array.from(checkboxes).map(cb => {
+        const baris = cb.closest('tr');
+        const nama = baris?.querySelector('td:nth-child(4)')?.textContent.trim() || '';
+        const nomor = baris?.querySelector('td:nth-child(3)')?.textContent.trim() || '';
+        return { id: cb.value, label: (nama + ' — ' + nomor).trim() };
+    });
+
+    const wadah = document.getElementById('hmDaftar');
+    wadah.innerHTML = daftar.map(d => `<li class="small">${d.label.replace(/[<>&]/g, '')}</li>`).join('');
+    document.getElementById('hmJumlah').textContent = daftar.length;
+
+    const inputs = document.getElementById('hmInputIds');
+    inputs.innerHTML = daftar.map(d =>
+        `<input type="hidden" name="peserta_ids[]" value="${d.id}">`
+    ).join('');
+
+    document.getElementById('hmPaham').checked = false;
+    document.getElementById('hmTeks').value = '';
+    document.getElementById('hmTombol').disabled = true;
+
+    bootstrap.Modal.getOrCreateInstance(document.getElementById('modalHapusMassal')).show();
+}
+
+function periksaSyaratMassal() {
+    const paham = document.getElementById('hmPaham').checked;
+    const teks = document.getElementById('hmTeks').value.trim().toUpperCase();
+    document.getElementById('hmTombol').disabled = !(paham && teks === 'HAPUS PERMANEN');
+}
 </script>
 @endpush
+
+@if(auth('pengguna')->user()?->peran === 'admin')
+{{-- Modal hapus permanen MASSAL (di luar tabel agar HTML valid) --}}
+<div class="modal fade" id="modalHapusMassal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h6 class="modal-title">
+                    <i class="bi bi-exclamation-octagon-fill me-2"></i>Hapus Permanen <span id="hmJumlah">0</span> Peserta
+                </h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('admin.peserta.hapus-permanen-massal') }}" method="POST" id="hmForm">
+                @csrf
+                @method('DELETE')
+                <div id="hmInputIds"></div>
+
+                <div class="modal-body">
+                    <div class="alert alert-danger">
+                        <strong><i class="bi bi-shield-exclamation me-1"></i>Tindakan ini TIDAK BISA dibatalkan.</strong>
+                        <div class="small mt-1">
+                            Seluruh data peserta berikut beserta berkasnya (formulir, jawaban tes, bukti pembayaran,
+                            file pegon &amp; rekaman) akan dihapus dari server. Kuota periode akan bertambah kembali.
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold small">Peserta yang akan dihapus:</h6>
+                    <ul id="hmDaftar" class="mb-3"></ul>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="paham" value="1" id="hmPaham"
+                               onchange="periksaSyaratMassal()">
+                        <label class="form-check-label small" for="hmPaham">
+                            Saya paham seluruh data dan berkas peserta di atas akan hilang <strong>permanen</strong>.
+                        </label>
+                    </div>
+
+                    <label class="form-label small mb-1">Ketik <code>HAPUS PERMANEN</code> untuk konfirmasi:</label>
+                    <input type="text" name="konfirmasi_teks" id="hmTeks" class="form-control form-control-sm"
+                           autocomplete="off" placeholder="HAPUS PERMANEN" oninput="periksaSyaratMassal()">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-danger btn-sm" id="hmTombol" disabled>
+                        <i class="bi bi-trash3-fill me-1"></i>Ya, Hapus Permanen
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endif
+
+@include('admin.peserta.partials.modal-hapus-permanen')
 @endsection

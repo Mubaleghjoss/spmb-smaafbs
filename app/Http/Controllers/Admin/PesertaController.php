@@ -3,13 +3,17 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LogAktivitas;
 use App\Models\Peserta;
+use App\Services\LogAktivitasService;
+use App\Services\PesertaPembersihService;
 use App\Services\PesertaService;
 use App\Services\GrupService;
 use App\Services\ImporEksporPesertaService;
 use App\Services\PeriodePendaftaranService;
 use App\Models\TahunAjaran;
 use App\Models\GelombangPendaftaran;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
@@ -111,6 +115,15 @@ class PesertaController extends Controller
         ];
         $this->pesertaService->buat($validated);
 
+        $this->catatLog(
+            'peserta.tambah',
+            LogAktivitas::KAT_PESERTA,
+            "Menambahkan peserta baru {$validated['nama']}",
+            null,
+            ['nama' => $validated['nama'], 'kelas_tujuan' => $validated['kelas_tujuan'] ?? null],
+            (int) ($validated['tahun_ajaran_id'] ?? 0) ?: null,
+        );
+
         return redirect()
             ->route('admin.peserta.index')
             ->with('success', 'Peserta berhasil ditambahkan.');
@@ -177,6 +190,14 @@ class PesertaController extends Controller
         ];
         $this->pesertaService->perbarui($peserta, $validated);
 
+        $this->catatLog(
+            'peserta.ubah',
+            LogAktivitas::KAT_PESERTA,
+            "Mengubah data peserta {$peserta->nama}",
+            $peserta,
+            tahunAjaranId: $peserta->tahun_ajaran_id,
+        );
+
         return redirect()
             ->route('admin.peserta.index')
             ->with('success', 'Peserta berhasil diperbarui.');
@@ -189,9 +210,202 @@ class PesertaController extends Controller
     {
         $this->pesertaService->hapus($peserta);
 
+        $this->catatLog(
+            'peserta.hapus',
+            LogAktivitas::KAT_PESERTA,
+            "Menghapus peserta {$peserta->nama} (masih bisa dipulihkan)",
+            $peserta,
+            tahunAjaranId: $peserta->tahun_ajaran_id,
+        );
+
         return redirect()
             ->route('admin.peserta.index')
             ->with('success', 'Peserta berhasil dihapus.');
+    }
+
+    /**
+     * Pratinjau data & berkas yang akan hilang bila peserta dihapus permanen.
+     * Dipakai modal konfirmasi (AJAX) agar admin melihat kondisi terkini.
+     */
+    public function pratinjauHapus(int $id): JsonResponse
+    {
+        if (!$this->bolehHapusPermanen()) {
+            return response()->json([
+                'pesan' => 'Hanya admin yang boleh menghapus peserta secara permanen.',
+            ], 403);
+        }
+
+        $peserta = Peserta::withTrashed()->find($id);
+
+        if (!$peserta) {
+            return response()->json(['pesan' => 'Peserta tidak ditemukan.'], 404);
+        }
+
+        return response()->json(
+            app(PesertaPembersihService::class)->ringkasan($peserta)
+        );
+    }
+
+    /**
+     * Hapus peserta PERMANEN beserta seluruh berkasnya.
+     *
+     * Konfirmasi berlapis: admin harus mencentang pernyataan paham DAN mengetik
+     * ulang nomor pendaftaran. Keduanya divalidasi di server, bukan hanya di UI.
+     */
+    public function hapusPermanen(Request $request, int $id): RedirectResponse
+    {
+        if (!$this->bolehHapusPermanen()) {
+            abort(403, 'Hanya admin yang boleh menghapus peserta secara permanen.');
+        }
+
+        $peserta = Peserta::withTrashed()->find($id);
+
+        if (!$peserta) {
+            return redirect()->route('admin.peserta.index')
+                ->with('error', 'Peserta tidak ditemukan.');
+        }
+
+        $request->validate([
+            'paham' => 'required|accepted',
+            'konfirmasi_nomor' => 'required|string',
+        ], [
+            'paham.required' => 'Centang pernyataan bahwa Anda paham data akan hilang permanen.',
+            'paham.accepted' => 'Centang pernyataan bahwa Anda paham data akan hilang permanen.',
+            'konfirmasi_nomor.required' => 'Ketik nomor pendaftaran peserta untuk konfirmasi.',
+        ]);
+
+        if (trim((string) $request->konfirmasi_nomor) !== (string) $peserta->nomor_pendaftaran) {
+            return back()->with('error', 'Nomor pendaftaran yang diketik tidak cocok. Penghapusan dibatalkan.');
+        }
+
+        // Simpan identitas untuk log SEBELUM data hilang.
+        $nama = $peserta->nama;
+        $nomor = $peserta->nomor_pendaftaran;
+        $tahunAjaranId = $peserta->tahun_ajaran_id;
+        $statusKelulusan = $peserta->tahapanSpmb?->status_kelulusan;
+        $ringkasan = app(PesertaPembersihService::class)->ringkasan($peserta);
+
+        $hasil = app(PesertaPembersihService::class)->hapusPermanen($peserta);
+
+        $this->catatLog(
+            'peserta.hapus_permanen',
+            LogAktivitas::KAT_PESERTA,
+            "Menghapus PERMANEN peserta {$nama} ({$nomor}) beserta {$hasil['berkas_terhapus']} berkas ({$hasil['byte_dibebaskan_label']})",
+            null,
+            [
+                'peserta_id' => $id,
+                'nama' => $nama,
+                'nomor_pendaftaran' => $nomor,
+                'status_kelulusan' => $statusKelulusan,
+                'berkas_terhapus' => $hasil['berkas_terhapus'],
+                'berkas_gagal' => $hasil['berkas_gagal'],
+                'ukuran_dibebaskan' => $hasil['byte_dibebaskan_label'],
+                'ringkasan_data' => collect($ringkasan['data'])->mapWithKeys(
+                    fn($d) => [$d['label'] => $d['jumlah']]
+                )->all(),
+            ],
+            $tahunAjaranId,
+        );
+
+        $pesan = "Peserta {$nama} ({$nomor}) dihapus permanen. "
+            . "{$hasil['berkas_terhapus']} berkas dibersihkan ({$hasil['byte_dibebaskan_label']}). Kuota periode diperbarui.";
+
+        if (!empty($hasil['berkas_gagal'])) {
+            $pesan .= ' Catatan: ' . count($hasil['berkas_gagal']) . ' berkas gagal dihapus, cek log aplikasi.';
+        }
+
+        return redirect()->route('admin.peserta.index')->with('success', $pesan);
+    }
+
+    /**
+     * Hapus PERMANEN beberapa peserta sekaligus (bersih-bersih data uji coba).
+     */
+    public function hapusPermanenMassal(Request $request): RedirectResponse
+    {
+        if (!$this->bolehHapusPermanen()) {
+            abort(403, 'Hanya admin yang boleh menghapus peserta secara permanen.');
+        }
+
+        $request->validate([
+            'peserta_ids' => 'required|array|min:1',
+            'peserta_ids.*' => 'integer',
+            'paham' => 'required|accepted',
+            'konfirmasi_teks' => 'required|string',
+        ], [
+            'paham.accepted' => 'Centang pernyataan bahwa Anda paham data akan hilang permanen.',
+        ]);
+
+        if (strtoupper(trim((string) $request->konfirmasi_teks)) !== 'HAPUS PERMANEN') {
+            return back()->with('error', 'Teks konfirmasi tidak cocok. Ketik: HAPUS PERMANEN');
+        }
+
+        $pembersih = app(PesertaPembersihService::class);
+        $terhapus = [];
+        $totalBerkas = 0;
+        $totalByte = 0;
+
+        foreach ($request->peserta_ids as $id) {
+            $peserta = Peserta::withTrashed()->find($id);
+            if (!$peserta) {
+                continue;
+            }
+
+            $label = $peserta->nama . ' (' . $peserta->nomor_pendaftaran . ')';
+            $hasil = $pembersih->hapusPermanen($peserta);
+
+            $terhapus[] = $label;
+            $totalBerkas += $hasil['berkas_terhapus'];
+            $totalByte += $hasil['byte_dibebaskan'];
+        }
+
+        $jumlah = count($terhapus);
+        $ukuran = $totalByte < 1024 * 1024
+            ? round($totalByte / 1024, 1) . ' KB'
+            : round($totalByte / 1024 / 1024, 2) . ' MB';
+
+        $this->catatLog(
+            'peserta.hapus_permanen_massal',
+            LogAktivitas::KAT_PESERTA,
+            "Menghapus PERMANEN {$jumlah} peserta beserta {$totalBerkas} berkas ({$ukuran})",
+            null,
+            [
+                'jumlah' => $jumlah,
+                'peserta' => array_slice($terhapus, 0, 100),
+                'berkas_terhapus' => $totalBerkas,
+                'ukuran_dibebaskan' => $ukuran,
+            ],
+        );
+
+        return redirect()->route('admin.peserta.index')->with(
+            'success',
+            "{$jumlah} peserta dihapus permanen. {$totalBerkas} berkas dibersihkan ({$ukuran}). Kuota periode diperbarui."
+        );
+    }
+
+    /**
+     * Hanya peran admin yang boleh menghapus permanen.
+     */
+    private function bolehHapusPermanen(): bool
+    {
+        return auth('pengguna')->user()?->peran === 'admin';
+    }
+
+    /**
+     * Pintasan pencatatan aktivitas.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function catatLog(
+        string $aksi,
+        string $kategori,
+        string $keterangan,
+        ?\Illuminate\Database\Eloquent\Model $subjek = null,
+        array $data = [],
+        ?int $tahunAjaranId = null,
+    ): void {
+        app(LogAktivitasService::class)->catat(
+            $aksi, $kategori, $keterangan, $subjek, $data, $tahunAjaranId
+        );
     }
 
     /**
@@ -202,6 +416,14 @@ class PesertaController extends Controller
         $peserta = $this->pesertaService->restore($id);
 
         if ($peserta) {
+            $this->catatLog(
+                'peserta.pulihkan',
+                LogAktivitas::KAT_PESERTA,
+                "Memulihkan peserta {$peserta->nama} dari daftar terhapus",
+                $peserta,
+                tahunAjaranId: $peserta->tahun_ajaran_id,
+            );
+
             return redirect()
                 ->route('admin.peserta.index')
                 ->with('success', 'Peserta berhasil dipulihkan.');

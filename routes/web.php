@@ -269,6 +269,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::post('/peserta/bulk-update-kategori', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateKategori'])->name('peserta.bulk-update-kategori');
     Route::post('/peserta/bulk-update-tahap', [\App\Http\Controllers\Admin\PesertaController::class, 'bulkUpdateTahap'])->name('peserta.bulk-update-tahap');
     Route::post('/peserta/{id}/restore', [\App\Http\Controllers\Admin\PesertaController::class, 'restore'])->name('peserta.restore');
+    // Hapus permanen (hanya peran admin — dijaga di controller)
+    Route::get('/peserta/{id}/pratinjau-hapus', [\App\Http\Controllers\Admin\PesertaController::class, 'pratinjauHapus'])->name('peserta.pratinjau-hapus');
+    Route::delete('/peserta/{id}/hapus-permanen', [\App\Http\Controllers\Admin\PesertaController::class, 'hapusPermanen'])->name('peserta.hapus-permanen');
+    Route::delete('/peserta/hapus-permanen-massal', [\App\Http\Controllers\Admin\PesertaController::class, 'hapusPermanenMassal'])->name('peserta.hapus-permanen-massal');
     Route::get('/peserta/{peserta}', [\App\Http\Controllers\Admin\PesertaController::class, 'show'])->name('peserta.show');
     Route::get('/peserta/{peserta}/edit', [\App\Http\Controllers\Admin\PesertaController::class, 'edit'])->name('peserta.edit');
     Route::get('/peserta/{peserta}/kartu', [\App\Http\Controllers\Admin\PesertaController::class, 'cetakKartu'])->name('peserta.kartu');
@@ -453,6 +457,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::put('/pengguna/{pengguna}', [\App\Http\Controllers\Admin\PenggunaController::class, 'update'])->name('pengguna.update');
     Route::delete('/pengguna/{pengguna}', [\App\Http\Controllers\Admin\PenggunaController::class, 'destroy'])->name('pengguna.destroy');
     Route::post('/pengguna/{pengguna}/toggle-aktif', [\App\Http\Controllers\Admin\PenggunaController::class, 'toggleAktif'])->name('pengguna.toggle-aktif');
+
+    // Log Aktivitas Tim SPMB (hanya baca)
+    Route::get('/log-aktivitas', [\App\Http\Controllers\Admin\LogAktivitasController::class, 'index'])->name('log-aktivitas.index');
+    Route::get('/log-aktivitas/ekspor', [\App\Http\Controllers\Admin\LogAktivitasController::class, 'eksporCsv'])->name('log-aktivitas.ekspor');
     
     // Token Global (untuk semua tes)
     Route::get('/token-global', [\App\Http\Controllers\Admin\TokenGlobalController::class, 'index'])->name('token-global.index');

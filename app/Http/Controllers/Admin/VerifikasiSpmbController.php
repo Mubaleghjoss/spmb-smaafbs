@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\LogAktivitas;
 use App\Models\Pembayaran;
 use App\Models\FormulirSpmb;
 use App\Models\Peserta;
 use App\Models\SesiTes;
+use App\Services\LogAktivitasService;
 use App\Services\MonitoringUjianService;
 use App\Services\VerifikasiSpmbService;
 use App\Services\PembayaranService;
@@ -23,6 +25,24 @@ class VerifikasiSpmbController extends Controller
         private VerifikasiSpmbService $verifikasiService,
         private PembayaranService $pembayaranService
     ) {}
+
+    /**
+     * Catat aktivitas yang mengubah data (pintasan internal).
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function catatLog(
+        string $aksi,
+        string $kategori,
+        string $keterangan,
+        ?\Illuminate\Database\Eloquent\Model $subjek = null,
+        array $data = [],
+        ?int $tahunAjaranId = null,
+    ): void {
+        app(LogAktivitasService::class)->catat(
+            $aksi, $kategori, $keterangan, $subjek, $data, $tahunAjaranId
+        );
+    }
 
     /**
      * Dashboard verifikasi
@@ -145,6 +165,16 @@ class VerifikasiSpmbController extends Controller
         $pembayaran->update(['nomor_kwitansi' => $nomorKwitansi]);
 
         $this->verifikasiService->verifikasiPembayaranFormulir($pembayaran, auth('pengguna')->user());
+
+        $this->catatLog(
+            'pembayaran.verifikasi_formulir',
+            LogAktivitas::KAT_PEMBAYARAN,
+            "Memverifikasi pembayaran formulir {$pembayaran->peserta?->nama} (kwitansi {$nomorKwitansi})",
+            $pembayaran->peserta,
+            ['pembayaran_id' => $pembayaran->id, 'jenis' => 'formulir', 'nomor_kwitansi' => $nomorKwitansi],
+            $pembayaran->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.pembayaran-formulir')
             ->with('success', "Pembayaran berhasil diverifikasi. No. Kwitansi: {$nomorKwitansi}");
     }
@@ -156,6 +186,16 @@ class VerifikasiSpmbController extends Controller
     {
         $request->validate(['alasan' => 'required|string|max:500']);
         $this->verifikasiService->tolakPembayaranFormulir($pembayaran, $request->alasan, auth('pengguna')->user());
+
+        $this->catatLog(
+            'pembayaran.tolak_formulir',
+            LogAktivitas::KAT_PEMBAYARAN,
+            "Menolak pembayaran formulir {$pembayaran->peserta?->nama}",
+            $pembayaran->peserta,
+            ['pembayaran_id' => $pembayaran->id, 'jenis' => 'formulir', 'alasan' => $request->alasan],
+            $pembayaran->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.pembayaran-formulir')
             ->with('success', 'Pembayaran ditolak');
     }
@@ -306,6 +346,15 @@ class VerifikasiSpmbController extends Controller
     public function verifikasiFormulir(FormulirSpmb $formulir): RedirectResponse
     {
         $this->verifikasiService->verifikasiFormulir($formulir, auth('pengguna')->user());
+
+        $this->catatLog(
+            'formulir.verifikasi',
+            LogAktivitas::KAT_FORMULIR,
+            'Menyetujui formulir biodata ' . ($formulir->peserta?->nama ?? $formulir->nama_lengkap),
+            $formulir->peserta ?? $formulir,
+            tahunAjaranId: $formulir->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.formulir')
             ->with('success', 'Formulir berhasil diverifikasi');
     }
@@ -317,6 +366,16 @@ class VerifikasiSpmbController extends Controller
     {
         $request->validate(['alasan' => 'required|string|max:500']);
         $this->verifikasiService->tolakFormulir($formulir, $request->alasan, auth('pengguna')->user());
+
+        $this->catatLog(
+            'formulir.tolak',
+            LogAktivitas::KAT_FORMULIR,
+            'Menolak formulir biodata ' . ($formulir->peserta?->nama ?? $formulir->nama_lengkap),
+            $formulir->peserta ?? $formulir,
+            ['alasan' => $request->alasan],
+            $formulir->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.formulir')
             ->with('success', 'Formulir ditolak');
     }
@@ -421,8 +480,18 @@ class VerifikasiSpmbController extends Controller
     public function verifikasiPelunasan(Pembayaran $pembayaran): RedirectResponse
     {
         $this->verifikasiService->verifikasiPelunasan($pembayaran, auth('pengguna')->user());
+
+        $this->catatLog(
+            'pembayaran.verifikasi_pertama',
+            LogAktivitas::KAT_PEMBAYARAN,
+            "Memverifikasi pembayaran tahap pertama {$pembayaran->peserta?->nama}",
+            $pembayaran->peserta,
+            ['pembayaran_id' => $pembayaran->id, 'jenis' => 'pertama'],
+            $pembayaran->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.pelunasan')
-            ->with('success', 'Pelunasan berhasil diverifikasi. Peserta resmi diterima.');
+            ->with('success', 'Pembayaran tahap pertama berhasil diverifikasi.');
     }
 
     /**
@@ -432,6 +501,16 @@ class VerifikasiSpmbController extends Controller
     {
         $request->validate(['alasan' => 'required|string|max:500']);
         $this->verifikasiService->tolakPelunasan($pembayaran, $request->alasan, auth('pengguna')->user());
+
+        $this->catatLog(
+            'pembayaran.tolak_pertama',
+            LogAktivitas::KAT_PEMBAYARAN,
+            "Menolak pembayaran tahap pertama {$pembayaran->peserta?->nama}",
+            $pembayaran->peserta,
+            ['pembayaran_id' => $pembayaran->id, 'jenis' => 'pertama', 'alasan' => $request->alasan],
+            $pembayaran->peserta?->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.pelunasan')
             ->with('success', 'Pelunasan ditolak');
     }
@@ -546,6 +625,20 @@ class VerifikasiSpmbController extends Controller
                 $request->catatan
             );
 
+            $this->catatLog(
+                'ujian.tambah_waktu',
+                LogAktivitas::KAT_UJIAN,
+                "Menambah waktu {$request->menit} menit pada tes '{$sesi->tes?->nama}' untuk {$sesi->peserta?->nama}",
+                $sesi->peserta,
+                [
+                    'sesi_id' => $sesi->id,
+                    'tes' => $sesi->tes?->nama,
+                    'menit' => (int) $request->menit,
+                    'catatan' => $request->catatan,
+                ],
+                $sesi->peserta?->tahun_ajaran_id,
+            );
+
             return $this->kembaliVerifikasi($request, 'success', "Perpanjangan {$request->menit} menit untuk {$sesi->peserta?->nama} disetujui. Peserta bisa melanjutkan tes.");
         } catch (\Exception $e) {
             return $this->kembaliVerifikasi($request, 'error', $e->getMessage());
@@ -569,6 +662,15 @@ class VerifikasiSpmbController extends Controller
                 $request->catatan
             );
 
+            $this->catatLog(
+                'ujian.ulang_dari_awal',
+                LogAktivitas::KAT_UJIAN,
+                "Menyetujui pengulangan tes '{$sesi->tes?->nama}' dari awal untuk {$sesi->peserta?->nama}",
+                $sesi->peserta,
+                ['sesi_id' => $sesi->id, 'tes' => $sesi->tes?->nama, 'catatan' => $request->catatan],
+                $sesi->peserta?->tahun_ajaran_id,
+            );
+
             return $this->kembaliVerifikasi($request, 'success', "Permohonan ulang dari 0 untuk {$sesi->peserta?->nama} disetujui.");
         } catch (\Exception $e) {
             return $this->kembaliVerifikasi($request, 'error', $e->getMessage());
@@ -586,6 +688,15 @@ class VerifikasiSpmbController extends Controller
                 $sesi,
                 auth('pengguna')->id(),
                 $request->catatan ?: 'Ditolak oleh admin'
+            );
+
+            $this->catatLog(
+                'ujian.tolak_permohonan',
+                LogAktivitas::KAT_UJIAN,
+                "Menolak permohonan tes '{$sesi->tes?->nama}' dari {$sesi->peserta?->nama}",
+                $sesi->peserta,
+                ['sesi_id' => $sesi->id, 'tes' => $sesi->tes?->nama, 'catatan' => $request->catatan],
+                $sesi->peserta?->tahun_ajaran_id,
             );
 
             return $this->kembaliVerifikasi($request, 'success', "Permohonan {$sesi->peserta?->nama} ditolak.");
@@ -772,6 +883,15 @@ class VerifikasiSpmbController extends Controller
         $skGelombangId = $this->validasiSkGelombangKelulusan($request, $peserta);
         $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId);
 
+        $this->catatLog(
+            'kelulusan.loloskan',
+            LogAktivitas::KAT_KELULUSAN,
+            "Menetapkan {$peserta->nama} LULUS SPMB" . ($this->namaSk($skGelombangId) ? " dengan SK {$this->namaSk($skGelombangId)}" : ''),
+            $peserta,
+            ['sk_gelombang_id' => $skGelombangId, 'sk_nama' => $this->namaSk($skGelombangId)],
+            $peserta->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.kelulusan')
             ->with('success', "Peserta {$peserta->nama} berhasil diluluskan.");
     }
@@ -782,6 +902,14 @@ class VerifikasiSpmbController extends Controller
     public function tidakLuluskanPeserta(Request $request, Peserta $peserta): RedirectResponse
     {
         $this->terapkanKelulusan($peserta, 'tidak_lulus');
+
+        $this->catatLog(
+            'kelulusan.tidak_lulus',
+            LogAktivitas::KAT_KELULUSAN,
+            "Menetapkan {$peserta->nama} TIDAK LULUS SPMB",
+            $peserta,
+            tahunAjaranId: $peserta->tahun_ajaran_id,
+        );
 
         return redirect()->route('admin.verifikasi.kelulusan')
             ->with('success', "Peserta {$peserta->nama} ditandai tidak lulus.");
@@ -804,6 +932,18 @@ class VerifikasiSpmbController extends Controller
 
         $count = $pesertaMenunggu->filter(fn($p) => $this->terapkanKelulusan($p, 'lulus', $skGelombangId))->count();
 
+        $this->catatLog(
+            'kelulusan.loloskan_semua',
+            LogAktivitas::KAT_KELULUSAN,
+            "Meluluskan {$count} peserta sekaligus" . ($this->namaSk($skGelombangId) ? " dengan SK {$this->namaSk($skGelombangId)}" : ''),
+            data: [
+                'jumlah' => $count,
+                'sk_gelombang_id' => $skGelombangId,
+                'sk_nama' => $this->namaSk($skGelombangId),
+                'peserta' => $pesertaMenunggu->pluck('nama')->take(50)->all(),
+            ],
+        );
+
         return redirect()->route('admin.verifikasi.kelulusan')
             ->with('success', "{$count} peserta berhasil diluluskan.");
     }
@@ -824,10 +964,26 @@ class VerifikasiSpmbController extends Controller
         }
 
         $count = 0;
+        $namaTerpilih = [];
         foreach ($pesertaIds as $pesertaId) {
             $peserta = Peserta::find($pesertaId);
-            if ($peserta && $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId)) $count++;
+            if ($peserta && $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId)) {
+                $count++;
+                $namaTerpilih[] = $peserta->nama;
+            }
         }
+
+        $this->catatLog(
+            'kelulusan.loloskan_terpilih',
+            LogAktivitas::KAT_KELULUSAN,
+            "Meluluskan {$count} peserta terpilih" . ($this->namaSk($skGelombangId) ? " dengan SK {$this->namaSk($skGelombangId)}" : ''),
+            data: [
+                'jumlah' => $count,
+                'sk_gelombang_id' => $skGelombangId,
+                'sk_nama' => $this->namaSk($skGelombangId),
+                'peserta' => array_slice($namaTerpilih, 0, 50),
+            ],
+        );
 
         return redirect()->route('admin.verifikasi.kelulusan')
             ->with('success', "{$count} peserta berhasil diluluskan.");
@@ -1243,6 +1399,14 @@ class VerifikasiSpmbController extends Controller
         // Selesaikan tahap 5
         app(\App\Services\SpmbService::class)->selesaikanTahapan($peserta, 5, $admin->id);
 
+        $this->catatLog(
+            'wawancara.loloskan',
+            LogAktivitas::KAT_WAWANCARA,
+            "Meluluskan wawancara {$peserta->nama} — Tahap 6 (pembayaran pertama) terbuka",
+            $peserta,
+            tahunAjaranId: $peserta->tahun_ajaran_id,
+        );
+
         return redirect()->route('admin.verifikasi.wawancara')
             ->with('success', "Peserta {$peserta->nama} lulus wawancara dan lanjut ke tahap berikutnya.");
     }
@@ -1263,6 +1427,15 @@ class VerifikasiSpmbController extends Controller
                 'diverifikasi_pada' => now(),
             ]);
         }
+
+        $this->catatLog(
+            'wawancara.tidak_lulus',
+            LogAktivitas::KAT_WAWANCARA,
+            "Menandai {$peserta->nama} TIDAK LULUS wawancara",
+            $peserta,
+            ['catatan' => $request->catatan],
+            $peserta->tahun_ajaran_id,
+        );
 
         return redirect()->route('admin.verifikasi.wawancara')
             ->with('success', "Peserta {$peserta->nama} tidak lulus wawancara.");
@@ -1420,6 +1593,20 @@ class VerifikasiSpmbController extends Controller
         $tahapan->update($data);
 
         return true;
+    }
+
+    /**
+     * Nama SK gelombang dari id (untuk keterangan log).
+     */
+    private function namaSk(?string $skGelombangId): ?string
+    {
+        if (empty($skGelombangId)) {
+            return null;
+        }
+
+        $sk = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanUntukGelombang($skGelombangId);
+
+        return $sk['nama'] ?? null;
     }
 
     /**
