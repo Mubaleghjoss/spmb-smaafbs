@@ -49,7 +49,7 @@ class PesertaPembersihService
         ]);
 
         $jumlahJawaban = JawabanPeserta::whereIn(
-            'sesi_id',
+            'sesi_tes_id',
             $peserta->sesiTes->pluck('id')
         )->count();
 
@@ -111,7 +111,7 @@ class PesertaPembersihService
 
         DB::transaction(function () use ($peserta) {
             // Urutan mengikuti relasi induk→anak agar tidak melanggar foreign key.
-            JawabanPeserta::whereIn('sesi_id', $peserta->sesiTes()->pluck('id'))->delete();
+            JawabanPeserta::whereIn('sesi_tes_id', $peserta->sesiTes()->pluck('id'))->delete();
             $peserta->sesiTes()->delete();
             $peserta->pembayaran()->delete();
             $peserta->wawancara()->delete();

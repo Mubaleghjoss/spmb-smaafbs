@@ -241,9 +241,21 @@ class PesertaController extends Controller
             return response()->json(['pesan' => 'Peserta tidak ditemukan.'], 404);
         }
 
-        return response()->json(
-            app(PesertaPembersihService::class)->ringkasan($peserta)
-        );
+        try {
+            return response()->json(
+                app(PesertaPembersihService::class)->ringkasan($peserta)
+            );
+        } catch (\Throwable $e) {
+            // Kirim sebab sebenarnya agar admin tidak hanya melihat pesan generik.
+            \Illuminate\Support\Facades\Log::error('Gagal menyusun pratinjau hapus peserta: ' . $e->getMessage(), [
+                'peserta_id' => $id,
+                'file' => $e->getFile() . ':' . $e->getLine(),
+            ]);
+
+            return response()->json([
+                'pesan' => 'Gagal menyusun ringkasan data peserta: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     /**

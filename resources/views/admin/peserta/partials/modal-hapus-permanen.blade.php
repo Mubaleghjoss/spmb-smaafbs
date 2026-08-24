@@ -157,12 +157,23 @@
         fetch("{{ url('admin/peserta') }}/" + id + "/pratinjau-hapus", {
             headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
         })
-        .then(r => r.json().then(j => ({ ok: r.ok, j })))
-        .then(({ ok, j }) => {
+        .then(async r => {
+            const teks = await r.text();
+            let j = null;
+            try { j = JSON.parse(teks); } catch (_) { /* respons bukan JSON (mis. halaman error) */ }
+            return { ok: r.ok, status: r.status, j, teks };
+        })
+        .then(({ ok, status, j, teks }) => {
             elMemuat.classList.add('d-none');
 
-            if (!ok) {
-                elGagal.textContent = j.pesan || 'Gagal memuat data peserta.';
+            if (!ok || !j) {
+                // Tampilkan sebab sebenarnya, bukan pesan generik, agar mudah didiagnosis.
+                let pesan = (j && j.pesan) ? j.pesan : ('Gagal memuat data peserta (HTTP ' + status + ').');
+                if (!j && teks) {
+                    const cocok = teks.match(/<title[^>]*>([^<]*)<\/title>/i);
+                    if (cocok) pesan += ' ' + cocok[1].trim();
+                }
+                elGagal.textContent = pesan;
                 elGagal.classList.remove('d-none');
                 return;
             }
