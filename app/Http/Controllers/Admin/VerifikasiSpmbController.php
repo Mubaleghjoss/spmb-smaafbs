@@ -26,6 +26,28 @@ class VerifikasiSpmbController extends Controller
         private PembayaranService $pembayaranService
     ) {}
 
+
+    /**
+     * Perbarui status kuota peserta setelah kelayakannya berubah.
+     * Dibungkus try/catch agar kegagalan hitung kuota tidak menggagalkan
+     * aksi utama (verifikasi/penolakan tetap tersimpan).
+     */
+    private function rekalkulasiKuota(?Peserta $peserta): void
+    {
+        if (! $peserta) {
+            return;
+        }
+
+        try {
+            app(\App\Services\KuotaPendaftaranService::class)->rekalkulasiPeserta($peserta);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning(
+                'Gagal rekalkulasi kuota: ' . $e->getMessage(),
+                ['peserta_id' => $peserta->id]
+            );
+        }
+    }
+
     /**
      * Catat aktivitas yang mengubah data (pintasan internal).
      *
@@ -175,6 +197,8 @@ class VerifikasiSpmbController extends Controller
             $pembayaran->peserta?->tahun_ajaran_id,
         );
 
+        $this->rekalkulasiKuota($pembayaran->peserta);
+
         return redirect()->route('admin.verifikasi.pembayaran-formulir')
             ->with('success', "Pembayaran berhasil diverifikasi. No. Kwitansi: {$nomorKwitansi}");
     }
@@ -195,6 +219,8 @@ class VerifikasiSpmbController extends Controller
             ['pembayaran_id' => $pembayaran->id, 'jenis' => 'formulir', 'alasan' => $request->alasan],
             $pembayaran->peserta?->tahun_ajaran_id,
         );
+
+        $this->rekalkulasiKuota($pembayaran->peserta);
 
         return redirect()->route('admin.verifikasi.pembayaran-formulir')
             ->with('success', 'Pembayaran ditolak');
@@ -347,6 +373,8 @@ class VerifikasiSpmbController extends Controller
     {
         $this->verifikasiService->verifikasiFormulir($formulir, auth('pengguna')->user());
 
+        $this->rekalkulasiKuota($formulir->peserta);
+
         $this->catatLog(
             'formulir.verifikasi',
             LogAktivitas::KAT_FORMULIR,
@@ -366,6 +394,8 @@ class VerifikasiSpmbController extends Controller
     {
         $request->validate(['alasan' => 'required|string|max:500']);
         $this->verifikasiService->tolakFormulir($formulir, $request->alasan, auth('pengguna')->user());
+
+        $this->rekalkulasiKuota($formulir->peserta);
 
         $this->catatLog(
             'formulir.tolak',
@@ -1591,6 +1621,10 @@ class VerifikasiSpmbController extends Controller
         }
 
         $tahapan->update($data);
+
+        // LAPIS 3 — kursi dilepas bila peserta dinyatakan tidak lulus, sehingga
+        // peserta waiting list teratas otomatis dipromosikan.
+        $this->rekalkulasiKuota($peserta);
 
         return true;
     }

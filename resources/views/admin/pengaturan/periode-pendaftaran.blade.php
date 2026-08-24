@@ -133,6 +133,17 @@
                         </div>
                     </div>
                     <div class="col-auto">
+                        <input type="hidden" name="kunci_kuota" value="0">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="kunci_kuota" value="1"
+                                   id="kunciKuota{{ $tahun->id }}" {{ ($tahun->kunci_kuota ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="kunciKuota{{ $tahun->id }}"
+                                   title="Status kuota peserta periode ini tidak dihitung ulang — dipakai untuk periode lama yang sudah berjalan">
+                                <i class="bi bi-lock"></i> Kunci Kuota
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
                         <button class="btn btn-sm btn-primary" type="submit" title="Simpan tahun ajaran">
                             <i class="bi bi-check-lg me-1"></i>Simpan
                         </button>

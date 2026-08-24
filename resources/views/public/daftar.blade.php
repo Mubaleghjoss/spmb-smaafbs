@@ -120,11 +120,17 @@
                                                 <span class="small fw-semibold">
                                                     <i class="bi bi-clipboard-data me-1"></i>Kuota Penerimaan
                                                 </span>
-                                                <span class="badge"
-                                                      :class="selectedTahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success'">
-                                                    <template x-if="selectedTahun.kuota.penuh"><span>Penuh</span></template>
-                                                    <template x-if="!selectedTahun.kuota.penuh"><span>Tersedia</span></template>
-                                                </span>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <button type="button" class="btn btn-sm btn-outline-success py-0 px-2"
+                                                            data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
+                                                        <i class="bi bi-patch-question me-1"></i>Cara masuk kuota
+                                                    </button>
+                                                    <span class="badge"
+                                                          :class="selectedTahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success'">
+                                                        <template x-if="selectedTahun.kuota.penuh"><span>Penuh</span></template>
+                                                        <template x-if="!selectedTahun.kuota.penuh"><span>Tersedia</span></template>
+                                                    </span>
+                                                </div>
                                             </div>
 
                                             <div class="row g-2 text-center mb-2">
@@ -190,6 +196,7 @@
                                             <div class="text-muted mt-2" style="font-size:.72rem">
                                                 <i class="bi bi-info-circle me-1"></i>
                                                 Pendaftaran menempati kuota setelah Formulir Biodata lengkap dan Pembayaran Pendaftaran (Tahap 3) diverifikasi Tim SPMB.
+                                                <a href="#" data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota" class="text-success fw-semibold">Selengkapnya</a>
                                             </div>
                                         </div>
 
@@ -379,6 +386,8 @@
         </div>
     </div>
 </div>
+
+@include('partials.modal-penjelasan-kuota')
 @endsection
 
 @push('scripts')

@@ -167,6 +167,7 @@
                         <option value="">Semua Status</option>
                         <option value="{{ \App\Models\Peserta::STATUS_KUOTA_DALAM }}" {{ $filter['status_kuota'] === \App\Models\Peserta::STATUS_KUOTA_DALAM ? 'selected' : '' }}>Masuk Kuota</option>
                         <option value="{{ \App\Models\Peserta::STATUS_KUOTA_WAITING }}" {{ $filter['status_kuota'] === \App\Models\Peserta::STATUS_KUOTA_WAITING ? 'selected' : '' }}>Waiting List</option>
+                        <option value="{{ \App\Models\Peserta::STATUS_KUOTA_BELUM_LENGKAP }}" {{ $filter['status_kuota'] === \App\Models\Peserta::STATUS_KUOTA_BELUM_LENGKAP ? 'selected' : '' }}>Belum Lengkap</option>
                     </select>
                 </div>
                 <div class="col-md-3">

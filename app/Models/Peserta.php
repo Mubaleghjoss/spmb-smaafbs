@@ -58,6 +58,13 @@ class Peserta extends Authenticatable
     public const JENIS_PINDAHAN = 'pindahan';
     public const STATUS_KUOTA_DALAM = 'dalam_kuota';
     public const STATUS_KUOTA_WAITING = 'waiting_list';
+    /**
+     * Belum memenuhi syarat menempati kuota: formulir belum lengkap atau
+     * pembayaran pendaftaran (Tahap 3) belum diverifikasi. Berbeda dari
+     * waiting list — waiting list berarti syarat SUDAH lengkap tetapi kursi
+     * habis, sehingga berhak dipromosikan bila ada kursi yang lepas.
+     */
+    public const STATUS_KUOTA_BELUM_LENGKAP = 'belum_lengkap';
 
     protected $table = 'peserta';
 
@@ -120,6 +127,7 @@ class Peserta extends Authenticatable
         return match ($this->status_kuota) {
             self::STATUS_KUOTA_WAITING => 'Waiting List',
             self::STATUS_KUOTA_DALAM => 'Masuk Kuota',
+            self::STATUS_KUOTA_BELUM_LENGKAP => 'Belum Lengkap',
             default => 'Belum dihitung',
         };
     }
@@ -129,6 +137,7 @@ class Peserta extends Authenticatable
         return match ($this->status_kuota) {
             self::STATUS_KUOTA_WAITING => 'warning text-dark',
             self::STATUS_KUOTA_DALAM => 'success',
+            self::STATUS_KUOTA_BELUM_LENGKAP => 'secondary',
             default => 'secondary',
         };
     }

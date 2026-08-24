@@ -159,9 +159,15 @@
                 <h5 class="mb-0"><i class="bi bi-clipboard-data me-2"></i>Kuota Penerimaan SPMB</h5>
                 <small class="text-muted">Periode {{ $ringkasanKuota['periode_label'] }}</small>
             </div>
-            <a href="{{ route('admin.peserta.index') }}" class="btn btn-sm btn-outline-secondary">
-                <i class="bi bi-people me-1"></i>Lihat Peserta
-            </a>
+            <div class="d-flex flex-wrap gap-2">
+                <button type="button" class="btn btn-sm btn-outline-success"
+                        data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
+                    <i class="bi bi-patch-question me-1"></i>Cara Masuk Kuota
+                </button>
+                <a href="{{ route('admin.peserta.index') }}" class="btn btn-sm btn-outline-secondary">
+                    <i class="bi bi-people me-1"></i>Lihat Peserta
+                </a>
+            </div>
         </div>
         <div class="card-body">
             @if($semuaPeriode ?? false)
@@ -189,15 +195,31 @@
                         <div class="border rounded-3 p-3 h-100 border-warning">
                             <div class="text-muted small">Waiting List</div>
                             <div class="h4 mb-0 text-warning">{{ number_format($k['waiting_list'] ?? 0) }}</div>
+                            <div class="text-muted" style="font-size:.7rem">Syarat lengkap, kursi habis</div>
                         </div>
                     </div>
                     <div class="col-6 col-lg-3">
                         <div class="border rounded-3 p-3 h-100">
-                            <div class="text-muted small">Sisa Kursi</div>
-                            <div class="h4 mb-0">{{ $k['sisa_label'] ?? '-' }}</div>
-                            @if($k['penuh'] ?? false)
-                                <span class="badge bg-warning text-dark mt-1">Kuota Penuh</span>
-                            @endif
+                            <div class="text-muted small">Belum Lengkap</div>
+                            <div class="h4 mb-0 text-secondary">{{ number_format($k['belum_lengkap'] ?? 0) }}</div>
+                            <div class="text-muted" style="font-size:.7rem">Formulir / bayar Tahap 3</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="border rounded-3 p-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+                            <div>
+                                <span class="text-muted small">Sisa Kursi</span>
+                                <span class="h5 mb-0 ms-2">{{ $k['sisa_label'] ?? '-' }}</span>
+                                @if($k['penuh'] ?? false)
+                                    <span class="badge bg-warning text-dark ms-2">Kuota Penuh</span>
+                                @endif
+                                @if($k['dikunci'] ?? false)
+                                    <span class="badge bg-info text-dark ms-2">
+                                        <i class="bi bi-lock-fill me-1"></i>Status kuota dikunci (aturan lama)
+                                    </span>
+                                @endif
+                            </div>
+                            <span class="text-muted small">Total pendaftar: {{ number_format($k['total'] ?? 0) }}</span>
                         </div>
                     </div>
                 </div>
@@ -228,6 +250,7 @@
                             <div class="d-flex flex-wrap gap-3 mt-2 small text-muted">
                                 <span>Total: {{ number_format($data['total'] ?? 0) }}</span>
                                 <span>Waiting: {{ number_format($data['waiting_list'] ?? 0) }}</span>
+                                <span>Belum lengkap: {{ number_format($data['belum_lengkap'] ?? 0) }}</span>
                                 @if($kuotaG > 0)
                                     <span>Sisa: {{ max(0, $kuotaG - ($data['dalam_kuota'] ?? 0)) }}</span>
                                 @endif
@@ -291,4 +314,6 @@
         </div>
     </div>
 </div>
+
+@include('partials.modal-penjelasan-kuota')
 @endsection

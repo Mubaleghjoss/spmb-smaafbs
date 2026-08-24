@@ -132,6 +132,15 @@ class AlurPesertaController extends Controller
             $pesan = "Tahap {$tahap} (" . (self::TAHAP_LABELS[$tahap] ?? '?') . ") untuk {$peserta->nama} dibatalkan (belum selesai).";
         }
 
+        // Tahap 3 menentukan kelayakan menempati kuota — hitung ulang bila diubah.
+        if ($tahap === 3) {
+            try {
+                app(\App\Services\KuotaPendaftaranService::class)->rekalkulasiPeserta($peserta);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Gagal rekalkulasi kuota: ' . $e->getMessage());
+            }
+        }
+
         app(\App\Services\LogAktivitasService::class)->catat(
             aksi: 'tahapan.' . $data['aksi'] . '_manual',
             kategori: \App\Models\LogAktivitas::KAT_PESERTA,

@@ -32,6 +32,10 @@ class KuotaPendaftaranService
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('status_kuota', Peserta::STATUS_KUOTA_WAITING)
             ->count();
+        $belumLengkap = Peserta::query()
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('status_kuota', Peserta::STATUS_KUOTA_BELUM_LENGKAP)
+            ->count();
         $perGender = $this->ringkasanGenderTahun($tahun);
         $genderPenuh = $kuotaLakiLaki > 0
             && $kuotaPerempuan > 0
@@ -48,6 +52,8 @@ class KuotaPendaftaranService
             'total' => $total,
             'dalam_kuota' => $dalamKuota,
             'waiting_list' => $waitingList,
+            'belum_lengkap' => $belumLengkap,
+            'dikunci' => (bool) $tahun->kunci_kuota,
             'sisa' => $kuota > 0 ? max(0, $kuota - $dalamKuota) : null,
             'sisa_label' => $kuota > 0 ? (string) max(0, $kuota - $dalamKuota) : 'Tidak dibatasi',
             'penuh' => ($kuota > 0 && $dalamKuota >= $kuota) || $genderPenuh,
@@ -81,19 +87,35 @@ class KuotaPendaftaranService
             $urutanBerikutnya = ((int) Peserta::withTrashed()
                 ->where('tahun_ajaran_id', $tahun->id)
                 ->max('urutan_kuota')) + 1;
-            $kuota = (int) ($tahun->kuota_peserta ?? 0);
-            $dalamKuota = Peserta::query()
-                ->where('tahun_ajaran_id', $tahun->id)
-                ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
-                ->count();
 
             return [
-                'status_kuota' => $kuota > 0 && $dalamKuota >= $kuota
-                    ? Peserta::STATUS_KUOTA_WAITING
-                    : Peserta::STATUS_KUOTA_DALAM,
+                // Pendaftar baru BELUM menempati kuota. Kursi baru diambil setelah
+                // formulir lengkap + pembayaran pendaftaran (Tahap 3) diverifikasi.
+                // Periode yang dikunci memakai perilaku lama agar data historis
+                // tidak berubah artinya.
+                'status_kuota' => $tahun->kunci_kuota
+                    ? $this->statusKuotaCaraLama($tahun)
+                    : Peserta::STATUS_KUOTA_BELUM_LENGKAP,
                 'urutan_kuota' => $urutanBerikutnya,
             ];
         });
+    }
+
+    /**
+     * Perilaku lama (sebelum aturan syarat kelengkapan): kursi langsung diambil
+     * saat mendaftar. Hanya dipakai untuk periode yang status kuotanya dikunci.
+     */
+    private function statusKuotaCaraLama(TahunAjaran $tahun): string
+    {
+        $kuota = (int) ($tahun->kuota_peserta ?? 0);
+        $dalamKuota = Peserta::query()
+            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
+            ->count();
+
+        return $kuota > 0 && $dalamKuota >= $kuota
+            ? Peserta::STATUS_KUOTA_WAITING
+            : Peserta::STATUS_KUOTA_DALAM;
     }
 
     public function rekalkulasiTahunBanyak(array $tahunAjaranIds): void
@@ -127,8 +149,20 @@ class KuotaPendaftaranService
                 return;
             }
 
+            // Periode yang dikunci: status kuota dibiarkan apa adanya agar aturan
+            // baru tidak berlaku surut pada periode yang sudah berjalan.
+            if ($tahun->kunci_kuota) {
+                return;
+            }
+
             $peserta = Peserta::query()
-                ->with('formulirSpmb:id,peserta_id,jenis_kelamin')
+                ->with([
+                    'formulirSpmb:id,peserta_id,jenis_kelamin',
+                    'tahapanSpmb:id,peserta_id,tahap_3_selesai,status_kelulusan',
+                ])
+                ->withExists(['pembayaran as bayar_formulir_ok' => fn($q) => $q
+                    ->where('jenis', 'formulir')
+                    ->where('status', 'terverifikasi')])
                 ->where('tahun_ajaran_id', $tahun->id)
                 ->orderByRaw('CASE WHEN urutan_kuota IS NULL THEN 1 ELSE 0 END')
                 ->orderBy('urutan_kuota')
@@ -154,6 +188,18 @@ class KuotaPendaftaranService
                 if (! $peserta->urutan_kuota) {
                     $urutanMaksimum++;
                     $peserta->urutan_kuota = $urutanMaksimum;
+                }
+
+                // LAPIS 1 — syarat menempati kuota.
+                // LAPIS 3 — kursi dilepas bila peserta dinyatakan tidak lulus.
+                if (! $this->layakMenempatiKuota($peserta)) {
+                    $peserta->status_kuota = Peserta::STATUS_KUOTA_BELUM_LENGKAP;
+
+                    if ($peserta->isDirty(['status_kuota', 'urutan_kuota'])) {
+                        $peserta->save();
+                    }
+
+                    return;
                 }
 
                 $jenisKelamin = $peserta->formulirSpmb?->jenis_kelamin;
@@ -183,6 +229,30 @@ class KuotaPendaftaranService
         });
     }
 
+    /**
+     * Syarat peserta boleh menempati kuota:
+     *  1. Formulir biodata sudah ada, DAN
+     *  2. Pembayaran pendaftaran (Tahap 3) terverifikasi — atau Tahap 3 sudah
+     *     ditandai selesai oleh Tim SPMB (verifikasi manual dianggap sah), DAN
+     *  3. Belum dinyatakan tidak lulus (kursi dilepas bila tidak lulus).
+     */
+    private function layakMenempatiKuota(Peserta $peserta): bool
+    {
+        if ($peserta->formulirSpmb === null) {
+            return false;
+        }
+
+        // Kursi dilepas bila peserta dinyatakan TIDAK LULUS pada tahap mana pun.
+        if (($peserta->tahapanSpmb?->status_kelulusan) === 'tidak_lulus') {
+            return false;
+        }
+
+        $bayarOk = (bool) ($peserta->bayar_formulir_ok ?? false);
+        $tahap3Ok = (bool) ($peserta->tahapanSpmb?->tahap_3_selesai ?? false);
+
+        return $bayarOk || $tahap3Ok;
+    }
+
     private function ringkasanKosong(): array
     {
         return [
@@ -195,6 +265,8 @@ class KuotaPendaftaranService
             'total' => 0,
             'dalam_kuota' => 0,
             'waiting_list' => 0,
+            'belum_lengkap' => 0,
+            'dikunci' => false,
             'sisa' => null,
             'sisa_label' => 'Tidak dibatasi',
             'penuh' => false,
@@ -217,6 +289,7 @@ class KuotaPendaftaranService
             ->selectRaw('COUNT(peserta.id) as total')
             ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as dalam_kuota", [Peserta::STATUS_KUOTA_DALAM])
             ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as waiting_list", [Peserta::STATUS_KUOTA_WAITING])
+            ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as belum_lengkap", [Peserta::STATUS_KUOTA_BELUM_LENGKAP])
             ->groupBy('formulir_spmb.jenis_kelamin')
             ->get()
             ->keyBy(fn($row) => $row->jenis_kelamin ?: '-');
@@ -228,6 +301,7 @@ class KuotaPendaftaranService
                 'total' => (int) ($rows->get('-')->total ?? 0),
                 'dalam_kuota' => (int) ($rows->get('-')->dalam_kuota ?? 0),
                 'waiting_list' => (int) ($rows->get('-')->waiting_list ?? 0),
+                'belum_lengkap' => (int) ($rows->get('-')->belum_lengkap ?? 0),
             ],
         ];
     }
@@ -242,6 +316,7 @@ class KuotaPendaftaranService
             'total' => (int) ($row->total ?? 0),
             'dalam_kuota' => $dalamKuota,
             'waiting_list' => (int) ($row->waiting_list ?? 0),
+            'belum_lengkap' => (int) ($row->belum_lengkap ?? 0),
             'sisa' => $kuota > 0 ? max(0, $kuota - $dalamKuota) : null,
             'sisa_label' => $kuota > 0 ? (string) max(0, $kuota - $dalamKuota) : 'Tidak dibatasi',
         ];
@@ -255,6 +330,7 @@ class KuotaPendaftaranService
             'total' => 0,
             'dalam_kuota' => 0,
             'waiting_list' => 0,
+            'belum_lengkap' => 0,
             'sisa' => null,
             'sisa_label' => 'Tidak dibatasi',
         ];

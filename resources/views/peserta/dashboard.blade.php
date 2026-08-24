@@ -93,10 +93,44 @@
         </div>
     </div>
 
-    @if($peserta->status_kuota === \App\Models\Peserta::STATUS_KUOTA_WAITING)
-        <div class="alert alert-warning border-0 shadow-sm mb-4">
-            <i class="bi bi-hourglass-split me-1"></i>
-            Anda berada di <strong>Waiting List</strong>. Tahapan SPMB tetap dapat dilanjutkan seperti biasa sambil menunggu keputusan admin.
+    {{-- Status kuota pendaftaran: jelaskan artinya, jangan hanya melabeli --}}
+    @php $sk = $peserta->status_kuota; @endphp
+    @if($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
+        <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <i class="bi bi-hourglass-split me-1"></i>
+                Pendaftaran Anda berada di <strong>Waiting List</strong> — syarat sudah lengkap, tetapi kursi
+                periode ini sedang penuh. Anda otomatis masuk kuota bila ada kursi yang kembali tersedia.
+                Tahapan SPMB tetap dapat dilanjutkan seperti biasa.
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-dark"
+                    data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
+                <i class="bi bi-patch-question me-1"></i>Penjelasan Kuota
+            </button>
+        </div>
+    @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_BELUM_LENGKAP)
+        <div class="alert alert-secondary border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <i class="bi bi-exclamation-circle me-1"></i>
+                Pendaftaran Anda <strong>belum menempati kuota</strong>. Kursi baru diambil setelah
+                Formulir Biodata lengkap dan Pembayaran Pendaftaran (Tahap 3) diverifikasi Tim SPMB.
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-dark"
+                    data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
+                <i class="bi bi-patch-question me-1"></i>Cara Masuk Kuota
+            </button>
+        </div>
+    @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_DALAM)
+        <div class="alert alert-success border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <i class="bi bi-check-circle me-1"></i>
+                Pendaftaran Anda <strong>sudah masuk hitungan kuota</strong> periode ini.
+                <span class="d-block small">Catatan: ini bukan keputusan penerimaan — penerimaan resmi dinyatakan lewat SK Kelulusan pada tahap akhir.</span>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-success"
+                    data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
+                <i class="bi bi-patch-question me-1"></i>Penjelasan Kuota
+            </button>
         </div>
     @endif
     
@@ -593,6 +627,8 @@
         </div>
     </div>
 </div>
+
+@include('partials.modal-penjelasan-kuota')
 @endsection
 
 @push('scripts')
