@@ -97,7 +97,8 @@
                                                           x-text="tahunAjaranId===tahun.id?'Dipilih':'Pilih'"></span>
                                                 </div>
                                                 <div class="small text-muted mt-1" x-text="ringkasanGelombangTahun(tahun)"></div>
-                                                <div class="small mt-1 d-flex flex-wrap gap-2 align-items-center">
+                                                <div class="small mt-1 d-flex flex-wrap gap-2 align-items-center"
+                                                     x-show="jenisPendaftaran !== 'pindahan'">
                                                     <span class="badge bg-light text-dark border">
                                                         <i class="bi bi-people me-1"></i>Kuota <span x-text="tahun.kuota.kuota_label"></span>
                                                     </span>
@@ -107,6 +108,11 @@
                                                         <template x-if="!tahun.kuota.penuh"><span>Sisa <span x-text="tahun.kuota.sisa_label"></span></span></template>
                                                     </span>
                                                 </div>
+                                                <div class="small mt-1" x-show="jenisPendaftaran === 'pindahan'">
+                                                    <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                                        <i class="bi bi-arrow-left-right me-1"></i>Pindahan — tanpa batas kuota
+                                                    </span>
+                                                </div>
                                             </button>
                                         </div>
                                     </template>
@@ -114,8 +120,10 @@
 
                                 <template x-if="selectedTahun">
                                     <div class="mb-3">
-                                        {{-- Rincian kuota periode terpilih: total & per jenis kelamin --}}
-                                        <div class="border rounded-3 p-3 mb-3 bg-light">
+                                        {{-- Rincian kuota HANYA untuk jalur siswa baru.
+                                             Jalur pindahan tidak dibatasi kuota (kebijakan sekolah),
+                                             jadi seluruh panel kuota disembunyikan. --}}
+                                        <div class="border rounded-3 p-3 mb-3 bg-light" x-show="jenisPendaftaran !== 'pindahan'">
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                                 <span class="small fw-semibold">
                                                     <i class="bi bi-clipboard-data me-1"></i>Kuota Penerimaan
@@ -200,6 +208,24 @@
                                             </div>
                                         </div>
 
+                                        {{-- Jalur pindahan: tidak ada batas kuota --}}
+                                        <div class="border rounded-3 p-3 mb-3 bg-light" x-show="jenisPendaftaran === 'pindahan'">
+                                            <div class="d-flex flex-wrap align-items-start gap-2">
+                                                <i class="bi bi-arrow-left-right text-primary mt-1"></i>
+                                                <div class="small">
+                                                    <div class="fw-semibold">Jalur Siswa Pindahan</div>
+                                                    <div class="text-muted">
+                                                        Jalur pindahan <strong>tidak dibatasi kuota</strong>.
+                                                        Penerimaan menyesuaikan ketersediaan rombel dan hasil seleksi,
+                                                        serta dinyatakan resmi melalui SK Kelulusan pada tahap akhir.
+                                                    </div>
+                                                    <div class="text-muted mt-1">
+                                                        Tersedia untuk <strong>Kelas 10</strong> dan <strong>Kelas 11</strong>.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                         <label class="form-label small text-muted">Gelombang</label>
                                         <div class="row g-2">
                                             <template x-for="g in gelombangTersedia" :key="g.id">
@@ -211,7 +237,9 @@
                                                             @click="selectGelombang(g)">
                                                         <div class="d-flex justify-content-between">
                                                             <span class="fw-medium" x-text="g.nama"></span>
-                                                            <span class="badge" :class="'bg-'+g.status_class" x-text="g.status_label"></span>
+                                                            <span class="badge"
+                                                                  :class="'bg-' + (jenisPendaftaran === 'pindahan' ? g.status_class_tanpa_kuota : g.status_class)"
+                                                                  x-text="jenisPendaftaran === 'pindahan' ? g.status_label_tanpa_kuota : g.status_label"></span>
                                                         </div>
                                                         <div class="small text-muted" x-text="g.periode"></div>
                                                     </button>

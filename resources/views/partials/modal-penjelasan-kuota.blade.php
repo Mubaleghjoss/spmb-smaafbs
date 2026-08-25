@@ -119,6 +119,15 @@
                     kursi. Keputusan penerimaan dinyatakan resmi melalui <strong>SK Kelulusan</strong> pada
                     tahap akhir.
                 </div>
+
+                <div class="alert alert-primary small mt-3 mb-0">
+                    <i class="bi bi-arrow-left-right me-1"></i>
+                    <strong>Jalur Siswa Pindahan tidak dibatasi kuota.</strong>
+                    Seluruh penjelasan di atas berlaku untuk jalur <strong>Siswa Baru</strong>.
+                    Pendaftar pindahan (Kelas 10 &amp; 11) tidak mengantre kursi dan tidak pernah
+                    berstatus Waiting List, tetapi tetap harus melengkapi Formulir Biodata serta
+                    Pembayaran Pendaftaran, dan penerimaannya tetap ditentukan SK Kelulusan.
+                </div>
             </div>
 
             <div class="modal-footer">

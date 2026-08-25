@@ -21,19 +21,22 @@ class KuotaPendaftaranService
         $kuota = (int) ($tahun->kuota_peserta ?? 0);
         $kuotaLakiLaki = (int) ($tahun->kuota_laki_laki ?? 0);
         $kuotaPerempuan = (int) ($tahun->kuota_perempuan ?? 0);
-        $total = Peserta::query()
+
+        // Kuota berlaku HANYA untuk jalur siswa baru. Jalur pindahan tidak
+        // dibatasi kuota (kebijakan sekolah), sehingga tidak boleh ikut
+        // mengurangi sisa kursi maupun membuat kuota terlihat penuh.
+        $basis = fn() => Peserta::query()
             ->where('tahun_ajaran_id', $tahun->id)
-            ->count();
-        $dalamKuota = Peserta::query()
-            ->where('tahun_ajaran_id', $tahun->id)
+            ->where('jenis_pendaftaran', Peserta::JENIS_SISWA_BARU);
+
+        $total = $basis()->count();
+        $dalamKuota = $basis()
             ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
             ->count();
-        $waitingList = Peserta::query()
-            ->where('tahun_ajaran_id', $tahun->id)
+        $waitingList = $basis()
             ->where('status_kuota', Peserta::STATUS_KUOTA_WAITING)
             ->count();
-        $belumLengkap = Peserta::query()
-            ->where('tahun_ajaran_id', $tahun->id)
+        $belumLengkap = $basis()
             ->where('status_kuota', Peserta::STATUS_KUOTA_BELUM_LENGKAP)
             ->count();
         $perGender = $this->ringkasanGenderTahun($tahun);
@@ -110,6 +113,7 @@ class KuotaPendaftaranService
         $kuota = (int) ($tahun->kuota_peserta ?? 0);
         $dalamKuota = Peserta::query()
             ->where('tahun_ajaran_id', $tahun->id)
+            ->where('jenis_pendaftaran', Peserta::JENIS_SISWA_BARU)
             ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
             ->count();
 
@@ -205,6 +209,19 @@ class KuotaPendaftaranService
                 $jenisKelamin = $peserta->formulirSpmb?->jenis_kelamin;
                 $masukKuotaGender = true;
 
+                // Jalur PINDAHAN tidak dibatasi kuota (kebijakan sekolah):
+                // begitu syarat lengkap, langsung masuk kuota tanpa menghitung
+                // kursi siswa baru dan tanpa menggeser urutan gender.
+                if ($peserta->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
+                    $peserta->status_kuota = Peserta::STATUS_KUOTA_DALAM;
+
+                    if ($peserta->isDirty(['status_kuota', 'urutan_kuota'])) {
+                        $peserta->save();
+                    }
+
+                    return;
+                }
+
                 if (in_array($jenisKelamin, ['L', 'P'], true)) {
                     $urutanGender[$jenisKelamin]++;
 
@@ -285,6 +302,8 @@ class KuotaPendaftaranService
         $rows = Peserta::query()
             ->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id')
             ->where('peserta.tahun_ajaran_id', $tahun->id)
+            // Kuota gender hanya berlaku untuk jalur siswa baru.
+            ->where('peserta.jenis_pendaftaran', Peserta::JENIS_SISWA_BARU)
             ->selectRaw('formulir_spmb.jenis_kelamin as jenis_kelamin')
             ->selectRaw('COUNT(peserta.id) as total')
             ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as dalam_kuota", [Peserta::STATUS_KUOTA_DALAM])

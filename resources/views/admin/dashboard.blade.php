@@ -178,6 +178,12 @@
                 </div>
             @else
                 {{-- Angka utama --}}
+                <div class="alert alert-primary py-2 small">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Angka kuota di bawah berlaku untuk jalur <strong>Siswa Baru</strong>.
+                    Jalur <strong>Siswa Pindahan</strong> tidak dibatasi kuota — jumlahnya dapat dilihat
+                    pada bagian <em>Pendaftar per Jalur</em>.
+                </div>
                 <div class="row g-3 mb-4">
                     <div class="col-6 col-lg-3">
                         <div class="border rounded-3 p-3 h-100">
@@ -327,6 +333,9 @@
                                     &middot; {{ $ak['dalam_kuota'] }} kuota
                                 </span>
                                 @endforeach
+                                <span class="badge bg-primary-subtle text-primary-emphasis border border-primary-subtle">
+                                    <i class="bi bi-infinity me-1"></i>Tanpa batas kuota
+                                </span>
                             </div>
                             @endif
                         </div>

@@ -93,9 +93,12 @@
         </div>
     </div>
 
-    {{-- Status kuota pendaftaran: jelaskan artinya, jangan hanya melabeli --}}
+    {{-- Status kuota pendaftaran: jelaskan artinya, jangan hanya melabeli.
+         Jalur pindahan tidak dibatasi kuota, jadi tidak diberi kartu status kuota. --}}
     @php $sk = $peserta->status_kuota; @endphp
-    @if($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
+    @if($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+        {{-- Tidak ada informasi kuota untuk jalur pindahan --}}
+    @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
         <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <i class="bi bi-hourglass-split me-1"></i>

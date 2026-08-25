@@ -249,6 +249,10 @@ class PendaftaranController extends Controller
                         'jadwal_dibuka' => $jadwalDibuka,
                         'status_label' => $statusLabel,
                         'status_class' => $statusClass,
+                        // Jalur pindahan tidak dibatasi kuota, jadi label "Kuota Penuh"
+                        // tidak boleh dipakai untuk jalur tersebut.
+                        'status_label_tanpa_kuota' => $status['label'],
+                        'status_class_tanpa_kuota' => $status['class'],
                     ];
                 })->values(),
             ];
