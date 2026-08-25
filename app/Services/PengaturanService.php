@@ -526,9 +526,16 @@ class PengaturanService
      * @param  int|string|null  $tahunAjaranId  Bila diisi, hanya SK milik periode
      *         tersebut yang dikembalikan (SK lama tanpa periode ikut disertakan
      *         agar data terdahulu tetap terpakai).
+     * @param  string|null  $jenisPendaftaran  Bila diisi ('siswa_baru'/'pindahan'),
+     *         hanya SK jalur tersebut yang dikembalikan. SK terpisah per jalur:
+     *         SK lama tanpa penanda jalur dianggap milik SISWA BARU, sebab semua
+     *         SK yang ada dibuat sebelum jalur pindahan dipisahkan — sehingga
+     *         jalur pindahan yang belum disetel benar-benar tampil kosong.
      */
-    public function ambilSuratKelulusanGelombang(int|string|null $tahunAjaranId = null): array
-    {
+    public function ambilSuratKelulusanGelombang(
+        int|string|null $tahunAjaranId = null,
+        ?string $jenisPendaftaran = null,
+    ): array {
         $json = $this->ambil('surat_kelulusan_gelombang', '[]');
         $items = json_decode($json, true) ?: [];
 
@@ -540,6 +547,7 @@ class PengaturanService
                     'nama' => 'Umum',
                     'file' => $suratLama,
                     'tahun_ajaran_id' => null,
+                    'jenis_pendaftaran' => \App\Models\Peserta::JENIS_SISWA_BARU,
                 ];
             }
         }
@@ -548,12 +556,19 @@ class PengaturanService
             ->filter(fn($item) => !empty($item['nama']) && !empty($item['file']))
             ->map(function ($item) {
                 $taId = $item['tahun_ajaran_id'] ?? null;
+                $jenis = $item['jenis_pendaftaran'] ?? null;
 
                 return [
                     'id' => $item['id'] ?? (string) Str::uuid(),
                     'nama' => $item['nama'],
                     'file' => $item['file'],
                     'tahun_ajaran_id' => ($taId === '' || $taId === null) ? null : (int) $taId,
+                    // SK tanpa penanda jalur = warisan sebelum pemisahan jalur,
+                    // diperlakukan sebagai SK siswa baru.
+                    'jenis_pendaftaran' => in_array($jenis, [
+                        \App\Models\Peserta::JENIS_SISWA_BARU,
+                        \App\Models\Peserta::JENIS_PINDAHAN,
+                    ], true) ? $jenis : \App\Models\Peserta::JENIS_SISWA_BARU,
                     'uploaded_at' => $item['uploaded_at'] ?? null,
                 ];
             });
@@ -564,6 +579,10 @@ class PengaturanService
                 // SK tanpa periode dianggap berlaku umum (kompatibilitas data lama).
                 fn($item) => $item['tahun_ajaran_id'] === null || $item['tahun_ajaran_id'] === $taId
             );
+        }
+
+        if ($jenisPendaftaran !== null && $jenisPendaftaran !== '') {
+            $hasil = $hasil->filter(fn($item) => $item['jenis_pendaftaran'] === $jenisPendaftaran);
         }
 
         return $hasil->values()->all();
@@ -584,6 +603,10 @@ class PengaturanService
                     'nama' => trim($item['nama']),
                     'file' => $item['file'],
                     'tahun_ajaran_id' => ($taId === '' || $taId === null) ? null : (int) $taId,
+                    'jenis_pendaftaran' => in_array($item['jenis_pendaftaran'] ?? null, [
+                        \App\Models\Peserta::JENIS_SISWA_BARU,
+                        \App\Models\Peserta::JENIS_PINDAHAN,
+                    ], true) ? $item['jenis_pendaftaran'] : \App\Models\Peserta::JENIS_SISWA_BARU,
                     'uploaded_at' => !empty($item['uploaded_at']) ? $item['uploaded_at'] : now()->toDateTimeString(),
                 ];
             })
@@ -733,11 +756,17 @@ class PengaturanService
      *
      * @param  int|string|null  $tahunAjaranId  Periode peserta; dipakai agar SK
      *         cadangan (bila id tidak ditemukan) tetap dari periode yang benar.
+     * @param  string|null  $jenisPendaftaran  Jalur peserta; SK cadangan harus
+     *         dari jalur yang sama agar peserta pindahan tidak menerima SK
+     *         siswa baru.
      */
-    public function ambilSuratKelulusanUntukGelombang(?string $gelombangId, int|string|null $tahunAjaranId = null): ?array
-    {
+    public function ambilSuratKelulusanUntukGelombang(
+        ?string $gelombangId,
+        int|string|null $tahunAjaranId = null,
+        ?string $jenisPendaftaran = null,
+    ): ?array {
         // Cari berdasarkan id di SELURUH daftar supaya SK yang sudah ditetapkan
-        // ke peserta tetap ditemukan walau periodenya berbeda.
+        // ke peserta tetap ditemukan walau periode/jalurnya berbeda.
         if (!empty($gelombangId)) {
             $selected = collect($this->ambilSuratKelulusanGelombang())->firstWhere('id', $gelombangId);
             if ($selected) {
@@ -745,8 +774,8 @@ class PengaturanService
             }
         }
 
-        // Cadangan: SK pertama pada periode peserta.
-        $items = $this->ambilSuratKelulusanGelombang($tahunAjaranId);
+        // Cadangan: SK pertama pada periode & jalur peserta.
+        $items = $this->ambilSuratKelulusanGelombang($tahunAjaranId, $jenisPendaftaran);
 
         return $items[0] ?? null;
     }

@@ -270,13 +270,14 @@ class VerifikasiSpmbController extends Controller
             $formulir = $this->verifikasiService->ambilFormulirMenunggu();
         }
 
-        // Statistik
+        // Statistik — WAJIB lewat whereHas('peserta') agar ikut ter-scope
+        // periode aktif DAN jalur pendaftaran aktif (PeriodeScope + JalurScope).
         $statistik = [
-            'total' => FormulirSpmb::whereIn('status_verifikasi', ['menunggu', 'terverifikasi', 'ditolak'])->count(),
-            'menunggu' => FormulirSpmb::where('status_verifikasi', 'menunggu')->count(),
-            'terverifikasi' => FormulirSpmb::where('status_verifikasi', 'terverifikasi')->count(),
-            'ditolak' => FormulirSpmb::where('status_verifikasi', 'ditolak')->count(),
-            'belum_lengkap' => FormulirSpmb::where(function($q) {
+            'total' => FormulirSpmb::whereIn('status_verifikasi', ['menunggu', 'terverifikasi', 'ditolak'])->whereHas('peserta')->count(),
+            'menunggu' => FormulirSpmb::where('status_verifikasi', 'menunggu')->whereHas('peserta')->count(),
+            'terverifikasi' => FormulirSpmb::where('status_verifikasi', 'terverifikasi')->whereHas('peserta')->count(),
+            'ditolak' => FormulirSpmb::where('status_verifikasi', 'ditolak')->whereHas('peserta')->count(),
+            'belum_lengkap' => FormulirSpmb::whereHas('peserta')->where(function($q) {
                 $q->whereNull('file_kk')
                   ->orWhereNull('file_akta')
                   ->orWhereNull('file_ijazah')
@@ -892,11 +893,12 @@ class VerifikasiSpmbController extends Controller
         $periodeAktifId = $periode->tahunAjaranId();
         $periodeLabel = $periode->label();
 
-        $skGelombang = $pengaturanService->ambilSuratKelulusanGelombang($periodeAktifId);
+        $jalurAktif = app(\App\Services\JalurContextService::class)->jenis();
+        $skGelombang = $pengaturanService->ambilSuratKelulusanGelombang($periodeAktifId, $jalurAktif);
         $skGelombangById = collect($skGelombang)->keyBy('id')->all();
 
         // Untuk membedakan "belum ada SK sama sekali" vs "ada, tapi bukan periode ini"
-        $skSemuaPeriode = $pengaturanService->ambilSuratKelulusanGelombang();
+        $skSemuaPeriode = $pengaturanService->ambilSuratKelulusanGelombang(null, $jalurAktif);
 
         return view('admin.verifikasi.kelulusan', compact(
             'peserta', 'statistik', 'pengaturanKelulusan',
@@ -1199,14 +1201,15 @@ class VerifikasiSpmbController extends Controller
             ->latest()
             ->paginate(20);
 
-        // Statistik
+        // Statistik — Wawancara disaring lewat whereHas('peserta') agar ikut
+        // ter-scope periode & jalur pendaftaran aktif.
         $statistik = [
             'menunggu' => Peserta::whereHas('tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', 5))
                 ->whereDoesntHave('wawancara')
                 ->count(),
-            'sudah_wawancara' => \App\Models\Wawancara::where('hasil_wawancara', '!=', 'menunggu')->count(),
-            'lulus' => \App\Models\Wawancara::where('hasil_wawancara', 'lulus')->count(),
-            'tidak_lulus' => \App\Models\Wawancara::where('hasil_wawancara', 'tidak_lulus')->count(),
+            'sudah_wawancara' => \App\Models\Wawancara::where('hasil_wawancara', '!=', 'menunggu')->whereHas('peserta')->count(),
+            'lulus' => \App\Models\Wawancara::where('hasil_wawancara', 'lulus')->whereHas('peserta')->count(),
+            'tidak_lulus' => \App\Models\Wawancara::where('hasil_wawancara', 'tidak_lulus')->whereHas('peserta')->count(),
         ];
 
         return view('admin.verifikasi.wawancara', compact('peserta', 'statistik'));
@@ -1653,7 +1656,10 @@ class VerifikasiSpmbController extends Controller
         $periodeId = $peserta?->tahun_ajaran_id
             ?? app(\App\Services\PeriodeContextService::class)->tahunAjaranId();
 
-        $skGelombang = $pengaturan->ambilSuratKelulusanGelombang($periodeId);
+        $skGelombang = $pengaturan->ambilSuratKelulusanGelombang(
+            $periodeId,
+            app(\App\Services\JalurContextService::class)->jenis(),
+        );
 
         if (empty($skGelombang)) {
             throw \Illuminate\Validation\ValidationException::withMessages([

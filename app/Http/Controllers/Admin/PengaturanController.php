@@ -284,7 +284,10 @@ class PengaturanController extends Controller
                 $tahapan["tahap_{$tahap}"] ?? []
             );
         }
-        $skGelombang = $this->pengaturanService->ambilSuratKelulusanGelombang();
+        // Pengaturan SK dipisah per JALUR: saat admin memilih jalur pindahan,
+        // daftar yang tampil hanya SK pindahan (kosong bila belum disetel).
+        $jalurAktif = app(\App\Services\JalurContextService::class)->jenis();
+        $skGelombang = $this->pengaturanService->ambilSuratKelulusanGelombang(null, $jalurAktif);
 
         // Daftar periode untuk memilih SK per tahun ajaran + periode aktif sebagai default
         $daftarTahunAjaran = TahunAjaran::orderByDesc('default')->orderByDesc('nama')->get();
@@ -347,6 +350,7 @@ class PengaturanController extends Controller
             'sk_gelombang_existing' => 'nullable|array',
             'sk_gelombang_existing.*.nama' => 'nullable|string|max:100',
             'sk_gelombang_existing.*.tahun_ajaran_id' => 'nullable|integer|exists:tahun_ajaran,id',
+            'sk_gelombang_existing.*.jenis_pendaftaran' => 'nullable|in:siswa_baru,pindahan',
             'sk_gelombang_existing.*.file_upload' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'sk_gelombang_baru' => 'nullable|array',
             'sk_gelombang_baru.*.nama' => 'nullable|string|max:100',
@@ -508,6 +512,21 @@ class PengaturanController extends Controller
     {
         $items = [];
 
+        // Form hanya menampilkan SK milik JALUR AKTIF. Tanpa langkah ini,
+        // menyimpan pengaturan akan MENGHAPUS SK jalur lain karena $items
+        // dibangun ulang dari request saja. Jadi SK jalur lain dipertahankan.
+        $jalurAktif = app(\App\Services\JalurContextService::class)->jenis();
+
+        if ($jalurAktif !== null) {
+            foreach ($this->pengaturanService->ambilSuratKelulusanGelombang() as $skLama) {
+                if (($skLama['jenis_pendaftaran'] ?? null) !== $jalurAktif) {
+                    $items[] = $skLama;
+                }
+            }
+        }
+
+        $jenisBaru = $jalurAktif ?? \App\Models\Peserta::JENIS_SISWA_BARU;
+
         foreach ($request->input('sk_gelombang_existing', []) as $index => $row) {
             $fileLama = $row['file'] ?? '';
 
@@ -538,6 +557,7 @@ class PengaturanController extends Controller
                     'nama' => $nama,
                     'file' => $filePath,
                     'tahun_ajaran_id' => $row['tahun_ajaran_id'] ?? null,
+                    'jenis_pendaftaran' => $row['jenis_pendaftaran'] ?? $jenisBaru,
                     'uploaded_at' => $row['uploaded_at'] ?? now()->toDateTimeString(),
                 ];
             }
@@ -556,6 +576,7 @@ class PengaturanController extends Controller
                 'nama' => $nama,
                 'file' => $this->pengaturanService->uploadSuratKelulusanGelombang($uploaded, $nama),
                 'tahun_ajaran_id' => $row['tahun_ajaran_id'] ?? null,
+                'jenis_pendaftaran' => $jenisBaru,
                 'uploaded_at' => now()->toDateTimeString(),
             ];
         }

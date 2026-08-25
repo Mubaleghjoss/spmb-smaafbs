@@ -266,6 +266,50 @@
             position: sticky;
             top: 0;
             z-index: 1020;
+            gap: .5rem;
+        }
+
+        /* Switcher periode & jalur: jangan sampai melewati batas baris header.
+           Di layar kecil topbar dibuat membungkus & tingginya mengikuti isi,
+           sebab tinggi tetap membuat tombol keluar dari kotak header. */
+        .admin-topbar .periode-switcher > .btn,
+        .admin-topbar .jalur-switcher > .btn {
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        @media (max-width: 767.98px) {
+            .admin-topbar {
+                height: auto;
+                min-height: var(--topbar-height);
+                flex-wrap: wrap;
+                align-items: flex-start;
+                padding: 8px 12px;
+                row-gap: .5rem;
+            }
+            .admin-topbar > .ms-3 {
+                margin-left: .5rem !important;
+            }
+            /* Kelompok switcher pindah ke baris sendiri, memenuhi lebar */
+            .admin-topbar .topbar-switchers {
+                width: 100%;
+                margin-left: 0 !important;
+                flex-direction: column;
+                align-items: stretch !important;
+            }
+            .admin-topbar .topbar-switchers .dropdown {
+                width: 100%;
+            }
+            .admin-topbar .topbar-switchers .dropdown > .btn {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .admin-topbar .topbar-switchers .dropdown-menu {
+                width: 100%;
+                min-width: 0 !important;
+            }
         }
 
         .topbar-toggle {
@@ -631,7 +675,7 @@
 
             {{-- ===== SWITCHER PERIODE AKTIF (Tahun Ajaran) ===== --}}
             @isset($periodePilihan)
-            <div class="ms-auto d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
+            <div class="ms-auto topbar-switchers d-flex flex-column flex-sm-row align-items-stretch align-items-sm-center gap-2">
             <div class="dropdown periode-switcher">
                 <button class="btn btn-sm dropdown-toggle d-flex align-items-center gap-2"
                         type="button" data-bs-toggle="dropdown" aria-expanded="false"

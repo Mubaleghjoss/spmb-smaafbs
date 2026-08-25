@@ -141,7 +141,9 @@ class PublicController extends Controller
                     $keterangan = 'Selamat! Anda dinyatakan lulus dan diterima sebagai peserta didik baru.';
 
                     $skKelulusan = $this->pengaturanService->ambilSuratKelulusanUntukGelombang(
-                        $peserta->tahapanSpmb?->sk_gelombang_kelulusan
+                        $peserta->tahapanSpmb?->sk_gelombang_kelulusan,
+            $peserta->tahun_ajaran_id,
+            $peserta->jenis_pendaftaran,
                     );
 
                     if ($skKelulusan && !empty($skKelulusan['file']) && Storage::disk('public')->exists($skKelulusan['file'])) {
@@ -196,7 +198,9 @@ class PublicController extends Controller
         }
 
         $skKelulusan = $this->pengaturanService->ambilSuratKelulusanUntukGelombang(
-            $peserta->tahapanSpmb?->sk_gelombang_kelulusan
+            $peserta->tahapanSpmb?->sk_gelombang_kelulusan,
+            $peserta->tahun_ajaran_id,
+            $peserta->jenis_pendaftaran,
         );
 
         if (!$skKelulusan || empty($skKelulusan['file']) || !Storage::disk('public')->exists($skKelulusan['file'])) {

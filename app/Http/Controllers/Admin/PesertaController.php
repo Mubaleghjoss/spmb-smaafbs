@@ -66,7 +66,10 @@ class PesertaController extends Controller
         $rekapFormulir = $this->pesertaService->rekapFormulir($filter);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();
-        $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
+        $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang(
+            null,
+            app(\App\Services\JalurContextService::class)->jenis(),
+        );
         [$tahunAjaran, $gelombangPendaftaran] = $this->periodeOptions();
 
         return view('admin.peserta.index', compact(
@@ -547,7 +550,10 @@ class PesertaController extends Controller
         $skGelombangId = null;
 
         if ($luluskanFinal) {
-            $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang();
+            $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang(
+                null,
+                app(\App\Services\JalurContextService::class)->jenis(),
+            );
             $selectedSk = $request->input('sk_gelombang_kelulusan');
 
             if (empty($skGelombang)) {

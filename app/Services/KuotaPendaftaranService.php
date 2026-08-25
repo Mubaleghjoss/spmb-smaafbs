@@ -25,7 +25,12 @@ class KuotaPendaftaranService
         // Kuota berlaku HANYA untuk jalur siswa baru. Jalur pindahan tidak
         // dibatasi kuota (kebijakan sekolah), sehingga tidak boleh ikut
         // mengurangi sisa kursi maupun membuat kuota terlihat penuh.
-        $basis = fn() => Peserta::query()
+        // semuaJalur(): hitungan kuota menyaring jenis_pendaftaran sendiri,
+        // jadi JalurScope harus dilewati agar tidak terjadi filter dobel.
+        $basis = fn() => Peserta::withoutGlobalScopes([
+            \App\Models\Scopes\PeriodeScope::class,
+            \App\Models\Scopes\JalurScope::class,
+        ])
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('jenis_pendaftaran', Peserta::JENIS_SISWA_BARU);
 
@@ -87,7 +92,10 @@ class KuotaPendaftaranService
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $urutanBerikutnya = ((int) Peserta::withTrashed()
+            $urutanBerikutnya = ((int) Peserta::withoutGlobalScopes([
+                \App\Models\Scopes\PeriodeScope::class,
+                \App\Models\Scopes\JalurScope::class,
+            ])->withTrashed()
                 ->where('tahun_ajaran_id', $tahun->id)
                 ->max('urutan_kuota')) + 1;
 
@@ -111,7 +119,10 @@ class KuotaPendaftaranService
     private function statusKuotaCaraLama(TahunAjaran $tahun): string
     {
         $kuota = (int) ($tahun->kuota_peserta ?? 0);
-        $dalamKuota = Peserta::query()
+        $dalamKuota = Peserta::withoutGlobalScopes([
+            \App\Models\Scopes\PeriodeScope::class,
+            \App\Models\Scopes\JalurScope::class,
+        ])
             ->where('tahun_ajaran_id', $tahun->id)
             ->where('jenis_pendaftaran', Peserta::JENIS_SISWA_BARU)
             ->where('status_kuota', Peserta::STATUS_KUOTA_DALAM)
@@ -134,7 +145,10 @@ class KuotaPendaftaranService
     {
         $tahunAjaranId = $peserta instanceof Peserta
             ? $peserta->tahun_ajaran_id
-            : Peserta::query()->whereKey($peserta)->value('tahun_ajaran_id');
+            : Peserta::withoutGlobalScopes([
+            \App\Models\Scopes\PeriodeScope::class,
+            \App\Models\Scopes\JalurScope::class,
+        ])->whereKey($peserta)->value('tahun_ajaran_id');
 
         if ($tahunAjaranId) {
             $this->rekalkulasiTahun((int) $tahunAjaranId);
@@ -159,7 +173,10 @@ class KuotaPendaftaranService
                 return;
             }
 
-            $peserta = Peserta::query()
+            $peserta = Peserta::withoutGlobalScopes([
+            \App\Models\Scopes\PeriodeScope::class,
+            \App\Models\Scopes\JalurScope::class,
+        ])
                 ->with([
                     'formulirSpmb:id,peserta_id,jenis_kelamin',
                     'tahapanSpmb:id,peserta_id,tahap_3_selesai,status_kelulusan',
@@ -174,7 +191,10 @@ class KuotaPendaftaranService
                 ->orderBy('id')
                 ->get();
 
-            $urutanMaksimum = (int) Peserta::withTrashed()
+            $urutanMaksimum = (int) Peserta::withoutGlobalScopes([
+                \App\Models\Scopes\PeriodeScope::class,
+                \App\Models\Scopes\JalurScope::class,
+            ])->withTrashed()
                 ->where('tahun_ajaran_id', $tahun->id)
                 ->max('urutan_kuota');
             $kuota = (int) ($tahun->kuota_peserta ?? 0);
@@ -299,7 +319,10 @@ class KuotaPendaftaranService
 
     private function ringkasanGenderTahun(TahunAjaran $tahun): array
     {
-        $rows = Peserta::query()
+        $rows = Peserta::withoutGlobalScopes([
+            \App\Models\Scopes\PeriodeScope::class,
+            \App\Models\Scopes\JalurScope::class,
+        ])
             ->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id')
             ->where('peserta.tahun_ajaran_id', $tahun->id)
             // Kuota gender hanya berlaku untuk jalur siswa baru.

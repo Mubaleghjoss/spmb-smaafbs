@@ -51,7 +51,9 @@ class RingkasanKuotaDashboardService
     private function perJalur(?int $tahunAjaranId): array
     {
         $hitung = function (?string $jenis, ?int $kelas = null) use ($tahunAjaranId): array {
-            $q = Peserta::query();
+            // semuaJalur(): dashboard sengaja melewati JalurScope karena justru
+            // bertugas membandingkan KEDUA jalur berdampingan.
+            $q = Peserta::semuaJalur();
 
             if ($tahunAjaranId) {
                 $q->where('tahun_ajaran_id', $tahunAjaranId);

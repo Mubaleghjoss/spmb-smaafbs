@@ -388,8 +388,17 @@
                 <div class="row">
                     <div class="col-md-8">
                         <div class="card mb-4 border-0 shadow-sm">
-                            <div class="card-header bg-dark text-white">
+                            <div class="card-header bg-dark text-white d-flex flex-wrap justify-content-between align-items-center gap-2">
                                 <h6 class="mb-0"><i class="bi bi-file-earmark-pdf me-2"></i>SK Kelulusan per Gelombang</h6>
+                                @if(!empty($jalurAktifJenis))
+                                    <span class="badge bg-{{ $jalurAktifJenis === 'pindahan' ? 'primary' : 'success' }}">
+                                        <i class="bi bi-{{ $jalurAktifJenis === 'pindahan' ? 'arrow-left-right' : 'person-plus' }} me-1"></i>{{ $jalurAktifLabel }}
+                                    </span>
+                                @else
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-signpost-2 me-1"></i>Semua jalur
+                                    </span>
+                                @endif
                             </div>
                             <div class="card-body">
                                 <p class="text-muted small mb-3">
@@ -397,12 +406,37 @@
                                     Saat meluluskan peserta, admin hanya akan melihat SK milik periode yang sedang aktif.
                                 </p>
 
+                                {{-- SK dipisah per JALUR: daftar di bawah hanya milik jalur aktif --}}
+                                @if(!empty($jalurAktifJenis))
+                                    <div class="alert alert-{{ $jalurAktifJenis === 'pindahan' ? 'primary' : 'success' }} small">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Daftar SK di bawah <strong>hanya untuk jalur {{ $jalurAktifLabel }}</strong>.
+                                        SK jalur lain tidak ditampilkan di sini dan tetap tersimpan.
+                                        Ganti jalur lewat tombol jalur di bagian atas halaman.
+                                    </div>
+                                    @if(empty($skGelombang))
+                                        <div class="alert alert-warning small mb-3">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Belum ada SK Kelulusan untuk jalur <strong>{{ $jalurAktifLabel }}</strong>.
+                                            Tambahkan di bawah agar peserta jalur ini dapat diluluskan.
+                                        </div>
+                                    @endif
+                                @else
+                                    <div class="alert alert-warning small">
+                                        <i class="bi bi-signpost-2 me-1"></i>
+                                        Jalur pendaftaran belum dipilih, sehingga daftar di bawah menampilkan
+                                        <strong>SK dari semua jalur</strong>. Pilih jalur lebih dulu agar
+                                        pengelolaan SK tidak tercampur.
+                                    </div>
+                                @endif
+
                                 <div id="skGelombangContainer">
                                     @foreach($skGelombang ?? [] as $index => $sk)
                                     <div class="sk-gelombang-item border rounded p-3 mb-3">
                                         <input type="hidden" name="sk_gelombang_existing[{{ $index }}][id]" value="{{ $sk['id'] }}">
                                         <input type="hidden" name="sk_gelombang_existing[{{ $index }}][file]" value="{{ $sk['file'] }}">
                                         <input type="hidden" name="sk_gelombang_existing[{{ $index }}][uploaded_at]" value="{{ $sk['uploaded_at'] ?? '' }}">
+                                        <input type="hidden" name="sk_gelombang_existing[{{ $index }}][jenis_pendaftaran]" value="{{ $sk['jenis_pendaftaran'] ?? 'siswa_baru' }}">
                                         <div class="row g-2 align-items-end">
                                             <div class="col-md-3">
                                                 <label class="form-label small">Nama Gelombang</label>

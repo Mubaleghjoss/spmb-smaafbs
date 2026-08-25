@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Scopes\JalurScope;
 use App\Models\Scopes\PeriodeScope;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -22,12 +23,14 @@ class Peserta extends Authenticatable
     use HasFactory, Notifiable, SoftDeletes;
 
     /**
-     * Daftarkan global scope periode: semua query Peserta di konteks admin
-     * otomatis difilter ke tahun ajaran aktif (kecuali mode "Semua Periode").
+     * Daftarkan global scope periode & jalur: semua query Peserta di konteks
+     * admin otomatis difilter ke tahun ajaran aktif (kecuali "Semua Periode")
+     * dan ke jalur pendaftaran aktif (kecuali belum memilih jalur).
      */
     protected static function booted(): void
     {
         static::addGlobalScope(new PeriodeScope);
+        static::addGlobalScope(new JalurScope);
     }
 
     /**
@@ -40,14 +43,24 @@ class Peserta extends Authenticatable
     }
 
     /**
-     * Route-model binding harus bisa mengakses peserta APA PUN (lintas periode),
-     * supaya membuka/edit detail peserta dari periode lain tidak 404 saat konteks
-     * periode aktif berbeda. Filter periode tetap berlaku untuk daftar & hitungan.
+     * Query lintas semua jalur (melewati JalurScope).
+     * Dipakai dashboard yang memang perlu membandingkan kedua jalur.
+     */
+    public function scopeSemuaJalur(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(JalurScope::class);
+    }
+
+    /**
+     * Route-model binding harus bisa mengakses peserta APA PUN (lintas periode
+     * dan lintas jalur), supaya membuka detail peserta dari periode/jalur lain
+     * tidak 404. Filter tetap berlaku untuk daftar & hitungan.
      */
     public function resolveRouteBinding($value, $field = null)
     {
         return $this->newQuery()
             ->withoutGlobalScope(PeriodeScope::class)
+            ->withoutGlobalScope(JalurScope::class)
             ->where($field ?? $this->getRouteKeyName(), $value)
             ->first();
     }
