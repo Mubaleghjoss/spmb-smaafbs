@@ -24,7 +24,16 @@ class GraduatedStudentResource extends JsonResource
                 'tahun_ajaran' => $this->tahunAjaran?->nama,
                 'gelombang' => $this->gelombangPendaftaran?->nama,
                 'jenis_pendaftaran' => $this->jenis_pendaftaran,
+                // Label siap-pakai supaya app tidak perlu menerjemahkan kode.
+                'jenis_pendaftaran_label' => $this->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN
+                    ? 'Siswa Pindahan'
+                    : 'Siswa Baru',
                 'kelas_tujuan' => $this->kelas_tujuan,
+                'kelas_tujuan_label' => $this->kelas_tujuan ? 'Kelas ' . $this->kelas_tujuan : null,
+                // Pindahan masuk ke rombel yang sedang berjalan, siswa baru ke
+                // rombel angkatan baru. Penanda ini dipakai app untuk memilih
+                // daftar rombel yang tepat saat menyinkron.
+                'masuk_rombel_berjalan' => $this->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN,
                 'kelas_penempatan' => $this->kelas_penempatan,
             ],
             'biodata' => [
