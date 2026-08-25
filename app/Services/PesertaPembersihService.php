@@ -28,6 +28,8 @@ class PesertaPembersihService
         'file_bpjs' => 'BPJS / KIS',
         'file_ktp_ayah' => 'KTP Ayah',
         'file_ktp_ibu' => 'KTP Ibu',
+        'file_mutasi_sekolah' => 'Surat Mutasi dari Sekolah',
+        'file_mutasi_dapodik' => 'Surat Mutasi dari Dapodik',
         'foto' => 'Foto Peserta',
     ];
 

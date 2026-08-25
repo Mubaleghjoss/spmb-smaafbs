@@ -188,6 +188,9 @@ class FormulirSpmbService
             'file_bpjs' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'file_ktp_ibu' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'file_ktp_ayah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            // Berkas mutasi jalur pindahan (boleh menyusul)
+            'file_mutasi_sekolah' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
+            'file_mutasi_dapodik' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:2048',
             'foto' => 'nullable|file|mimes:jpg,jpeg,png|max:2048',
         ];
     }

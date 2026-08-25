@@ -271,6 +271,30 @@
                                 <span class="badge bg-secondary">Belum diunggah</span>
                             @endif
                         </div>
+
+                        {{-- Berkas mutasi: hanya jalur pindahan, boleh menyusul --}}
+                        @if($formulir->peserta?->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">42. Surat Mutasi dari Sekolah</small>
+                            @if($formulir->file_mutasi_sekolah)
+                                <a href="{{ Storage::url($formulir->file_mutasi_sekolah) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Lihat
+                                </a>
+                            @else
+                                <span class="badge bg-warning text-dark">Belum diunggah (boleh menyusul)</span>
+                            @endif
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted d-block">43. Surat Mutasi dari Dapodik</small>
+                            @if($formulir->file_mutasi_dapodik)
+                                <a href="{{ Storage::url($formulir->file_mutasi_dapodik) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-eye me-1"></i>Lihat
+                                </a>
+                            @else
+                                <span class="badge bg-warning text-dark">Belum diunggah (boleh menyusul)</span>
+                            @endif
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>

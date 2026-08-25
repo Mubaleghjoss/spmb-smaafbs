@@ -334,6 +334,12 @@
                             '40. KTP Ibu' => $f->file_ktp_ibu,
                             '41. KTP Ayah' => $f->file_ktp_ayah,
                         ];
+
+                        // Berkas mutasi hanya untuk jalur pindahan.
+                        if ($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN) {
+                            $dokumen['42. Surat Mutasi Sekolah'] = $f->file_mutasi_sekolah;
+                            $dokumen['43. Surat Mutasi Dapodik'] = $f->file_mutasi_dapodik;
+                        }
                         @endphp
                         @foreach($dokumen as $label => $file)
                         <div class="col-md-4">

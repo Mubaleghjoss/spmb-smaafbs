@@ -71,6 +71,8 @@ class FormulirSpmb extends Model
         'file_bpjs',
         'file_ktp_ibu',
         'file_ktp_ayah',
+        'file_mutasi_sekolah',
+        'file_mutasi_dapodik',
         'foto',
         // Status
         'status_verifikasi',

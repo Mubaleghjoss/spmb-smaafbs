@@ -57,7 +57,7 @@ class FormulirController extends Controller
         }
         
         // Handle file uploads
-        $fileFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'foto'];
+        $fileFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'file_mutasi_sekolah', 'file_mutasi_dapodik', 'foto'];
         foreach ($fileFields as $field) {
             if ($request->hasFile($field)) {
                 $validated[$field] = $this->kompresGambar->simpan($request->file($field), "formulir/{$peserta->id}");
@@ -142,7 +142,7 @@ class FormulirController extends Controller
         }
         
         // Validasi field yang diizinkan
-        $allowedFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah'];
+        $allowedFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'file_mutasi_sekolah', 'file_mutasi_dapodik'];
         $field = $request->input('field');
         
         if (!in_array($field, $allowedFields)) {
@@ -171,6 +171,8 @@ class FormulirController extends Controller
             'file_bpjs' => 'Kartu BPJS',
             'file_ktp_ibu' => 'KTP Ibu',
             'file_ktp_ayah' => 'KTP Ayah',
+            'file_mutasi_sekolah' => 'Surat Mutasi dari Sekolah',
+            'file_mutasi_dapodik' => 'Surat Mutasi dari Dapodik',
         ];
         
         return redirect()->route('peserta.formulir.review')
@@ -206,7 +208,7 @@ class FormulirController extends Controller
             $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
         }
 
-        foreach (['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'foto'] as $fileField) {
+        foreach (['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'file_mutasi_sekolah', 'file_mutasi_dapodik', 'foto'] as $fileField) {
             unset($validated[$fileField]);
         }
 

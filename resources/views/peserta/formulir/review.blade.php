@@ -247,6 +247,13 @@
                             'file_ktp_ibu' => ['label' => '43. KTP Ibu', 'field' => 'file_ktp_ibu'],
                             'file_ktp_ayah' => ['label' => '44. KTP Ayah', 'field' => 'file_ktp_ayah'],
                         ];
+
+                        // Berkas mutasi hanya relevan untuk jalur pindahan.
+                        if (($peserta->jenis_pendaftaran ?? null) === \App\Models\Peserta::JENIS_PINDAHAN) {
+                            $berkasFields['file_mutasi_sekolah'] = ['label' => '45. Surat Mutasi dari Sekolah', 'field' => 'file_mutasi_sekolah'];
+                            $berkasFields['file_mutasi_dapodik'] = ['label' => '46. Surat Mutasi dari Dapodik', 'field' => 'file_mutasi_dapodik'];
+                        }
+
                         $berkasBelumLengkap = collect($berkasFields)->filter(fn($item, $key) => empty($formulir->$key));
                     @endphp
 

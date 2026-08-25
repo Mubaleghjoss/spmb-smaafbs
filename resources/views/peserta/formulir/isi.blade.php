@@ -369,6 +369,47 @@
                             </div>
                         </div>
 
+                        {{-- Berkas MUTASI: hanya untuk jalur siswa pindahan.
+                             Keduanya boleh menyusul agar tidak menghambat pendaftaran. --}}
+                        @if($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+                        <hr>
+                        <h6 class="text-primary mb-3">
+                            <i class="bi bi-arrow-left-right me-2"></i>Berkas Mutasi (Jalur Pindahan)
+                        </h6>
+                        <div class="alert alert-light border small">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Kedua berkas di bawah khusus untuk pendaftar <strong>pindahan</strong> dan
+                            <strong>boleh menyusul</strong>. Formulir tetap dapat disimpan tanpa keduanya,
+                            namun berkas ini diperlukan sebelum proses mutasi diselesaikan.
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label">42. Surat Mutasi dari Sekolah (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <input type="file" class="form-control @error('file_mutasi_sekolah') is-invalid @enderror"
+                                       name="file_mutasi_sekolah" accept=".jpg,.jpeg,.png,.pdf">
+                                @error('file_mutasi_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                @if(!empty($formulir?->file_mutasi_sekolah))
+                                    <div class="form-text text-success">
+                                        <i class="bi bi-check-circle me-1"></i>Berkas ada:
+                                        <a href="{{ Storage::url($formulir->file_mutasi_sekolah) }}" target="_blank">Lihat</a>
+                                    </div>
+                                @endif
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">43. Surat Mutasi dari Dapodik (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <input type="file" class="form-control @error('file_mutasi_dapodik') is-invalid @enderror"
+                                       name="file_mutasi_dapodik" accept=".jpg,.jpeg,.png,.pdf">
+                                @error('file_mutasi_dapodik')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                @if(!empty($formulir?->file_mutasi_dapodik))
+                                    <div class="form-text text-success">
+                                        <i class="bi bi-check-circle me-1"></i>Berkas ada:
+                                        <a href="{{ Storage::url($formulir->file_mutasi_dapodik) }}" target="_blank">Lihat</a>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+
                         <hr>
                         
                         <div class="d-flex gap-2">
