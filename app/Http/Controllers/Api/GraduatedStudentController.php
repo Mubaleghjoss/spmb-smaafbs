@@ -57,7 +57,7 @@ class GraduatedStudentController extends Controller
 
         return GraduatedStudentResource::collection($peserta)
             ->additional([
-                'api_version' => '1.1',
+                'api_version' => '1.2',
                 'generated_at' => now()->toIso8601String(),
                 'filters' => [
                     'jenis' => $validated['jenis'] ?? null,
