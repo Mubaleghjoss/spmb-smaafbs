@@ -40,9 +40,11 @@ class GraduatedStudentResource extends JsonResource
                 'nama' => $formulir?->nama_lengkap ?: $this->nama,
                 'email' => $formulir?->email ?: $this->email,
                 'telepon' => $formulir?->telepon ?: $this->telepon,
+                'telepon_rumah' => $formulir?->telp_rumah,
                 'nisn' => $formulir?->nisn,
                 'jenis_kelamin' => $formulir?->jenis_kelamin,
                 'tempat_lahir' => $formulir?->tempat_lahir,
+                'provinsi_lahir' => $formulir?->provinsi_lahir,
                 'tanggal_lahir' => $formulir?->tanggal_lahir?->format('Y-m-d'),
                 'agama' => $formulir?->agama,
                 'alamat' => $formulir?->alamat ?: $this->alamat,
@@ -50,6 +52,14 @@ class GraduatedStudentResource extends JsonResource
                 'kecamatan' => $formulir?->alamat_kecamatan,
                 'kota' => $formulir?->alamat_kota,
                 'provinsi' => $formulir?->alamat_provinsi,
+                // Wilayah khas sekolah (jamaah): desa, daerah, kelompok
+                'desa' => $formulir?->desa,
+                'daerah' => $formulir?->daerah,
+                'kelompok' => $formulir?->kelompok,
+                'jumlah_saudara' => $this->numericValue($formulir?->jumlah_saudara),
+                'hobi' => $formulir?->hobi,
+                'cita_cita' => $formulir?->cita_cita,
+                'prestasi' => $formulir?->prestasi,
             ],
             'orang_tua' => [
                 'nama_ayah' => $formulir?->nama_ayah,
@@ -69,6 +79,10 @@ class GraduatedStudentResource extends JsonResource
                 'tinggi_badan' => $this->numericValue($formulir?->tinggi_badan),
                 'berat_badan' => $this->numericValue($formulir?->berat_badan),
                 'lingkar_kepala' => $this->numericValue($formulir?->lingkar_kepala),
+                // Ukuran seragam — hanya SPMB yang mengumpulkannya
+                'lingkar_dada' => $this->numericValue($formulir?->lingkar_dada),
+                'lingkar_pinggang' => $this->numericValue($formulir?->lingkar_pinggang),
+                'panjang_celana' => $this->numericValue($formulir?->panjang_celana),
             ],
             'hasil_tes' => [
                 'kepribadian' => $kepribadian?->label,
