@@ -67,17 +67,14 @@
                             </div>
                         </div>
 
-                        {{-- Baris 3: Asal Sekolah & Prestasi --}}
+                        @php($tambahanNomorPindahan = $peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN ? 2 : 0)
+
+                        {{-- Baris 3: Sekolah asal; kontak khusus pindahan tepat di bawahnya; lalu prestasi. --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
                                 <label class="form-label">6. Asal Sekolah SMP <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('asal_sekolah') is-invalid @enderror" 
                                        name="asal_sekolah" maxlength="255" value="{{ old('asal_sekolah', $formulir?->asal_sekolah ?? $peserta->asal_sekolah) }}">
-                            </div>
-                            <div class="col-sm-6">
-                                <label class="form-label">7. Prestasi</label>
-                                <input type="text" class="form-control @error('prestasi') is-invalid @enderror" 
-                                       name="prestasi" maxlength="255" value="{{ old('prestasi', $formulir?->prestasi) }}">
                             </div>
                         </div>
 
@@ -99,6 +96,14 @@
                         </div>
                         @endif
 
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label">{{ 7 + $tambahanNomorPindahan }}. Prestasi</label>
+                                <input type="text" class="form-control @error('prestasi') is-invalid @enderror"
+                                       name="prestasi" maxlength="255" value="{{ old('prestasi', $formulir?->prestasi) }}">
+                            </div>
+                        </div>
+
                         {{-- Baris 4: Data Fisik / Ukuran Baju --}}
                         <div class="alert alert-warning py-2 mb-3">
                             <i class="bi bi-exclamation-triangle me-1"></i>
@@ -106,34 +111,34 @@
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
-                                <label class="form-label">8. Lingkar Dada (cm)</label>
+                                <label class="form-label">{{ 8 + $tambahanNomorPindahan }}. Lingkar Dada (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_dada') is-invalid @enderror" 
                                        name="lingkar_dada" value="{{ old('lingkar_dada', $formulir?->lingkar_dada) }}" placeholder="cth: 85">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">9. Lingkar Pinggang (cm)</label>
+                                <label class="form-label">{{ 9 + $tambahanNomorPindahan }}. Lingkar Pinggang (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_pinggang') is-invalid @enderror" 
                                        name="lingkar_pinggang" value="{{ old('lingkar_pinggang', $formulir?->lingkar_pinggang) }}" placeholder="cth: 70">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">10. Lingkar Kepala (cm)</label>
+                                <label class="form-label">{{ 10 + $tambahanNomorPindahan }}. Lingkar Kepala (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_kepala') is-invalid @enderror" 
                                        name="lingkar_kepala" value="{{ old('lingkar_kepala', $formulir?->lingkar_kepala) }}" placeholder="cth: 55">
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
-                                <label class="form-label">11. Panjang Celana/Rok (cm)</label>
+                                <label class="form-label">{{ 11 + $tambahanNomorPindahan }}. Panjang Celana/Rok (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('panjang_celana') is-invalid @enderror" 
                                        name="panjang_celana" value="{{ old('panjang_celana', $formulir?->panjang_celana) }}" placeholder="cth: 100">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">12. Tinggi Badan (cm)</label>
+                                <label class="form-label">{{ 12 + $tambahanNomorPindahan }}. Tinggi Badan (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('tinggi_badan') is-invalid @enderror" 
                                        name="tinggi_badan" value="{{ old('tinggi_badan', $formulir?->tinggi_badan) }}" placeholder="cth: 170">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">13. Berat Badan (kg)</label>
+                                <label class="form-label">{{ 13 + $tambahanNomorPindahan }}. Berat Badan (kg)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('berat_badan') is-invalid @enderror" 
                                        name="berat_badan" value="{{ old('berat_badan', $formulir?->berat_badan) }}" placeholder="cth: 60">
                             </div>
@@ -142,14 +147,14 @@
                         {{-- Baris 5: Hobi & Cita-cita --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">14. Hobi <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 14 + $tambahanNomorPindahan }}. Hobi <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('hobi') is-invalid @enderror" 
                                        name="hobi" value="{{ old('hobi', $formulir?->hobi) }}"
                                        placeholder="Contoh: Membaca, Futsal, Menggambar">
                                 <div class="form-text">Boleh lebih dari satu. Pisahkan setiap hobi dengan koma (,).</div>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">15. Cita-cita <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 15 + $tambahanNomorPindahan }}. Cita-cita <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('cita_cita') is-invalid @enderror" 
                                        name="cita_cita" value="{{ old('cita_cita', $formulir?->cita_cita) }}"
                                        placeholder="Contoh: Dokter, Pengusaha, Ustadz">
@@ -160,12 +165,12 @@
                         {{-- Baris 6: Data Orang Tua --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">16. Nama Ayah/Wali <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 16 + $tambahanNomorPindahan }}. Nama Ayah/Wali <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('nama_ayah') is-invalid @enderror" 
                                        name="nama_ayah" value="{{ old('nama_ayah', $formulir?->nama_ayah) }}">
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">17. Nama Ibu/Wali <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 17 + $tambahanNomorPindahan }}. Nama Ibu/Wali <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('nama_ibu') is-invalid @enderror" 
                                        name="nama_ibu" value="{{ old('nama_ibu', $formulir?->nama_ibu) }}">
                             </div>
@@ -174,12 +179,12 @@
                         {{-- Baris 7: Pekerjaan Orang Tua --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">18. Pekerjaan Ayah <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 18 + $tambahanNomorPindahan }}. Pekerjaan Ayah <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('pekerjaan_ayah') is-invalid @enderror" 
                                        name="pekerjaan_ayah" value="{{ old('pekerjaan_ayah', $formulir?->pekerjaan_ayah) }}">
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">19. Pekerjaan Ibu <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 19 + $tambahanNomorPindahan }}. Pekerjaan Ibu <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('pekerjaan_ibu') is-invalid @enderror" 
                                        name="pekerjaan_ibu" value="{{ old('pekerjaan_ibu', $formulir?->pekerjaan_ibu) }}">
                             </div>
@@ -188,7 +193,7 @@
                         {{-- Baris 7b: Pendidikan Orang Tua --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">20. Pendidikan Terakhir Ayah</label>
+                                <label class="form-label">{{ 20 + $tambahanNomorPindahan }}. Pendidikan Terakhir Ayah</label>
                                 <select class="form-select @error('pendidikan_ayah') is-invalid @enderror" name="pendidikan_ayah">
                                     <option value="">-- Pilih --</option>
                                     @foreach(['SD', 'SMP', 'SMA/SMK', 'D1', 'D2', 'D3', 'S1', 'S2', 'S3'] as $pend)
@@ -197,7 +202,7 @@
                                 </select>
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">21. Pendidikan Terakhir Ibu</label>
+                                <label class="form-label">{{ 21 + $tambahanNomorPindahan }}. Pendidikan Terakhir Ibu</label>
                                 <select class="form-select @error('pendidikan_ibu') is-invalid @enderror" name="pendidikan_ibu">
                                     <option value="">-- Pilih --</option>
                                     @foreach(['SD', 'SMP', 'SMA/SMK', 'D1', 'D2', 'D3', 'S1', 'S2', 'S3'] as $pend)
@@ -210,22 +215,22 @@
                         {{-- Baris 8: Alamat Detail --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-3">
-                                <label class="form-label">22. Kelurahan <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 22 + $tambahanNomorPindahan }}. Kelurahan <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('alamat_kelurahan') is-invalid @enderror" 
                                        name="alamat_kelurahan" value="{{ old('alamat_kelurahan', $formulir?->alamat_kelurahan) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">23. Kecamatan <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 23 + $tambahanNomorPindahan }}. Kecamatan <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('alamat_kecamatan') is-invalid @enderror" 
                                        name="alamat_kecamatan" value="{{ old('alamat_kecamatan', $formulir?->alamat_kecamatan) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">24. Kota/Kab <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 24 + $tambahanNomorPindahan }}. Kota/Kab <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('alamat_kota') is-invalid @enderror" 
                                        name="alamat_kota" value="{{ old('alamat_kota', $formulir?->alamat_kota) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">25. Provinsi <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 25 + $tambahanNomorPindahan }}. Provinsi <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('alamat_provinsi') is-invalid @enderror" 
                                        name="alamat_provinsi" value="{{ old('alamat_provinsi', $formulir?->alamat_provinsi) }}">
                             </div>
@@ -234,22 +239,22 @@
                         {{-- Baris 9: Telepon --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-3">
-                                <label class="form-label">26. No Telepon Rumah</label>
+                                <label class="form-label">{{ 26 + $tambahanNomorPindahan }}. No Telepon Rumah</label>
                                 <input type="text" class="form-control @error('telp_rumah') is-invalid @enderror" 
                                        name="telp_rumah" value="{{ old('telp_rumah', $formulir?->telp_rumah) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">27. No HP/WA Siswa</label>
+                                <label class="form-label">{{ 27 + $tambahanNomorPindahan }}. No HP/WA Siswa</label>
                                 <input type="text" class="form-control @error('telepon') is-invalid @enderror" 
                                        name="telepon" value="{{ old('telepon', $formulir?->telepon ?? $peserta->telepon) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">28. No HP/WA Ayah</label>
+                                <label class="form-label">{{ 28 + $tambahanNomorPindahan }}. No HP/WA Ayah</label>
                                 <input type="text" class="form-control @error('telepon_ayah') is-invalid @enderror" 
                                        name="telepon_ayah" value="{{ old('telepon_ayah', $formulir?->telepon_ayah) }}">
                             </div>
                             <div class="col-sm-3">
-                                <label class="form-label">29. No HP/WA Ibu</label>
+                                <label class="form-label">{{ 29 + $tambahanNomorPindahan }}. No HP/WA Ibu</label>
                                 <input type="text" class="form-control @error('telepon_ibu') is-invalid @enderror" 
                                        name="telepon_ibu" value="{{ old('telepon_ibu', $formulir?->telepon_ibu) }}">
                             </div>
@@ -258,7 +263,7 @@
                         {{-- Baris 10: Jumlah Saudara --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
-                                <label class="form-label">30. Jumlah Saudara Kandung <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 30 + $tambahanNomorPindahan }}. Jumlah Saudara Kandung <span class="text-danger">*</span></label>
                                 <input type="number" class="form-control @error('jumlah_saudara') is-invalid @enderror" 
                                        name="jumlah_saudara" value="{{ old('jumlah_saudara', $formulir?->jumlah_saudara) }}" min="0">
                             </div>
@@ -267,12 +272,12 @@
                         {{-- Baris 11: Tanggal Daftar & NISN --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
-                                <label class="form-label">31. Tanggal Daftar SMA AFBS <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 31 + $tambahanNomorPindahan }}. Tanggal Daftar SMA AFBS <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control @error('tanggal_daftar') is-invalid @enderror" 
                                        name="tanggal_daftar" value="{{ old('tanggal_daftar', $formulir?->tanggal_daftar?->format('Y-m-d') ?? now()->format('Y-m-d')) }}">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">32. NISN <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 32 + $tambahanNomorPindahan }}. NISN <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('nisn') is-invalid @enderror" 
                                        name="nisn" maxlength="20" inputmode="numeric" autocomplete="off"
                                        placeholder="Masukkan NISN 10 digit"
@@ -287,19 +292,19 @@
                         {{-- Baris 12: Kelompok, Desa, Daerah --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
-                                <label class="form-label">33. Nama Kelompok <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 33 + $tambahanNomorPindahan }}. Nama Kelompok <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('kelompok') is-invalid @enderror" 
                                        name="kelompok" value="{{ old('kelompok', $formulir?->kelompok) }}"
                                        placeholder="Nama tempat sambung Kelompok">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">34. Nama Desa <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 34 + $tambahanNomorPindahan }}. Nama Desa <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('desa') is-invalid @enderror" 
                                        name="desa" value="{{ old('desa', $formulir?->desa) }}"
                                        placeholder="Nama tempat sambung Desa ">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">35. Nama Daerah <span class="text-danger">*</span></label>
+                                <label class="form-label">{{ 35 + $tambahanNomorPindahan }}. Nama Daerah <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('daerah') is-invalid @enderror" 
                                        name="daerah" value="{{ old('daerah', $formulir?->daerah) }}"
                                        placeholder="Nama tempat sambung Daerah">
@@ -312,7 +317,7 @@
                         {{-- Baris 13: KK & Akta --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">36. KK (pdf/foto) - Wajib <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 36 + $tambahanNomorPindahan }}. KK (pdf/foto) - Wajib <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_kk') is-invalid @enderror" 
                                        name="file_kk" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_kk))
@@ -323,7 +328,7 @@
                                 @endif
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">37. Akta Lahir (pdf/foto) - Wajib <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 37 + $tambahanNomorPindahan }}. Akta Lahir (pdf/foto) - Wajib <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_akta') is-invalid @enderror" 
                                        name="file_akta" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_akta))
@@ -338,7 +343,7 @@
                         {{-- Baris 14: Ijazah & BPJS --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">38. Ijazah SMP (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 38 + $tambahanNomorPindahan }}. Ijazah SMP (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_ijazah') is-invalid @enderror" 
                                        name="file_ijazah" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_ijazah))
@@ -349,7 +354,7 @@
                                 @endif
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">39. Kartu BPJS (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 39 + $tambahanNomorPindahan }}. Kartu BPJS (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_bpjs') is-invalid @enderror" 
                                        name="file_bpjs" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_bpjs))
@@ -364,7 +369,7 @@
                         {{-- Baris 15: KTP Ibu & KTP Ayah --}}
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">40. KTP Ibu Kandung (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 40 + $tambahanNomorPindahan }}. KTP Ibu Kandung (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_ktp_ibu') is-invalid @enderror" 
                                        name="file_ktp_ibu" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_ktp_ibu))
@@ -375,7 +380,7 @@
                                 @endif
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">41. KTP Ayah Kandung (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 41 + $tambahanNomorPindahan }}. KTP Ayah Kandung (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_ktp_ayah') is-invalid @enderror" 
                                        name="file_ktp_ayah" accept=".jpg,.jpeg,.png,.pdf">
                                 @if(!empty($formulir?->file_ktp_ayah))
@@ -402,7 +407,7 @@
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-6">
-                                <label class="form-label">42. Surat Mutasi dari Sekolah (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 42 + $tambahanNomorPindahan }}. Surat Mutasi dari Sekolah (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_mutasi_sekolah') is-invalid @enderror"
                                        name="file_mutasi_sekolah" accept=".jpg,.jpeg,.png,.pdf">
                                 @error('file_mutasi_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -414,7 +419,7 @@
                                 @endif
                             </div>
                             <div class="col-sm-6">
-                                <label class="form-label">43. Surat Mutasi dari Dapodik (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
+                                <label class="form-label">{{ 43 + $tambahanNomorPindahan }}. Surat Mutasi dari Dapodik (pdf/foto) - Boleh menyusul <small class="text-muted">(maks. 2MB)</small></label>
                                 <input type="file" class="form-control @error('file_mutasi_dapodik') is-invalid @enderror"
                                        name="file_mutasi_dapodik" accept=".jpg,.jpeg,.png,.pdf">
                                 @error('file_mutasi_dapodik')<div class="invalid-feedback">{{ $message }}</div>@enderror
