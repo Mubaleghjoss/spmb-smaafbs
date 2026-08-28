@@ -116,6 +116,11 @@ class FormulirSpmbService
             'nama_ayah' => 'Nama Ayah',
             'nama_ibu' => 'Nama Ibu',
         ];
+
+        if ($formulir->peserta?->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
+            $wajib['nama_kontak_sekolah'] = 'Nama Operator/Bagian Kesiswaan Sekolah Asal';
+            $wajib['telepon_kontak_sekolah'] = 'No. HP/WhatsApp Operator/Bagian Kesiswaan Sekolah Asal';
+        }
         
         $kosong = [];
         foreach ($wajib as $field => $label) {
@@ -179,6 +184,8 @@ class FormulirSpmbService
             // Data sekolah
             'asal_sekolah' => 'nullable|string|max:255',
             'alamat_sekolah' => 'nullable|string|max:255',
+            'nama_kontak_sekolah' => 'nullable|string|max:255',
+            'telepon_kontak_sekolah' => 'nullable|string|max:20',
             'nisn' => 'nullable|string|max:20',
             'tanggal_daftar' => 'nullable|date',
             // File dokumen

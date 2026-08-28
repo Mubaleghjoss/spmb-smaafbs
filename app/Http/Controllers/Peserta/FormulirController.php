@@ -47,10 +47,13 @@ class FormulirController extends Controller
     {
         $peserta = Peserta::find(session('peserta_id'));
         
-        $validated = $request->validate(
-            $this->formulirService->validasi($request->all()),
-            $this->pesanValidasi()
-        );
+        $aturan = $this->formulirService->validasi($request->all());
+        if ($peserta->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
+            $aturan['nama_kontak_sekolah'] = 'required|string|max:255';
+            $aturan['telepon_kontak_sekolah'] = 'required|string|max:20';
+        }
+
+        $validated = $request->validate($aturan, $this->pesanValidasi());
 
         foreach (['hobi', 'cita_cita'] as $field) {
             $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
@@ -199,10 +202,13 @@ class FormulirController extends Controller
             ]);
         }
         
-        $validated = $request->validate(
-            $this->formulirService->validasi($request->all()),
-            $this->pesanValidasi()
-        );
+        $aturan = $this->formulirService->validasi($request->all());
+        if ($peserta->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
+            $aturan['nama_kontak_sekolah'] = 'required|string|max:255';
+            $aturan['telepon_kontak_sekolah'] = 'required|string|max:20';
+        }
+
+        $validated = $request->validate($aturan, $this->pesanValidasi());
 
         foreach (['hobi', 'cita_cita'] as $field) {
             $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
@@ -256,7 +262,9 @@ class FormulirController extends Controller
             'nama_ibu.required' => 'Nama ibu wajib diisi',
             'pekerjaan_ibu.required' => 'Pekerjaan ibu wajib diisi',
             'telepon_ibu.required' => 'No HP/WA ibu wajib diisi',
-            'asal_sekolah.required' => 'Asal sekolah SMP wajib diisi',
+            'asal_sekolah.required' => 'Asal sekolah wajib diisi',
+            'nama_kontak_sekolah.required' => 'Nama operator atau bagian kesiswaan sekolah asal wajib diisi untuk jalur pindahan',
+            'telepon_kontak_sekolah.required' => 'No. HP/WhatsApp operator atau bagian kesiswaan sekolah asal wajib diisi untuk jalur pindahan',
             'nisn.required' => 'NISN wajib diisi',
             'tanggal_daftar.required' => 'Tanggal daftar wajib diisi',
             'file_kk.mimes' => 'File KK harus berformat jpg, jpeg, png, atau pdf',

@@ -81,6 +81,24 @@
                             </div>
                         </div>
 
+                        @if($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+                        <div class="alert alert-primary py-2 mb-3">
+                            <i class="bi bi-telephone-outbound me-1"></i>Kontak ini dipakai panitia untuk memverifikasi riwayat calon siswa kepada sekolah asal.
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label">7. Nama Operator/Bagian Kesiswaan Sekolah Asal <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('nama_kontak_sekolah') is-invalid @enderror" name="nama_kontak_sekolah" maxlength="255" value="{{ old('nama_kontak_sekolah', $formulir?->nama_kontak_sekolah) }}" placeholder="Contoh: Ibu Siti — Kesiswaan">
+                                @error('nama_kontak_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">8. No. HP/WhatsApp Operator/Kesiswaan <span class="text-danger">*</span></label>
+                                <input type="tel" class="form-control @error('telepon_kontak_sekolah') is-invalid @enderror" name="telepon_kontak_sekolah" maxlength="20" inputmode="numeric" value="{{ old('telepon_kontak_sekolah', $formulir?->telepon_kontak_sekolah) }}" placeholder="08xxxxxxxxxx">
+                                @error('telepon_kontak_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                        </div>
+                        @endif
+
                         {{-- Baris 4: Data Fisik / Ukuran Baju --}}
                         <div class="alert alert-warning py-2 mb-3">
                             <i class="bi bi-exclamation-triangle me-1"></i>

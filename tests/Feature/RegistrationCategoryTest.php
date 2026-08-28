@@ -182,6 +182,54 @@ class RegistrationCategoryTest extends TestCase
         $this->assertSame(Peserta::STATUS_KUOTA_DALAM, $perempuanPertama->fresh()->status_kuota);
     }
 
+    public function test_jalur_pindahan_mewajibkan_nama_dan_nomor_kontak_sekolah_asal(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+
+        $this->from('/daftar')->post('/daftar', [
+            'nama' => 'Peserta Pindahan',
+            'telepon' => '081234567899',
+            'asal_sekolah' => 'SMA Negeri Contoh',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'pindahan',
+            'kelas_tujuan' => 10,
+            'jenis_kelamin' => 'L',
+            'setuju' => '1',
+        ])
+            ->assertRedirect('/daftar')
+            ->assertSessionHasErrors([
+                'nama_kontak_sekolah',
+                'telepon_kontak_sekolah',
+            ]);
+    }
+
+    public function test_jalur_pindahan_menyimpan_kontak_sekolah_asal(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+
+        $this->post('/daftar', [
+            'nama' => 'Peserta Pindahan Lengkap',
+            'telepon' => '081234567898',
+            'asal_sekolah' => 'SMA Negeri Contoh',
+            'nama_kontak_sekolah' => 'Ibu Siti Kesiswaan',
+            'telepon_kontak_sekolah' => '+62 812-3456-7890',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'pindahan',
+            'kelas_tujuan' => 10,
+            'jenis_kelamin' => 'L',
+            'setuju' => '1',
+        ])->assertRedirect(route('peserta.dashboard'));
+
+        $this->assertDatabaseHas('formulir_spmb', [
+            'nama_kontak_sekolah' => 'Ibu Siti Kesiswaan',
+            'telepon_kontak_sekolah' => '081234567890',
+        ]);
+    }
+
     public function test_gelombang_dari_tahun_lain_ditolak(): void
     {
         $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();

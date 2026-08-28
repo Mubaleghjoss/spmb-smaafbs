@@ -54,6 +54,17 @@
                             <small class="text-muted d-block">7. Prestasi</small>
                             <strong>{{ $formulir->prestasi ?? '-' }}</strong>
                         </div>
+                        @if($formulir->peserta?->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+                        <div class="col-md-6">
+                            <small class="text-muted d-block">Kontak Sekolah Asal (Operator/Kesiswaan)</small>
+                            <strong>{{ $formulir->nama_kontak_sekolah ?? '-' }}</strong>
+                            @if($formulir->telepon_kontak_sekolah)
+                                <a class="d-block small" href="https://wa.me/{{ preg_replace('/\D+/', '', preg_replace('/^0/', '62', $formulir->telepon_kontak_sekolah)) }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $formulir->telepon_kontak_sekolah }}</a>
+                            @else
+                                <span class="d-block">-</span>
+                            @endif
+                        </div>
+                        @endif
                         <div class="col-md-4">
                             <small class="text-muted d-block">23. Tanggal Daftar</small>
                             <strong>{{ $formulir->tanggal_daftar?->format('d F Y') ?? '-' }}</strong>

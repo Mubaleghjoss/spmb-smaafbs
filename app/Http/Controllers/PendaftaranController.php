@@ -89,6 +89,9 @@ class PendaftaranController extends Controller
             'tempat_lahir' => 'nullable|string|max:100',
             'jenis_kelamin' => 'required|in:L,P',
             'asal_sekolah' => 'required|string|max:255',
+            // Kontak sekolah asal dipakai panitia untuk verifikasi riwayat pindahan.
+            'nama_kontak_sekolah' => 'required_if:jenis_pendaftaran,pindahan|nullable|string|max:255',
+            'telepon_kontak_sekolah' => 'required_if:jenis_pendaftaran,pindahan|nullable|string|max:20',
             'nama_ayah' => 'nullable|string|max:255',
             'nama_ibu' => 'nullable|string|max:255',
             'alamat_kota' => 'nullable|string|max:100',
@@ -101,6 +104,8 @@ class PendaftaranController extends Controller
             'kelas_tujuan.required' => 'Kelas tujuan wajib dipilih',
             'jenis_kelamin.required' => 'Jenis kelamin wajib dipilih',
             'asal_sekolah.required' => 'Asal sekolah wajib diisi',
+            'nama_kontak_sekolah.required_if' => 'Nama operator atau bagian kesiswaan sekolah asal wajib diisi untuk jalur pindahan',
+            'telepon_kontak_sekolah.required_if' => 'No. HP/WhatsApp operator atau bagian kesiswaan sekolah asal wajib diisi untuk jalur pindahan',
             'setuju.required' => 'Anda harus menyetujui syarat dan ketentuan',
         ]);
 
@@ -150,6 +155,8 @@ class PendaftaranController extends Controller
                 'tanggal_lahir' => $request->tanggal_lahir,
                 'jenis_kelamin' => $request->jenis_kelamin,
                 'asal_sekolah' => $request->asal_sekolah,
+                'nama_kontak_sekolah' => $request->nama_kontak_sekolah,
+                'telepon_kontak_sekolah' => $this->normalisasiNoHp($request->telepon_kontak_sekolah),
                 'nama_ayah' => $request->nama_ayah,
                 'nama_ibu' => $request->nama_ibu,
                 'telepon' => $request->telepon,

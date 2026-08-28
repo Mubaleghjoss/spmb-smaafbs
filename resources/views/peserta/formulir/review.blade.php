@@ -111,6 +111,18 @@
                             <input type="text" name="alamat_sekolah" class="form-control @error('alamat_sekolah') is-invalid @enderror" value="{{ old('alamat_sekolah', $formulir->alamat_sekolah) }}">
                             @error('alamat_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
+                        @if($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
+                        <div class="col-md-6">
+                            <label class="form-label">Nama Operator/Bagian Kesiswaan Sekolah Asal <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_kontak_sekolah" class="form-control @error('nama_kontak_sekolah') is-invalid @enderror" value="{{ old('nama_kontak_sekolah', $formulir->nama_kontak_sekolah) }}">
+                            @error('nama_kontak_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">No. HP/WhatsApp Operator/Kesiswaan <span class="text-danger">*</span></label>
+                            <input type="tel" name="telepon_kontak_sekolah" class="form-control @error('telepon_kontak_sekolah') is-invalid @enderror" inputmode="numeric" value="{{ old('telepon_kontak_sekolah', $formulir->telepon_kontak_sekolah) }}">
+                            @error('telepon_kontak_sekolah')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        @endif
                         <div class="col-md-4">
                             <label class="form-label">9. Tanggal Daftar</label>
                             <input type="date" name="tanggal_daftar" class="form-control @error('tanggal_daftar') is-invalid @enderror" value="{{ old('tanggal_daftar', $formulir->tanggal_daftar?->format('Y-m-d')) }}">

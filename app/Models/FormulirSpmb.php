@@ -62,6 +62,9 @@ class FormulirSpmb extends Model
         // Data sekolah
         'asal_sekolah',
         'alamat_sekolah',
+        // Kontak verifikasi sekolah asal (wajib khusus jalur pindahan)
+        'nama_kontak_sekolah',
+        'telepon_kontak_sekolah',
         'nisn',
         'tanggal_daftar',
         // File dokumen

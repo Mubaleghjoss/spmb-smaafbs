@@ -300,8 +300,22 @@
                                     <input type="text" name="tempat_lahir" class="form-control" value="{{ old('tempat_lahir') }}" placeholder="Kota kelahiran">
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label">Asal Sekolah SMP/MTs <span class="text-danger">*</span></label>
+                                    <label class="form-label" x-text="jenisPendaftaran === 'pindahan' ? 'Asal Sekolah' : 'Asal Sekolah SMP/MTs'"></label> <span class="text-danger">*</span>
                                     <input type="text" name="asal_sekolah" class="form-control" value="{{ old('asal_sekolah') }}">
+                                </div>
+                                <div class="border rounded-3 p-3 mb-3 bg-primary-subtle" x-show="jenisPendaftaran === 'pindahan'" x-cloak>
+                                    <div class="fw-semibold text-primary mb-2"><i class="bi bi-telephone-outbound me-1"></i>Kontak Verifikasi Sekolah Asal</div>
+                                    <p class="small text-muted mb-3">Panitia akan menghubungi sekolah asal untuk menanyakan riwayat calon siswa.</p>
+                                    <div class="row g-2">
+                                        <div class="col-sm-6">
+                                            <label class="form-label">Nama Operator/Bagian Kesiswaan <span class="text-danger">*</span></label>
+                                            <input type="text" name="nama_kontak_sekolah" class="form-control" value="{{ old('nama_kontak_sekolah') }}" :required="jenisPendaftaran === 'pindahan'" placeholder="Contoh: Ibu Siti — Kesiswaan">
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <label class="form-label">No. HP/WhatsApp <span class="text-danger">*</span></label>
+                                            <input type="tel" name="telepon_kontak_sekolah" class="form-control" value="{{ old('telepon_kontak_sekolah') }}" :required="jenisPendaftaran === 'pindahan'" inputmode="numeric" placeholder="08xxxxxxxxxx">
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="row g-2">
                                     <div class="col-sm-6 mb-3">
