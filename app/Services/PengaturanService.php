@@ -252,6 +252,10 @@ class PengaturanService
             'nama_rekening' => $this->ambil('nama_rekening', ''),
             'whatsapp_spmb' => $this->ambil('whatsapp_spmb', ''),
             'kontak_tim_spmb' => $this->ambil('kontak_tim_spmb', '[]'),
+            'keterangan_kuota_publik' => $this->ambil(
+                'keterangan_kuota_publik',
+                'Lengkapi formulir dan unggah bukti pembayaran formulir untuk memperoleh urutan kuota. Masuk kuota bukan keputusan diterima; keputusan resmi disampaikan melalui SK Kelulusan.'
+            ),
         ];
     }
 
@@ -286,7 +290,7 @@ class PengaturanService
             'biaya_total_dalam_kota', 'biaya_total_luar_kota',
             'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
-            'whatsapp_spmb', 'kontak_tim_spmb'
+            'whatsapp_spmb', 'kontak_tim_spmb', 'keterangan_kuota_publik'
         ];
 
         $filtered = array_intersect_key($data, array_flip($allowedKeys));

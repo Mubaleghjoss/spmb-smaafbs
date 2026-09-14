@@ -84,6 +84,19 @@
                     <div class="col-lg-4">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-people me-2"></i>Informasi Kuota Publik</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="small text-muted">Teks ini tampil di halaman <code>/daftar</code>. Angka kuota tetap dihitung otomatis dari Tahun Ajaran dan data peserta.</p>
+                                <label class="form-label" for="keteranganKuotaPublik">Keterangan untuk calon pendaftar</label>
+                                <textarea class="form-control" id="keteranganKuotaPublik" name="keterangan_kuota_publik" rows="5" maxlength="1000">{{ old('keterangan_kuota_publik', $spmb['keterangan_kuota_publik']) }}</textarea>
+                                <div class="form-text">Gunakan bahasa singkat dan mudah dipahami. Maksimum 1.000 karakter.</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-header bg-success text-white">
                                 <h6 class="mb-0"><i class="bi bi-power me-2"></i>Status Umum Pendaftaran</h6>
                             </div>
                             <div class="card-body">

@@ -20,4 +20,18 @@ class AdminPengaturanSpmbTest extends TestCase
             ->assertSee('biaya_formulir_dalam_kota', false)
             ->assertSee('biaya_formulir_luar_kota', false);
     }
+
+    public function test_admin_dapat_menyimpan_keterangan_kuota_publik(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->post(route('admin.pengaturan.spmb.simpan'), [
+            'keterangan_kuota_publik' => 'Lengkapi formulir lalu unggah bukti pembayaran formulir untuk memperoleh urutan kuota.',
+        ])->assertRedirect(route('admin.pengaturan.spmb'));
+
+        $this->assertDatabaseHas('pengaturan', [
+            'kunci' => 'keterangan_kuota_publik',
+            'nilai' => 'Lengkapi formulir lalu unggah bukti pembayaran formulir untuk memperoleh urutan kuota.',
+        ]);
+    }
 }

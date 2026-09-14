@@ -349,6 +349,7 @@ class PengaturanController extends Controller
             'rekening_bank' => 'nullable|string|max:100',
             'nomor_rekening' => 'nullable|string|max:50',
             'nama_rekening' => 'nullable|string|max:255',
+            'keterangan_kuota_publik' => 'nullable|string|max:1000',
             'kontak_tim' => 'nullable|array',
             'kontak_tim.*.nama' => 'nullable|string|max:100',
             'kontak_tim.*.whatsapp' => 'nullable|string|max:20',
