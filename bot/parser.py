@@ -6,7 +6,14 @@ from .config import Config
 
 ACTIONS = frozenset({'get_quota','get_statistics','search_applicant','get_applicant_detail','list_by_city','list_by_district','list_by_school','list_by_document_status','list_by_verification_status','list_registered_today','gender_summary'})
 FILTERS = frozenset({'query','identifier','city','district','school','document_status','verification_status'})
+CONTROL_COMMANDS = frozenset({'/setupid', '/whoami'})
 DANGEROUS = re.compile(r'(;|--|/\*|\*/|\b(union|select|drop|insert|delete|update|alter|exec)\b)', re.I)
+
+def parse_control_command(text: str) -> str | None:
+    value = text.strip()
+    value = re.sub(r'^(/\w+)@\w+', r'\1', value, flags=re.I)
+    command = value.lower()
+    return command if command in CONTROL_COMMANDS else None
 
 def parse_deterministic(text: str) -> dict | None:
     value = text.strip()

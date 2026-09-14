@@ -5,6 +5,7 @@ from .config import Config
 
 READ_ONLY_MESSAGE = 'Bot Data SPMB hanya memiliki akses baca. Silakan lakukan perubahan melalui aplikasi SPMB.'
 WAITING_GROUP_MESSAGE = 'Grup resmi Tim SPMB belum dikonfigurasi. Hubungi administrator.'
+BOOTSTRAP_SETUPID_MESSAGE = 'Jalankan /setupid di grup Telegram resmi untuk melihat ID grup.'
 UNAUTHORIZED_MESSAGE = 'Anda tidak berwenang menggunakan Bot Data SPMB.'
 WRONG_GROUP_MESSAGE = 'Bot Data SPMB hanya dapat digunakan di grup resmi Tim SPMB.'
 _WRITE = re.compile(r'\b(ubah(\s+data)?|hapus(\s+data)?|verifikasi|terima\s+siswa|edit\s+biodata|tolak|update|delete|insert|create)\b', re.I)
