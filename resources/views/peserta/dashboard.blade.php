@@ -141,10 +141,9 @@
     @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
         <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <i class="bi bi-hourglass-split me-1"></i>
-                Pendaftaran Anda berada di <strong>Waiting List</strong> — syarat sudah lengkap, tetapi kursi
-                periode ini sedang penuh. Anda otomatis masuk kuota bila ada kursi yang kembali tersedia.
-                Tahapan SPMB tetap dapat dilanjutkan seperti biasa.
+                <span class="badge bg-warning text-dark me-1">Waiting List #{{ $peserta->urutan_kuota }}</span>
+                Bukti pembayaran formulir Anda sudah diterima sistem, tetapi kuota saat upload sudah penuh.
+                Posisi waiting list akan diperbarui otomatis bila ada kursi yang dilepas. <strong>Tes online tetap menunggu verifikasi pembayaran panitia.</strong>
             </div>
             <button type="button" class="btn btn-sm btn-outline-dark"
                     data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
@@ -155,8 +154,7 @@
         <div class="alert alert-secondary border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <i class="bi bi-exclamation-circle me-1"></i>
-                Pendaftaran Anda <strong>belum menempati kuota</strong>. Kursi baru diambil setelah
-                Formulir Biodata lengkap dan Pembayaran Pendaftaran (Tahap 3) diverifikasi Tim SPMB.
+                Pendaftaran Anda <strong>belum berhasil mendapatkan kuota</strong>. Lengkapi Tahap 1 dan 2, lalu transfer serta upload bukti pembayaran formulir senilai tagihan penuh pada Tahap 3. Jika bukti sebelumnya ditolak panitia, kuota telah dilepas; kirim ulang bukti transfer yang valid untuk memperoleh urutan kuota baru.
             </div>
             <button type="button" class="btn btn-sm btn-outline-dark"
                     data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
@@ -166,9 +164,9 @@
     @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_DALAM)
         <div class="alert alert-success border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <i class="bi bi-check-circle me-1"></i>
-                Pendaftaran Anda <strong>sudah masuk hitungan kuota</strong> periode ini.
-                <span class="d-block small">Catatan: ini bukan keputusan penerimaan — penerimaan resmi dinyatakan lewat SK Kelulusan pada tahap akhir.</span>
+                <span class="badge bg-success me-1">Kuota Diamankan #{{ $peserta->urutan_kuota }}</span>
+                Bukti pembayaran formulir Anda sudah diterima sistem dan urutan kuota telah diamankan berdasarkan waktu upload.
+                <span class="d-block small">Tes online baru terbuka setelah panitia menyatakan bukti pembayaran valid. Ini bukan keputusan penerimaan; keputusan resmi hanya melalui SK Kelulusan.</span>
             </div>
             <button type="button" class="btn btn-sm btn-outline-success"
                     data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">

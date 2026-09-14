@@ -2,9 +2,8 @@
 
 namespace Tests\Property;
 
-use App\Models\Peserta;
 use App\Models\Pengguna;
-use App\Models\FormulirSpmb;
+use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Services\FormulirSpmbService;
 use App\Services\SpmbService;
@@ -20,7 +19,7 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->formulirService = new FormulirSpmbService(new SpmbService());
+        $this->formulirService = new FormulirSpmbService(new SpmbService);
     }
 
     /**
@@ -35,7 +34,7 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             Generators::elements(['Islam', 'Kristen', 'Katolik', 'Hindu', 'Buddha'])
         )->then(function ($nama, $tempat, $jenisKelamin, $agama) {
             $peserta = Peserta::factory()->create();
-            
+
             $data = [
                 'nama_lengkap' => $nama ?: 'Test',
                 'tempat_lahir' => $tempat ?: 'Jakarta',
@@ -48,15 +47,15 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
                 'nama_ibu' => 'Ibu Test',
                 'asal_sekolah' => 'SMP Test',
             ];
-            
+
             $formulir = $this->formulirService->simpan($peserta, $data);
-            
+
             $this->assertEquals($peserta->id, $formulir->peserta_id);
             $this->assertEquals($data['nama_lengkap'], $formulir->nama_lengkap);
             $this->assertEquals($data['jenis_kelamin'], $formulir->jenis_kelamin);
             $this->assertEquals($data['agama'], $formulir->agama);
             $this->assertEquals('draft', $formulir->status_verifikasi);
-            
+
             // Cleanup
             $formulir->delete();
             $peserta->forceDelete();
@@ -69,7 +68,7 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
     public function test_update_formulir_memperbarui_data(): void
     {
         $peserta = Peserta::factory()->create();
-        
+
         // Simpan pertama
         $dataAwal = [
             'nama_lengkap' => 'Nama Awal',
@@ -83,18 +82,18 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'nama_ibu' => 'Ibu',
             'asal_sekolah' => 'SMP Awal',
         ];
-        
+
         $formulir = $this->formulirService->simpan($peserta, $dataAwal);
         $this->assertEquals('Nama Awal', $formulir->nama_lengkap);
-        
+
         // Update
         $dataBaru = array_merge($dataAwal, [
             'nama_lengkap' => 'Nama Baru',
             'alamat' => 'Alamat Baru',
         ]);
-        
+
         $formulirUpdated = $this->formulirService->simpan($peserta, $dataBaru);
-        
+
         $this->assertEquals($formulir->id, $formulirUpdated->id);
         $this->assertEquals('Nama Baru', $formulirUpdated->nama_lengkap);
         $this->assertEquals('Alamat Baru', $formulirUpdated->alamat);
@@ -114,9 +113,9 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'tahap_1_selesai' => true,
             'tahap_2_selesai' => false,
         ]);
-        
+
         $admin = Pengguna::factory()->create(['peran' => 'admin']);
-        
+
         $data = [
             'nama_lengkap' => 'Test Peserta',
             'tempat_lahir' => 'Jakarta',
@@ -129,23 +128,18 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'nama_ibu' => 'Ibu',
             'asal_sekolah' => 'SMP Test',
         ];
-        
+
         $formulir = $this->formulirService->simpan($peserta, $data);
         $this->formulirService->submit($peserta);
-        
-        $formulir->refresh();
-        $this->assertEquals('menunggu', $formulir->status_verifikasi);
-        
-        $this->formulirService->verifikasi($formulir, $admin);
-        
+
         $formulir->refresh();
         $peserta->refresh();
-        
-        $this->assertEquals('terverifikasi', $formulir->status_verifikasi);
-        $this->assertEquals($admin->id, $formulir->diverifikasi_oleh);
-        $this->assertNotNull($formulir->diverifikasi_pada);
-        // Verifikasi formulir menyelesaikan tahap 2 (Isi Formulir)
+
+        // Formulir lengkap langsung menyelesaikan Tahap 2 dan membuka Tahap 3;
+        // verifikasi panitia kini berfokus pada bukti pembayaran formulir.
+        $this->assertEquals('terkirim', $formulir->status_verifikasi);
         $this->assertTrue($peserta->tahapanSelesai(2));
+        $this->assertEquals(3, $peserta->tahapanSpmb->tahap_saat_ini);
     }
 
     /**
@@ -160,9 +154,9 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'tahap_1_selesai' => true,
             'tahap_2_selesai' => true,
         ]);
-        
+
         $admin = Pengguna::factory()->create(['peran' => 'admin']);
-        
+
         $data = [
             'nama_lengkap' => 'Test Peserta',
             'tempat_lahir' => 'Jakarta',
@@ -175,15 +169,15 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'nama_ibu' => 'Ibu',
             'asal_sekolah' => 'SMP Test',
         ];
-        
+
         $formulir = $this->formulirService->simpan($peserta, $data);
         $this->formulirService->submit($peserta);
-        
+
         $this->formulirService->tolak($formulir, 'Data tidak lengkap', $admin);
-        
+
         $formulir->refresh();
         $tahapan->refresh();
-        
+
         $this->assertEquals('ditolak', $formulir->status_verifikasi);
         $this->assertEquals('Data tidak lengkap', $formulir->catatan_verifikasi);
         $this->assertFalse($tahapan->tahap_3_selesai);
@@ -196,7 +190,7 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
     public function test_cek_kelengkapan_mendeteksi_field_kosong(): void
     {
         $peserta = Peserta::factory()->create();
-        
+
         // Formulir tidak lengkap - field wajib yang kosong
         $dataKurang = [
             'nama_lengkap' => 'Test',
@@ -210,10 +204,10 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'nama_ibu' => 'Ibu',
             'asal_sekolah' => 'SMP Test',
         ];
-        
+
         $formulir = $this->formulirService->simpan($peserta, $dataKurang);
         $cek = $this->formulirService->cekKelengkapan($formulir);
-        
+
         $this->assertFalse($cek['lengkap']);
         $this->assertContains('Kota Kelahiran', $cek['kosong']);  // tempat_lahir -> Kota Kelahiran
         $this->assertContains('Nama Ayah', $cek['kosong']);
@@ -226,7 +220,7 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
     public function test_formulir_sudah_submit_tidak_bisa_diedit(): void
     {
         $peserta = Peserta::factory()->create();
-        
+
         $data = [
             'nama_lengkap' => 'Test',
             'tempat_lahir' => 'Jakarta',
@@ -239,24 +233,24 @@ class FormulirSpmbPropertyTest extends PropertyTestCase
             'nama_ibu' => 'Ibu',
             'asal_sekolah' => 'SMP Test',
         ];
-        
+
         $formulir = $this->formulirService->simpan($peserta, $data);
-        
+
         // Draft bisa diedit
         $this->assertTrue($this->formulirService->bisaDiedit($formulir));
-        
+
         // Submit
         $this->formulirService->submit($peserta);
         $formulir->refresh();
-        
+
         // Menunggu tidak bisa diedit
         $this->assertFalse($this->formulirService->bisaDiedit($formulir));
-        
+
         // Ditolak bisa diedit lagi
         $admin = Pengguna::factory()->create(['peran' => 'admin']);
         $this->formulirService->tolak($formulir, 'Perbaiki', $admin);
         $formulir->refresh();
-        
+
         $this->assertTrue($this->formulirService->bisaDiedit($formulir));
     }
 }

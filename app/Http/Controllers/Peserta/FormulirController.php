@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Peserta;
 use App\Services\FormulirSpmbService;
 use App\Services\KompresGambarService;
-use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FormulirController extends Controller
@@ -24,19 +24,19 @@ class FormulirController extends Controller
     {
         $peserta = Peserta::find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
-        
+
         // Cek apakah tahap 1 (Buat Akun) sudah selesai
         // Tahap 2 adalah Isi Formulir, jadi peserta bisa langsung isi setelah daftar
-        if (!$peserta->tahapanSelesai(1)) {
+        if (! $peserta->tahapanSelesai(1)) {
             return redirect()->route('peserta.dashboard')
                 ->with('error', 'Selesaikan pendaftaran akun terlebih dahulu');
         }
-        
+
         // Jika sudah submit dan menunggu/terverifikasi, redirect ke review
         if ($formulir && in_array($formulir->status_verifikasi, ['menunggu', 'terverifikasi'])) {
             return redirect()->route('peserta.formulir.review');
         }
-        
+
         return view('peserta.formulir.isi', compact('peserta', 'formulir'));
     }
 
@@ -46,7 +46,7 @@ class FormulirController extends Controller
     public function simpan(Request $request): RedirectResponse
     {
         $peserta = Peserta::find(session('peserta_id'));
-        
+
         $aturan = $this->formulirService->validasi($request->all());
         if ($peserta->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
             $aturan['nama_kontak_sekolah'] = 'required|string|max:255';
@@ -58,7 +58,7 @@ class FormulirController extends Controller
         foreach (['hobi', 'cita_cita'] as $field) {
             $validated[$field] = $this->normalisasiDaftarKoma($validated[$field] ?? null);
         }
-        
+
         // Handle file uploads
         $fileFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'file_mutasi_sekolah', 'file_mutasi_dapodik', 'foto'];
         foreach ($fileFields as $field) {
@@ -68,28 +68,29 @@ class FormulirController extends Controller
                 unset($validated[$field]);
             }
         }
-        
+
         // Simpan formulir
         $formulir = $this->formulirService->simpan($peserta, $validated);
-        
+
         // Cek kelengkapan - hanya field yang benar-benar wajib
         $cek = $this->formulirService->cekKelengkapan($formulir);
-        if (!$cek['lengkap']) {
+        if (! $cek['lengkap']) {
             $fieldKosong = array_slice($cek['kosong'], 0, 5);
             $sisanya = count($cek['kosong']) - 5;
-            $pesan = 'Data belum lengkap: ' . implode(', ', $fieldKosong);
+            $pesan = 'Data belum lengkap: '.implode(', ', $fieldKosong);
             if ($sisanya > 0) {
                 $pesan .= " dan {$sisanya} field lainnya";
             }
+
             return redirect()->route('peserta.formulir.isi')
                 ->with('error', $pesan);
         }
-        
-        // Langsung submit untuk verifikasi
+
+        // Formulir lengkap otomatis menyelesaikan Tahap 2 dan membuka Tahap 3.
         $this->formulirService->submit($peserta);
-        
-        return redirect()->route('peserta.formulir.review')
-            ->with('success', 'Formulir berhasil disimpan dan disubmit. Tunggu verifikasi dari admin.');
+
+        return redirect()->route('peserta.pembayaran.formulir')
+            ->with('success', 'Formulir lengkap berhasil dikirim. Lanjutkan Tahap 3: transfer dan upload bukti pembayaran formulir untuk mengamankan urutan kuota.');
     }
 
     /**
@@ -107,9 +108,9 @@ class FormulirController extends Controller
     {
         $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
-        
-        if (!$formulir) {
-            if (!$this->sudahLulusFinal($peserta)) {
+
+        if (! $formulir) {
+            if (! $this->sudahLulusFinal($peserta)) {
                 return redirect()->route('peserta.formulir.isi');
             }
 
@@ -122,7 +123,7 @@ class FormulirController extends Controller
                 'status_verifikasi' => 'draft',
             ]);
         }
-        
+
         // Ambil daftar kontak Tim SPMB dari pengaturan (bisa banyak nomor)
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $kontakTimSpmb = $pengaturanService->ambilKontakTimSpmb();
@@ -138,20 +139,20 @@ class FormulirController extends Controller
     {
         $peserta = Peserta::find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
-        
-        if (!$formulir) {
+
+        if (! $formulir) {
             return redirect()->route('peserta.formulir.isi')
                 ->with('error', 'Formulir tidak ditemukan');
         }
-        
+
         // Validasi field yang diizinkan
         $allowedFields = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah', 'file_mutasi_sekolah', 'file_mutasi_dapodik'];
         $field = $request->input('field');
-        
-        if (!in_array($field, $allowedFields)) {
+
+        if (! in_array($field, $allowedFields)) {
             return back()->with('error', 'Field tidak valid');
         }
-        
+
         // Validasi file
         $request->validate([
             'berkas' => 'required|file|mimes:jpg,jpeg,png,pdf|max:2048',
@@ -160,13 +161,13 @@ class FormulirController extends Controller
             'berkas.mimes' => 'Format file harus JPG, JPEG, PNG, atau PDF',
             'berkas.max' => 'Ukuran file maksimal 2MB',
         ]);
-        
+
         // Upload file (gambar dikompres otomatis; PDF disimpan apa adanya)
         $path = $this->kompresGambar->simpan($request->file('berkas'), "formulir/{$peserta->id}");
-        
+
         // Update formulir
         $formulir->update([$field => $path]);
-        
+
         $fieldLabels = [
             'file_kk' => 'Kartu Keluarga',
             'file_akta' => 'Akta Lahir',
@@ -177,7 +178,7 @@ class FormulirController extends Controller
             'file_mutasi_sekolah' => 'Surat Mutasi dari Sekolah',
             'file_mutasi_dapodik' => 'Surat Mutasi dari Dapodik',
         ];
-        
+
         return redirect()->route('peserta.formulir.review')
             ->with('sukses', "Berkas {$fieldLabels[$field]} berhasil diunggah");
     }
@@ -189,9 +190,9 @@ class FormulirController extends Controller
     {
         $peserta = Peserta::with('tahapanSpmb')->find(session('peserta_id'));
         $formulir = $this->formulirService->ambilFormulir($peserta);
-        
-        if (!$formulir) {
-            if (!$this->sudahLulusFinal($peserta)) {
+
+        if (! $formulir) {
+            if (! $this->sudahLulusFinal($peserta)) {
                 return redirect()->route('peserta.formulir.isi')
                     ->with('error', 'Formulir tidak ditemukan');
             }
@@ -201,7 +202,7 @@ class FormulirController extends Controller
                 'status_verifikasi' => 'draft',
             ]);
         }
-        
+
         $aturan = $this->formulirService->validasi($request->all());
         if ($peserta->jenis_pendaftaran === Peserta::JENIS_PINDAHAN) {
             $aturan['nama_kontak_sekolah'] = 'required|string|max:255';
@@ -219,7 +220,7 @@ class FormulirController extends Controller
         }
 
         $this->formulirService->simpan($peserta, $validated);
-        
+
         return redirect()->route('peserta.formulir.review')
             ->with('sukses', 'Data formulir berhasil diperbarui');
     }

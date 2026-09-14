@@ -26,7 +26,17 @@
                                     <i class="bi bi-hourglass-split text-warning" style="font-size: 2rem;"></i>
                                 </div>
                                 <h5 class="text-warning">Menunggu Verifikasi</h5>
-                                <p class="text-muted">Bukti pembayaran sedang diverifikasi oleh admin</p>
+                                @if($peserta->status_kuota === \App\Models\Peserta::STATUS_KUOTA_DALAM)
+                                    <p class="text-muted mb-1">Bukti pembayaran sedang diverifikasi oleh panitia.</p>
+                                    <span class="badge bg-success">Kuota Diamankan #{{ $peserta->urutan_kuota }}</span>
+                                    <p class="small text-muted mt-2 mb-0">Urutan ditentukan saat bukti diupload. Tes online tetap menunggu bukti dinyatakan valid.</p>
+                                @elseif($peserta->status_kuota === \App\Models\Peserta::STATUS_KUOTA_WAITING)
+                                    <p class="text-muted mb-1">Bukti pembayaran sedang diverifikasi oleh panitia.</p>
+                                    <span class="badge bg-warning text-dark">Waiting List #{{ $peserta->urutan_kuota }}</span>
+                                    <p class="small text-muted mt-2 mb-0">Posisi akan diperbarui otomatis bila kuota tersedia.</p>
+                                @else
+                                    <p class="text-muted">Bukti pembayaran sedang diverifikasi oleh panitia.</p>
+                                @endif
                             @elseif($pembayaran->status === 'terverifikasi')
                                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
@@ -37,8 +47,11 @@
                                 <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-x-circle text-danger" style="font-size: 2rem;"></i>
                                 </div>
-                                <h5 class="text-danger">Ditolak</h5>
-                                <p class="text-muted">{{ $pembayaran->catatan ?? 'Bukti pembayaran ditolak' }}</p>
+                                <h5 class="text-danger">Bukti Pembayaran Tidak Valid</h5>
+                                <p class="text-muted mb-2">{{ $pembayaran->catatan ?? 'Bukti pembayaran ditolak oleh panitia.' }}</p>
+                                <div class="alert alert-danger text-start small">
+                                    <strong>Anda belum berhasil mendapatkan kuota.</strong> Kuota dari bukti ini telah dilepas karena bukti pembayaran tidak valid atau nominalnya tidak sesuai. Transfer dan upload ulang bukti pembayaran formulir senilai tagihan penuh untuk memperoleh urutan kuota baru.
+                                </div>
                                 <a href="{{ route('peserta.pembayaran.formulir') }}" class="btn btn-warning">
                                     <i class="bi bi-upload me-2"></i>Upload Ulang
                                 </a>

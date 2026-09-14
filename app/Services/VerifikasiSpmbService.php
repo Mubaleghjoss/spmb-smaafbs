@@ -2,15 +2,12 @@
 
 namespace App\Services;
 
-use App\Models\Peserta;
-use App\Models\Pengguna;
-use App\Models\Pembayaran;
 use App\Models\FormulirSpmb;
-use App\Models\TahapanSpmb;
-use App\Models\LogTahapanSpmb;
-use App\Enums\StatusPembayaran;
-use Illuminate\Support\Facades\DB;
+use App\Models\Pembayaran;
+use App\Models\Pengguna;
+use App\Models\Peserta;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\DB;
 
 class VerifikasiSpmbService
 {
@@ -28,26 +25,25 @@ class VerifikasiSpmbService
         $query = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran'])
             ->whereHas('tahapanSpmb');
 
-        if (!empty($filter['tahap'])) {
+        if (! empty($filter['tahap'])) {
             $query->whereHas('tahapanSpmb', function ($q) use ($filter) {
                 $q->where('tahap_saat_ini', $filter['tahap']);
             });
         }
 
-        if (!empty($filter['status'])) {
+        if (! empty($filter['status'])) {
             // Filter berdasarkan status verifikasi
             if ($filter['status'] === 'menunggu') {
-                $query->where(function ($q) {
-                    $q->whereHas('pembayaran', fn($p) => $p->where('status', 'menunggu'))
-                      ->orWhereHas('formulirSpmb', fn($f) => $f->where('status_verifikasi', 'menunggu'));
-                });
+                // Formulir lengkap otomatis membuka Tahap 3; antrean kerja
+                // panitia hanya pembayaran dan verifikasi tahapan berikutnya.
+                $query->whereHas('pembayaran', fn ($p) => $p->where('status', 'menunggu'));
             }
         }
 
-        if (!empty($filter['cari'])) {
+        if (! empty($filter['cari'])) {
             $query->where(function ($q) use ($filter) {
                 $q->where('nama', 'like', "%{$filter['cari']}%")
-                  ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
+                    ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
             });
         }
 
@@ -107,11 +103,11 @@ class VerifikasiSpmbService
      */
     public function verifikasiBerkas(Peserta $peserta, array $dokumen, Pengguna $admin): void
     {
-        DB::transaction(function () use ($peserta, $dokumen, $admin) {
+        DB::transaction(function () use ($dokumen) {
             // Simpan checklist dokumen
             // Untuk saat ini, langsung update tahapan jika semua dokumen lengkap
-            $semuaLengkap = collect($dokumen)->every(fn($v) => $v === true || $v === '1');
-            
+            $semuaLengkap = collect($dokumen)->every(fn ($v) => $v === true || $v === '1');
+
             if ($semuaLengkap) {
                 // Berkas adalah bagian dari tahap 5 (wawancara)
                 // Jadi tidak perlu update tahapan terpisah
@@ -126,7 +122,7 @@ class VerifikasiSpmbService
     {
         DB::transaction(function () use ($pembayaran, $admin) {
             $this->pembayaranService->verifikasi($pembayaran, $admin);
-            
+
             // Setelah pelunasan terverifikasi, peserta resmi diterima (tahap 7)
             $this->spmbService->selesaikanTahapan($pembayaran->peserta, 7, $admin->id);
         });
@@ -149,7 +145,7 @@ class VerifikasiSpmbService
         // Implementasi notifikasi (email/SMS/in-app)
         // Untuk saat ini, log saja
         \Log::info("Notifikasi penolakan {$jenis} untuk peserta {$peserta->nomor_pendaftaran}: {$alasan}");
-        
+
         // TODO: Implementasi email notification
         // if ($peserta->email) {
         //     Mail::to($peserta->email)->send(new PenolakanNotification($peserta, $jenis, $alasan));
@@ -177,7 +173,7 @@ class VerifikasiSpmbService
                 ->whereHas('peserta')
                 ->where(function ($q) {
                     $q->where('status_verifikasi_tes', 'menunggu')
-                      ->orWhereNull('status_verifikasi_tes');
+                        ->orWhereNull('status_verifikasi_tes');
                 })
                 ->whereHas('tes', function ($q) {
                     $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
@@ -198,6 +194,7 @@ class VerifikasiSpmbService
             // Lewat relasi peserta agar ikut ter-scope periode aktif (PeriodeScope).
             $hasil[$i] = Peserta::whereHas('tahapanSpmb', fn ($q) => $q->where('tahap_saat_ini', $i))->count();
         }
+
         return $hasil;
     }
 

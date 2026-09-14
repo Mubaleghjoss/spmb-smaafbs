@@ -2,9 +2,9 @@
 
 namespace App\Services;
 
-use App\Models\Peserta;
 use App\Models\FormulirSpmb;
 use App\Models\Pengguna;
+use App\Models\Peserta;
 use Illuminate\Support\Facades\DB;
 
 class FormulirSpmbService
@@ -23,7 +23,7 @@ class FormulirSpmbService
     {
         $formulir = FormulirSpmb::where('peserta_id', $peserta->id)->first();
         $jenisKelaminSebelum = $formulir?->jenis_kelamin;
-        
+
         if ($formulir) {
             $formulir->update($data);
         } else {
@@ -44,22 +44,33 @@ class FormulirSpmbService
     }
 
     /**
-     * Submit formulir untuk diverifikasi
+     * Submit formulir lengkap.
+     *
+     * Tahap 2 tidak lagi menjadi antrean verifikasi manual: peserta yang sudah
+     * mengirim formulir langsung dapat melanjutkan ke pembayaran formulir
+     * (Tahap 3). Pemeriksaan berkas tetap dapat dilakukan panitia pada tahap
+     * wawancara tanpa menahan akses peserta pada tahap ini.
      */
     public function submit(Peserta $peserta): FormulirSpmb
     {
         $peserta->refresh();
         $formulir = $peserta->formulirSpmb;
-        
-        if (!$formulir) {
+
+        if (! $formulir) {
             throw new \Exception('Formulir belum diisi');
         }
-        
-        $formulir->update([
-            'status_verifikasi' => 'menunggu',
-        ]);
-        
-        return $formulir;
+
+        DB::transaction(function () use ($formulir, $peserta) {
+            $formulir->update([
+                'status_verifikasi' => 'terkirim',
+                'catatan_verifikasi' => null,
+                'diverifikasi_oleh' => null,
+                'diverifikasi_pada' => now(),
+            ]);
+            $this->spmbService->selesaikanTahapan($peserta, 2);
+        });
+
+        return $formulir->fresh();
     }
 
     /**
@@ -74,7 +85,7 @@ class FormulirSpmbService
                 'diverifikasi_oleh' => $admin->id,
                 'diverifikasi_pada' => now(),
             ]);
-            
+
             // Selesaikan tahap 2 (Isi Formulir)
             $this->spmbService->selesaikanTahapan($formulir->peserta, 2, $admin->id);
         });
@@ -121,14 +132,14 @@ class FormulirSpmbService
             $wajib['nama_kontak_sekolah'] = 'Nama Operator/Bagian Kesiswaan Sekolah Asal';
             $wajib['telepon_kontak_sekolah'] = 'No. HP/WhatsApp Operator/Bagian Kesiswaan Sekolah Asal';
         }
-        
+
         $kosong = [];
         foreach ($wajib as $field => $label) {
             if (empty($formulir->$field)) {
                 $kosong[] = $label;
             }
         }
-        
+
         return [
             'lengkap' => empty($kosong),
             'kosong' => $kosong,
@@ -218,6 +229,7 @@ class FormulirSpmbService
     public function sudahDiSubmit(Peserta $peserta): bool
     {
         $formulir = $peserta->formulirSpmb;
-        return $formulir && in_array($formulir->status_verifikasi, ['menunggu', 'terverifikasi']);
+
+        return $formulir && in_array($formulir->status_verifikasi, ['menunggu', 'terkirim', 'terverifikasi']);
     }
 }

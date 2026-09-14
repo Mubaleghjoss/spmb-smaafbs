@@ -25,7 +25,7 @@
             <div class="modal-body">
                 <p class="mb-3">
                     Kursi penerimaan terbatas, jadi kuota tidak langsung terpakai begitu akun dibuat.
-                    Pendaftaran <strong>menempati kuota</strong> setelah dua syarat di bawah terpenuhi.
+                    Pendaftaran <strong>mendapat reservasi kuota</strong> setelah formulir lengkap dan bukti pembayaran formulir senilai tagihan penuh berhasil diupload.
                 </p>
 
                 {{-- Dua syarat --}}
@@ -48,10 +48,10 @@
                             <div class="d-flex align-items-start gap-2">
                                 <span class="badge bg-success rounded-circle px-2 py-1">2</span>
                                 <div>
-                                    <div class="fw-semibold">Pembayaran Pendaftaran diverifikasi</div>
+                                    <div class="fw-semibold">Bukti pembayaran formulir diupload</div>
                                     <div class="small text-muted">
-                                        Tahap 3 — bukti pembayaran biaya pendaftaran sudah diperiksa dan
-                                        disetujui Tim SPMB.
+                                        Tahap 3 — upload bukti transfer senilai tagihan penuh langsung menentukan urutan reservasi.
+                                        Tes online baru terbuka setelah Tim SPMB menyatakan bukti tersebut valid.
                                     </div>
                                 </div>
                             </div>
@@ -69,23 +69,23 @@
                                     <span class="badge bg-secondary">Belum Lengkap</span>
                                 </td>
                                 <td class="small">
-                                    Salah satu syarat di atas belum selesai. Pendaftaran <strong>tercatat</strong>
-                                    tetapi <strong>belum mengambil kursi</strong>.
+                                    Formulir atau bukti pembayaran formulir belum lengkap. Pendaftaran <strong>tercatat</strong>
+                                    tetapi <strong>belum memperoleh urutan kuota</strong>.
                                 </td>
                             </tr>
                             <tr>
                                 <td><span class="badge bg-success">Masuk Kuota</span></td>
                                 <td class="small">
-                                    Kedua syarat sudah terpenuhi dan kursi masih tersedia — pendaftaran
-                                    <strong>menempati kuota</strong>.
+                                    Bukti upload tercatat saat kursi masih tersedia — peserta mendapat badge
+                                    <strong>Kuota Diamankan</strong> beserta nomor urutnya.
                                 </td>
                             </tr>
                             <tr>
                                 <td><span class="badge bg-warning text-dark">Waiting List</span></td>
                                 <td class="small">
-                                    Kedua syarat sudah terpenuhi, tetapi kursi (total atau kuota
-                                    laki-laki/perempuan) sudah habis. Pendaftaran <strong>mengantre</strong> dan
-                                    otomatis naik ke Masuk Kuota bila ada kursi yang kembali.
+                                    Bukti upload sudah tercatat, tetapi kursi (total atau kuota
+                                    laki-laki/perempuan) sudah habis. Peserta mendapat nomor <strong>Waiting List</strong> dan
+                                    otomatis naik ke Kuota Diamankan bila ada kursi yang kembali.
                                 </td>
                             </tr>
                         </tbody>
@@ -108,9 +108,7 @@
                 {{-- Urutan --}}
                 <h6 class="fw-semibold">Urutan Kursi</h6>
                 <p class="small mb-3">
-                    Urutan mengikuti <strong>tanggal pendaftaran</strong>, bukan tanggal pembayaran diverifikasi.
-                    Jadi peserta yang mendaftar lebih dulu tidak dirugikan hanya karena verifikasinya
-                    diproses lebih lambat.
+                    Urutan mengikuti <strong>waktu bukti pembayaran formulir berhasil diupload</strong>, bukan waktu akun dibuat atau waktu panitia memverifikasi. Jika bukti ditolak karena tidak valid atau nominalnya tidak sesuai, reservasi dilepas dan upload ulang memperoleh urutan baru.
                 </p>
 
                 <div class="alert alert-warning small mb-0">

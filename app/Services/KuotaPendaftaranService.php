@@ -27,7 +27,7 @@ class KuotaPendaftaranService
         // mengurangi sisa kursi maupun membuat kuota terlihat penuh.
         // semuaJalur(): hitungan kuota menyaring jenis_pendaftaran sendiri,
         // jadi JalurScope harus dilewati agar tidak terjadi filter dobel.
-        $basis = fn() => Peserta::withoutGlobalScopes([
+        $basis = fn () => Peserta::withoutGlobalScopes([
             \App\Models\Scopes\PeriodeScope::class,
             \App\Models\Scopes\JalurScope::class,
         ])
@@ -100,14 +100,13 @@ class KuotaPendaftaranService
                 ->max('urutan_kuota')) + 1;
 
             return [
-                // Pendaftar baru BELUM menempati kuota. Kursi baru diambil setelah
-                // formulir lengkap + pembayaran pendaftaran (Tahap 3) diverifikasi.
-                // Periode yang dikunci memakai perilaku lama agar data historis
-                // tidak berubah artinya.
+                // Pendaftar baru belum menempati kuota. Nomor urut baru dibuat
+                // saat bukti pembayaran formulir aktif diupload. Periode yang
+                // dikunci mempertahankan nomor historisnya.
                 'status_kuota' => $tahun->kunci_kuota
                     ? $this->statusKuotaCaraLama($tahun)
                     : Peserta::STATUS_KUOTA_BELUM_LENGKAP,
-                'urutan_kuota' => $urutanBerikutnya,
+                'urutan_kuota' => $tahun->kunci_kuota ? $urutanBerikutnya : null,
             ];
         });
     }
@@ -138,7 +137,7 @@ class KuotaPendaftaranService
         collect($tahunAjaranIds)
             ->filter()
             ->unique()
-            ->each(fn($tahunId) => $this->rekalkulasiTahun((int) $tahunId));
+            ->each(fn ($tahunId) => $this->rekalkulasiTahun((int) $tahunId));
     }
 
     public function rekalkulasiPeserta(Peserta|int $peserta): void
@@ -146,9 +145,9 @@ class KuotaPendaftaranService
         $tahunAjaranId = $peserta instanceof Peserta
             ? $peserta->tahun_ajaran_id
             : Peserta::withoutGlobalScopes([
-            \App\Models\Scopes\PeriodeScope::class,
-            \App\Models\Scopes\JalurScope::class,
-        ])->whereKey($peserta)->value('tahun_ajaran_id');
+                \App\Models\Scopes\PeriodeScope::class,
+                \App\Models\Scopes\JalurScope::class,
+            ])->whereKey($peserta)->value('tahun_ajaran_id');
 
         if ($tahunAjaranId) {
             $this->rekalkulasiTahun((int) $tahunAjaranId);
@@ -174,29 +173,28 @@ class KuotaPendaftaranService
             }
 
             $peserta = Peserta::withoutGlobalScopes([
-            \App\Models\Scopes\PeriodeScope::class,
-            \App\Models\Scopes\JalurScope::class,
-        ])
+                \App\Models\Scopes\PeriodeScope::class,
+                \App\Models\Scopes\JalurScope::class,
+            ])
                 ->with([
                     'formulirSpmb:id,peserta_id,jenis_kelamin',
                     'tahapanSpmb:id,peserta_id,tahap_3_selesai,status_kelulusan',
                 ])
-                ->withExists(['pembayaran as bayar_formulir_ok' => fn($q) => $q
+                // Bukti formulir yang masih aktif (menunggu atau terverifikasi)
+                // langsung mereservasi antrean. Bukti yang ditolak tidak ikut dihitung.
+                ->withExists(['pembayaran as bayar_formulir_aktif' => fn ($q) => $q
                     ->where('jenis', 'formulir')
-                    ->where('status', 'terverifikasi')])
+                    ->whereIn('status', ['menunggu', 'terverifikasi'])])
+                ->withMin(['pembayaran as waktu_reservasi_kuota' => fn ($q) => $q
+                    ->where('jenis', 'formulir')
+                    ->whereIn('status', ['menunggu', 'terverifikasi'])], 'created_at')
                 ->where('tahun_ajaran_id', $tahun->id)
-                ->orderByRaw('CASE WHEN urutan_kuota IS NULL THEN 1 ELSE 0 END')
-                ->orderBy('urutan_kuota')
-                ->orderBy('created_at')
+                ->orderByRaw('CASE WHEN waktu_reservasi_kuota IS NULL THEN 1 ELSE 0 END')
+                ->orderBy('waktu_reservasi_kuota')
                 ->orderBy('id')
                 ->get();
 
-            $urutanMaksimum = (int) Peserta::withoutGlobalScopes([
-                \App\Models\Scopes\PeriodeScope::class,
-                \App\Models\Scopes\JalurScope::class,
-            ])->withTrashed()
-                ->where('tahun_ajaran_id', $tahun->id)
-                ->max('urutan_kuota');
+            $urutanReservasi = 0;
             $kuota = (int) ($tahun->kuota_peserta ?? 0);
             $kuotaGender = [
                 'L' => (int) ($tahun->kuota_laki_laki ?? 0),
@@ -208,16 +206,12 @@ class KuotaPendaftaranService
             ];
             $dalamKuota = 0;
 
-            $peserta->values()->each(function (Peserta $peserta) use (&$urutanMaksimum, $kuota, $kuotaGender, &$urutanGender, &$dalamKuota) {
-                if (! $peserta->urutan_kuota) {
-                    $urutanMaksimum++;
-                    $peserta->urutan_kuota = $urutanMaksimum;
-                }
-
+            $peserta->values()->each(function (Peserta $peserta) use (&$urutanReservasi, $kuota, $kuotaGender, &$urutanGender, &$dalamKuota) {
                 // LAPIS 1 — syarat menempati kuota.
                 // LAPIS 3 — kursi dilepas bila peserta dinyatakan tidak lulus.
                 if (! $this->layakMenempatiKuota($peserta)) {
                     $peserta->status_kuota = Peserta::STATUS_KUOTA_BELUM_LENGKAP;
+                    $peserta->urutan_kuota = null;
 
                     if ($peserta->isDirty(['status_kuota', 'urutan_kuota'])) {
                         $peserta->save();
@@ -226,6 +220,8 @@ class KuotaPendaftaranService
                     return;
                 }
 
+                $urutanReservasi++;
+                $peserta->urutan_kuota = $urutanReservasi;
                 $jenisKelamin = $peserta->formulirSpmb?->jenis_kelamin;
                 $masukKuotaGender = true;
 
@@ -269,8 +265,8 @@ class KuotaPendaftaranService
     /**
      * Syarat peserta boleh menempati kuota:
      *  1. Formulir biodata sudah ada, DAN
-     *  2. Pembayaran pendaftaran (Tahap 3) terverifikasi — atau Tahap 3 sudah
-     *     ditandai selesai oleh Tim SPMB (verifikasi manual dianggap sah), DAN
+     *  2. Bukti pembayaran pendaftaran (Tahap 3) sudah diupload dan belum
+     *     ditolak — upload yang menunggu verifikasi sudah mereservasi kursi, DAN
      *  3. Belum dinyatakan tidak lulus (kursi dilepas bila tidak lulus).
      */
     private function layakMenempatiKuota(Peserta $peserta): bool
@@ -284,10 +280,7 @@ class KuotaPendaftaranService
             return false;
         }
 
-        $bayarOk = (bool) ($peserta->bayar_formulir_ok ?? false);
-        $tahap3Ok = (bool) ($peserta->tahapanSpmb?->tahap_3_selesai ?? false);
-
-        return $bayarOk || $tahap3Ok;
+        return (bool) ($peserta->bayar_formulir_aktif ?? false);
     }
 
     private function ringkasanKosong(): array
@@ -329,12 +322,12 @@ class KuotaPendaftaranService
             ->where('peserta.jenis_pendaftaran', Peserta::JENIS_SISWA_BARU)
             ->selectRaw('formulir_spmb.jenis_kelamin as jenis_kelamin')
             ->selectRaw('COUNT(peserta.id) as total')
-            ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as dalam_kuota", [Peserta::STATUS_KUOTA_DALAM])
-            ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as waiting_list", [Peserta::STATUS_KUOTA_WAITING])
-            ->selectRaw("SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as belum_lengkap", [Peserta::STATUS_KUOTA_BELUM_LENGKAP])
+            ->selectRaw('SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as dalam_kuota', [Peserta::STATUS_KUOTA_DALAM])
+            ->selectRaw('SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as waiting_list', [Peserta::STATUS_KUOTA_WAITING])
+            ->selectRaw('SUM(CASE WHEN peserta.status_kuota = ? THEN 1 ELSE 0 END) as belum_lengkap', [Peserta::STATUS_KUOTA_BELUM_LENGKAP])
             ->groupBy('formulir_spmb.jenis_kelamin')
             ->get()
-            ->keyBy(fn($row) => $row->jenis_kelamin ?: '-');
+            ->keyBy(fn ($row) => $row->jenis_kelamin ?: '-');
 
         return [
             'laki_laki' => $this->ringkasanGender((int) ($tahun->kuota_laki_laki ?? 0), $rows->get('L')),
