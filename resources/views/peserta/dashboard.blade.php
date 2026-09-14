@@ -48,7 +48,14 @@
 
     {{-- Informasi biaya selalu tersedia setelah domisili dipilih. --}}
     @if($rincianBiaya['lengkap'])
-        @php($urlGambarBiaya = $rincianBiaya['gambar'] ? (str_starts_with($rincianBiaya['gambar'], 'biaya-spmb/') ? Storage::url($rincianBiaya['gambar']) : asset($rincianBiaya['gambar'])) : null)
+        @php
+            $urlGambarBiaya = null;
+            if ($rincianBiaya['gambar']) {
+                $urlGambarBiaya = str_starts_with($rincianBiaya['gambar'], 'biaya-spmb/')
+                    ? Storage::url($rincianBiaya['gambar'])
+                    : asset($rincianBiaya['gambar']);
+            }
+        @endphp
         <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
             <div class="card-header bg-warning bg-opacity-25">
                 <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya — {{ $rincianBiaya['label_domisili'] }}</strong>
