@@ -28,7 +28,7 @@ class DashboardSpmbController extends Controller
      */
     public function index(): View
     {
-        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'wawancara', 'sesiTes' => function($q) {
+        $peserta = Peserta::with(['tahunAjaran', 'tahapanSpmb', 'formulirSpmb', 'pembayaran', 'wawancara', 'sesiTes' => function($q) {
             $q->whereIn('status', ['selesai', 'timeout'])->with('tes')->latest();
         }])->find(session('peserta_id'));
         $statusData = $this->spmbService->ambilStatusTahapan($peserta);

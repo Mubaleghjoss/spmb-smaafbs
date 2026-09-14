@@ -116,11 +116,21 @@
                     </div>
                     <div class="text-muted" style="font-size:.75rem">Dipakai admin untuk token tes online</div>
                 </div>
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg-2">
+                    <div class="text-muted small">Jalur Pendaftaran</div>
+                    <span class="badge bg-{{ $peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN ? 'primary' : 'success' }}">
+                        {{ $peserta->jenis_pendaftaran_label }}
+                    </span>
+                </div>
+                <div class="col-sm-6 col-lg-2">
+                    <div class="text-muted small">Tahun Ajaran</div>
+                    <div class="fw-bold">{{ $peserta->tahunAjaran?->nama ?? '-' }}</div>
+                </div>
+                <div class="col-sm-6 col-lg-2">
                     <div class="text-muted small">Tahap Saat Ini</div>
                     <div class="fw-bold">Tahap {{ $tahapan->tahap_saat_ini ?? 1 }} dari 7</div>
                 </div>
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-sm-6 col-lg-2">
                     <div class="text-muted small">Status Kuota</div>
                     <span class="badge bg-{{ $peserta->status_kuota_badge }}">{{ $peserta->status_kuota_label }}</span>
                 </div>
@@ -133,12 +143,32 @@
         </div>
     </div>
 
-    {{-- Status kuota pendaftaran: jelaskan artinya, jangan hanya melabeli.
-         Jalur pindahan tidak dibatasi kuota, jadi tidak diberi kartu status kuota. --}}
-    @php $sk = $peserta->status_kuota; @endphp
-    @if($peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN)
-        {{-- Tidak ada informasi kuota untuk jalur pindahan --}}
-    @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
+    {{-- Status kuota pendaftaran dan tindakan berikutnya untuk kedua jalur. --}}
+    @php
+        $sk = $peserta->status_kuota;
+        $jalurPindahan = $peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN;
+        [$alasanBelumLengkap, $saranStatus, $aksiStatusUrl, $aksiStatusLabel] = match (true) {
+            !($tahapan->tahap_1_selesai ?? false) => [
+                'Tahap 1 belum selesai',
+                'Lengkapi data awal pendaftaran terlebih dahulu agar formulir biodata dapat dibuka.',
+                route('peserta.dashboard'),
+                'Lihat Tahap Pendaftaran',
+            ],
+            !($tahapan->tahap_2_selesai ?? false) => [
+                'Tahap 2 belum selesai',
+                'Lengkapi dan kirim formulir biodata beserta berkas wajib agar pembayaran formulir dapat dibuka.',
+                route('peserta.formulir.isi'),
+                'Lengkapi Formulir',
+            ],
+            default => [
+                'Tahap 3 belum selesai',
+                'Transfer biaya formulir sesuai tagihan lalu unggah bukti pembayaran formulir. Setelah bukti diterima sistem, status kelengkapan akan diperbarui.',
+                route('peserta.pembayaran.formulir'),
+                'Upload Bukti Pembayaran',
+            ],
+        };
+    @endphp
+    @if($sk === \App\Models\Peserta::STATUS_KUOTA_WAITING)
         <div class="alert alert-warning border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
                 <span class="badge bg-warning text-dark me-1">Waiting List #{{ $peserta->urutan_kuota }}</span>
@@ -153,13 +183,21 @@
     @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_BELUM_LENGKAP)
         <div class="alert alert-secondary border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
             <div>
-                <i class="bi bi-exclamation-circle me-1"></i>
-                Pendaftaran Anda <strong>belum berhasil mendapatkan kuota</strong>. Lengkapi Tahap 1 dan 2, lalu transfer serta upload bukti pembayaran formulir senilai tagihan penuh pada Tahap 3. Jika bukti sebelumnya ditolak panitia, kuota telah dilepas; kirim ulang bukti transfer yang valid untuk memperoleh urutan kuota baru.
+                <div class="mb-2">
+                    <span class="badge bg-secondary me-1">Belum Lengkap</span>
+                    <span class="badge bg-warning text-dark">{{ $alasanBelumLengkap }}</span>
+                </div>
+                @if($jalurPindahan)
+                    <strong>Jalur Siswa Pindahan tidak memakai antrean kuota Siswa Baru.</strong>
+                    Lengkapi tahapan yang masih terbuka agar proses pendaftaran dapat dilanjutkan.
+                @else
+                    Pendaftaran Anda <strong>belum berhasil mendapatkan kuota</strong> karena persyaratan belum lengkap.
+                @endif
+                <span class="d-block mt-1"><strong>Saran:</strong> {{ $saranStatus }}</span>
             </div>
-            <button type="button" class="btn btn-sm btn-outline-dark"
-                    data-bs-toggle="modal" data-bs-target="#modalPenjelasanKuota">
-                <i class="bi bi-patch-question me-1"></i>Cara Masuk Kuota
-            </button>
+            <a href="{{ $aksiStatusUrl }}" class="btn btn-sm btn-outline-dark">
+                <i class="bi bi-arrow-right-circle me-1"></i>{{ $aksiStatusLabel }}
+            </a>
         </div>
     @elseif($sk === \App\Models\Peserta::STATUS_KUOTA_DALAM)
         <div class="alert alert-success border-0 shadow-sm mb-4 d-flex flex-wrap justify-content-between align-items-center gap-2">
