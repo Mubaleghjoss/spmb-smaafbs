@@ -132,6 +132,10 @@ ln -sfn "$release_dir" "$STAGING_ROOT/current.tmp"
 mv -Tf "$STAGING_ROOT/current.tmp" "$CURRENT_LINK"
 SWITCHED=true
 SYMLINK_RESULT="SUCCESS"
+
+# Reload PHP-FPM to flush OPcache for new release if permitted
+sudo -n /usr/bin/systemctl reload php8.2-fpm >/dev/null 2>&1 || true
+
 STAGE_FAILED="health_check"
 if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
