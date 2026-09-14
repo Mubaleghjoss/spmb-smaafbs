@@ -18,7 +18,9 @@ use Illuminate\Support\Str;
 class DashboardSpmbController extends Controller
 {
     public function __construct(
-        private SpmbService $spmbService
+        private SpmbService $spmbService,
+        private \App\Services\BiayaSpmbService $biayaSpmbService,
+        private \App\Services\PengaturanService $pengaturanService,
     ) {}
 
     /**
@@ -48,7 +50,9 @@ class DashboardSpmbController extends Controller
         // Daftar kontak Tim SPMB (untuk tombol "Kabari" saat formulir menunggu verifikasi)
         $pengaturanService = app(\App\Services\PengaturanService::class);
         $kontakTimSpmb = $pengaturanService->ambilKontakTimSpmb();
-        $whatsappSpmb = $pengaturanService->ambilSpmb()['whatsapp_spmb'] ?? '';
+        $spmb = $pengaturanService->ambilSpmb();
+        $whatsappSpmb = $spmb['whatsapp_spmb'] ?? '';
+        $rincianBiaya = $this->biayaSpmbService->untukFormulir($spmb, $peserta->formulirSpmb);
 
         return view('peserta.dashboard', [
             'peserta' => $peserta,
@@ -60,6 +64,7 @@ class DashboardSpmbController extends Controller
             'kelengkapanPascakelulusan' => $kelengkapanPascakelulusan,
             'kontakTimSpmb' => $kontakTimSpmb,
             'whatsappSpmb' => $whatsappSpmb,
+            'rincianBiaya' => $rincianBiaya,
         ]);
     }
 

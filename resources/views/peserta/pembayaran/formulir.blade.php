@@ -35,7 +35,7 @@
                             <p class="mb-1"><strong>Bank:</strong> {{ $spmb['rekening_bank'] ?? 'BSI' }}</p>
                             <p class="mb-1"><strong>No. Rekening:</strong> <code class="fs-5">{{ $spmb['nomor_rekening'] ?? '-' }}</code></p>
                             <p class="mb-1"><strong>Atas Nama:</strong> {{ $spmb['nama_rekening'] ?? '-' }}</p>
-                            <p class="mb-0"><strong>Nominal:</strong> <span class="text-success fw-bold">Rp {{ number_format($spmb['biaya_formulir'] ?? 0, 0, ',', '.') }}</span></p>
+                            <p class="mb-0"><strong>Nominal:</strong> <span class="text-success fw-bold">Rp {{ number_format($rincianBiaya['formulir'], 0, ',', '.') }}</span><br><small class="text-muted">Tarif {{ $rincianBiaya['label_domisili'] }}</small></p>
                         </div>
 
                         <form action="{{ route('peserta.pembayaran.simpan-formulir') }}" method="POST" enctype="multipart/form-data" x-data="uploadForm()">

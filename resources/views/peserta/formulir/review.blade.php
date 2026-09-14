@@ -201,7 +201,7 @@
                     </div>
 
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-geo-alt me-2"></i>Alamat dan Sambung</h6>
-                    <div class="row g-3 mb-4">
+                    <div class="row g-3 mb-4" x-data="{ domisili: '{{ old('domisili_biaya', $formulir->domisili_biaya) }}' }">
                         @foreach([
                             'alamat_kelurahan' => '29. Kelurahan',
                             'alamat_kecamatan' => '30. Kecamatan',
@@ -209,7 +209,6 @@
                             'alamat_provinsi' => '32. Provinsi',
                             'kelompok' => '33. Nama Kelompok',
                             'desa' => '34. Nama Desa',
-                            'daerah' => '35. Nama Daerah',
                         ] as $field => $label)
                             <div class="col-md-4">
                                 <label class="form-label">{{ $label }}</label>
@@ -217,6 +216,20 @@
                                 @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         @endforeach
+                        <div class="col-md-4">
+                            <label class="form-label">35. Domisili Biaya <span class="text-danger">*</span></label>
+                            <select name="domisili_biaya" class="form-select @error('domisili_biaya') is-invalid @enderror" x-model="domisili">
+                                <option value="">-- Pilih domisili --</option>
+                                <option value="dalam_tangerang_kota">Dalam Tangerang Kota</option>
+                                <option value="luar_tangerang_kota">Luar Tangerang Kota</option>
+                            </select>
+                            @error('domisili_biaya')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-4" x-show="domisili === 'luar_tangerang_kota'" x-cloak>
+                            <label class="form-label">Nama Daerah Luar Tangerang Kota <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_daerah_luar" class="form-control @error('nama_daerah_luar') is-invalid @enderror" value="{{ old('nama_daerah_luar', $formulir->nama_daerah_luar) }}" :required="domisili === 'luar_tangerang_kota'">
+                            @error('nama_daerah_luar')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
 
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-telephone me-2"></i>Kontak</h6>

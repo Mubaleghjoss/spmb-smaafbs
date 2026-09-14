@@ -168,6 +168,8 @@ class FormulirSpmbService
             'desa' => 'nullable|string|max:100',
             'daerah' => 'nullable|string|max:100',
             'kelompok' => 'nullable|string|max:100',
+            'domisili_biaya' => 'required|in:dalam_tangerang_kota,luar_tangerang_kota',
+            'nama_daerah_luar' => 'nullable|required_if:domisili_biaya,luar_tangerang_kota|string|max:100',
             // Kontak
             'telp_rumah' => 'nullable|string|max:20',
             'telepon' => 'nullable|string|max:20',

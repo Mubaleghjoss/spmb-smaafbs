@@ -240,6 +240,13 @@ class PengaturanService
             'waktu_tutup' => $this->ambil('waktu_tutup', ''),
             'biaya_formulir' => $this->ambil('biaya_formulir', 0),
             'biaya_pelunasan' => $this->ambil('biaya_pelunasan', 0),
+            // Tarif lama menjadi fallback aman sampai admin menetapkan tarif per domisili.
+            'biaya_formulir_dalam_kota' => $this->ambil('biaya_formulir_dalam_kota', $this->ambil('biaya_formulir', 0)),
+            'biaya_formulir_luar_kota' => $this->ambil('biaya_formulir_luar_kota', $this->ambil('biaya_formulir', 0)),
+            'biaya_total_dalam_kota' => $this->ambil('biaya_total_dalam_kota', $this->ambil('biaya_formulir', 0) + $this->ambil('biaya_pelunasan', 0)),
+            'biaya_total_luar_kota' => $this->ambil('biaya_total_luar_kota', $this->ambil('biaya_formulir', 0) + $this->ambil('biaya_pelunasan', 0)),
+            'gambar_rincian_biaya_dalam_kota' => $this->ambil('gambar_rincian_biaya_dalam_kota', 'images/rincian-biaya-dalam-kota-tangerang.png'),
+            'gambar_rincian_biaya_luar_kota' => $this->ambil('gambar_rincian_biaya_luar_kota', 'images/rincian-biaya-luar-kota-tangerang.png'),
             'rekening_bank' => $this->ambil('rekening_bank', 'BSI'),
             'nomor_rekening' => $this->ambil('nomor_rekening', ''),
             'nama_rekening' => $this->ambil('nama_rekening', ''),
@@ -275,6 +282,9 @@ class PengaturanService
         $allowedKeys = [
             'pendaftaran_buka', 'tanggal_buka', 'waktu_buka', 'tanggal_tutup', 'waktu_tutup',
             'biaya_formulir', 'biaya_pelunasan',
+            'biaya_formulir_dalam_kota', 'biaya_formulir_luar_kota',
+            'biaya_total_dalam_kota', 'biaya_total_luar_kota',
+            'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
             'whatsapp_spmb', 'kontak_tim_spmb'
         ];

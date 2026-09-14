@@ -340,6 +340,12 @@ class PengaturanController extends Controller
             'waktu_tutup' => 'nullable|date_format:H:i',
             'biaya_formulir' => 'nullable|numeric|min:0',
             'biaya_pelunasan' => 'nullable|numeric|min:0',
+            'biaya_formulir_dalam_kota' => 'nullable|numeric|min:0',
+            'biaya_formulir_luar_kota' => 'nullable|numeric|min:0',
+            'biaya_total_dalam_kota' => 'nullable|numeric|min:0',
+            'biaya_total_luar_kota' => 'nullable|numeric|min:0',
+            'gambar_rincian_biaya_dalam_kota' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
+            'gambar_rincian_biaya_luar_kota' => 'nullable|image|mimes:png,jpg,jpeg|max:2048',
             'rekening_bank' => 'nullable|string|max:100',
             'nomor_rekening' => 'nullable|string|max:50',
             'nama_rekening' => 'nullable|string|max:255',
@@ -395,8 +401,22 @@ class PengaturanController extends Controller
 
         $this->simpanSkKelulusanGelombang($request);
 
-        $data = $request->except(['tahap_2', 'tahap_3', 'tahap_4', 'tahap_5', 'tahap_6', 'tahap_7', '_token', 'kontak_tim']);
+        $data = $request->except([
+            'tahap_2', 'tahap_3', 'tahap_4', 'tahap_5', 'tahap_6', 'tahap_7',
+            '_token', 'kontak_tim', 'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
+        ]);
         $data['pendaftaran_buka'] = $request->boolean('pendaftaran_buka');
+
+        foreach (['dalam_kota', 'luar_kota'] as $wilayah) {
+            $field = "gambar_rincian_biaya_{$wilayah}";
+            if ($request->hasFile($field)) {
+                $lama = $this->pengaturanService->ambilSpmb()[$field] ?? null;
+                if ($lama && str_starts_with($lama, 'biaya-spmb/') && Storage::disk('public')->exists($lama)) {
+                    Storage::disk('public')->delete($lama);
+                }
+                $data[$field] = $request->file($field)->store('biaya-spmb', 'public');
+            }
+        }
         
         // Proses kontak tim SPMB
         $kontakTim = [];

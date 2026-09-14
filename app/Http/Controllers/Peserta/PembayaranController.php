@@ -15,7 +15,8 @@ class PembayaranController extends Controller
 {
     public function __construct(
         private PembayaranService $pembayaranService,
-        private PengaturanService $pengaturanService
+        private PengaturanService $pengaturanService,
+        private \App\Services\BiayaSpmbService $biayaSpmbService,
     ) {}
 
     public function uploadBuktiFormulir(): View|RedirectResponse
@@ -28,7 +29,13 @@ class PembayaranController extends Controller
 
         $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'formulir');
         $spmb = $this->pengaturanService->ambilSpmb();
-        return view('peserta.pembayaran.formulir', compact('peserta', 'pembayaran', 'spmb'));
+        $rincianBiaya = $this->biayaSpmbService->untukFormulir($spmb, $peserta->formulirSpmb);
+        if (!$rincianBiaya['lengkap']) {
+            return redirect()->route('peserta.formulir.isi')
+                ->with('error', 'Pilih domisili biaya pada formulir sebelum upload bukti pembayaran.');
+        }
+
+        return view('peserta.pembayaran.formulir', compact('peserta', 'pembayaran', 'spmb', 'rincianBiaya'));
     }
 
     public function simpanBuktiFormulir(Request $request): RedirectResponse
@@ -48,7 +55,16 @@ class PembayaranController extends Controller
                 ->with('error', 'Selesaikan formulir terlebih dahulu sebelum upload bukti pembayaran.');
         }
 
-        $this->pembayaranService->uploadBukti($peserta, 'formulir', $request->file('bukti'));
+        $rincianBiaya = $this->biayaSpmbService->untukFormulir(
+            $this->pengaturanService->ambilSpmb(),
+            $peserta->formulirSpmb,
+        );
+        if (!$rincianBiaya['lengkap']) {
+            return redirect()->route('peserta.formulir.isi')
+                ->with('error', 'Pilih domisili biaya pada formulir sebelum upload bukti pembayaran.');
+        }
+
+        $this->pembayaranService->uploadBukti($peserta, 'formulir', $request->file('bukti'), $rincianBiaya['formulir']);
 
         return redirect()->route('peserta.pembayaran.status-formulir')
             ->with('success', 'Bukti pembayaran berhasil diupload. Tunggu verifikasi dari admin.');

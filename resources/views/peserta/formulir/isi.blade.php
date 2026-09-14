@@ -304,10 +304,20 @@
                                        placeholder="Nama tempat sambung Desa ">
                             </div>
                             <div class="col-sm-4">
-                                <label class="form-label">{{ 35 + $tambahanNomorPindahan }}. Nama Daerah <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control @error('daerah') is-invalid @enderror" 
-                                       name="daerah" value="{{ old('daerah', $formulir?->daerah) }}"
-                                       placeholder="Nama tempat sambung Daerah">
+                                <label class="form-label">{{ 35 + $tambahanNomorPindahan }}. Domisili Biaya <span class="text-danger">*</span></label>
+                                <select id="domisiliBiaya" class="form-select @error('domisili_biaya') is-invalid @enderror" name="domisili_biaya">
+                                    <option value="">-- Pilih domisili --</option>
+                                    <option value="dalam_tangerang_kota" {{ old('domisili_biaya', $formulir?->domisili_biaya) === 'dalam_tangerang_kota' ? 'selected' : '' }}>Dalam Tangerang Kota</option>
+                                    <option value="luar_tangerang_kota" {{ old('domisili_biaya', $formulir?->domisili_biaya) === 'luar_tangerang_kota' ? 'selected' : '' }}>Luar Tangerang Kota</option>
+                                </select>
+                                @error('domisili_biaya')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-sm-4" id="namaDaerahLuarWrap">
+                                <label class="form-label">Nama Daerah Luar Tangerang Kota <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control @error('nama_daerah_luar') is-invalid @enderror"
+                                       name="nama_daerah_luar" value="{{ old('nama_daerah_luar', $formulir?->nama_daerah_luar) }}"
+                                       placeholder="Contoh: Serang">
+                                @error('nama_daerah_luar')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
 
@@ -456,6 +466,17 @@
 document.addEventListener('DOMContentLoaded', function() {
     const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB per file
     const MAX_FILE_SIZE_LABEL = '2MB';
+
+    const domisiliBiaya = document.getElementById('domisiliBiaya');
+    const namaDaerahLuarWrap = document.getElementById('namaDaerahLuarWrap');
+    const namaDaerahLuar = namaDaerahLuarWrap?.querySelector('input');
+    const perbaruiInputDomisili = () => {
+        const luarKota = domisiliBiaya?.value === 'luar_tangerang_kota';
+        if (namaDaerahLuarWrap) namaDaerahLuarWrap.classList.toggle('d-none', !luarKota);
+        if (namaDaerahLuar) namaDaerahLuar.required = luarKota;
+    };
+    domisiliBiaya?.addEventListener('change', perbaruiInputDomisili);
+    perbaruiInputDomisili();
 
     // Client-side file size validation
     document.querySelectorAll('input[type="file"]').forEach(input => {

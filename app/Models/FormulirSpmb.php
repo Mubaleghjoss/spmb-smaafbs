@@ -14,6 +14,13 @@ class FormulirSpmb extends Model
 {
     use HasFactory;
 
+    public const DOMISILI_DALAM_TANGERANG_KOTA = 'dalam_tangerang_kota';
+    public const DOMISILI_LUAR_TANGERANG_KOTA = 'luar_tangerang_kota';
+    public const DOMISILI_VALID = [
+        self::DOMISILI_DALAM_TANGERANG_KOTA,
+        self::DOMISILI_LUAR_TANGERANG_KOTA,
+    ];
+
     protected $table = 'formulir_spmb';
 
     protected $fillable = [
@@ -46,6 +53,8 @@ class FormulirSpmb extends Model
         'desa',
         'daerah',
         'kelompok',
+        'domisili_biaya',
+        'nama_daerah_luar',
         // Kontak
         'telepon',
         'telp_rumah',

@@ -46,6 +46,39 @@
     </div>
     @endif
 
+    {{-- Informasi biaya selalu tersedia setelah domisili dipilih. --}}
+    @if($rincianBiaya['lengkap'])
+        @php($urlGambarBiaya = $rincianBiaya['gambar'] ? (str_starts_with($rincianBiaya['gambar'], 'biaya-spmb/') ? Storage::url($rincianBiaya['gambar']) : asset($rincianBiaya['gambar'])) : null)
+        <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
+            <div class="card-header bg-warning bg-opacity-25">
+                <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya — {{ $rincianBiaya['label_domisili'] }}</strong>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center g-3">
+                    <div class="col-md-5">
+                        <div class="small text-muted">Biaya formulir (Tahap 3)</div>
+                        <div class="fs-4 fw-bold text-success">Rp {{ number_format($rincianBiaya['formulir'], 0, ',', '.') }}</div>
+                        <div class="small text-muted mt-2">Total biaya</div>
+                        <div class="fs-5 fw-bold">Rp {{ number_format($rincianBiaya['total'], 0, ',', '.') }}</div>
+                    </div>
+                    @if($urlGambarBiaya)
+                        <div class="col-md-7 text-center">
+                            <a href="{{ $urlGambarBiaya }}" target="_blank" rel="noopener">
+                                <img src="{{ $urlGambarBiaya }}" alt="Rincian biaya {{ $rincianBiaya['label_domisili'] }}" class="img-fluid rounded border" style="max-height: 420px;">
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    @else
+        <div class="alert alert-warning border-0 shadow-sm mb-4">
+            <i class="bi bi-geo-alt me-1"></i><strong>Informasi biaya belum dapat ditampilkan.</strong>
+            Pilih domisili biaya pada formulir agar rincian biaya yang sesuai dapat ditampilkan.
+            <a href="{{ route('peserta.formulir.isi') }}" class="alert-link">Isi formulir</a>
+        </div>
+    @endif
+
     {{-- Kartu Akun Saya (username & password = No HP) --}}
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white d-flex align-items-center gap-2">

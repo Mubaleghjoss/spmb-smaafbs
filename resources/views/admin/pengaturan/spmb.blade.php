@@ -237,7 +237,44 @@
                     'warnaJadwal' => 'warning',
                 ])
                 <div class="row">
-                    <div class="col-md-6 mx-auto">
+                    <div class="col-lg-7">
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-header text-white" style="background:#fd7e14">
+                                <h6 class="mb-0"><i class="bi bi-cash-stack me-2"></i>Biaya Berdasarkan Domisili</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted small">Nominal formulir dipakai pada tagihan Tahap 3. Nominal total tampil sebagai informasi biaya pada dashboard peserta.</p>
+                                <div class="row g-3">
+                                    @foreach([
+                                        'dalam_kota' => 'Dalam Tangerang Kota',
+                                        'luar_kota' => 'Luar Tangerang Kota',
+                                    ] as $wilayah => $label)
+                                        <div class="col-md-6">
+                                            <div class="border rounded p-3 h-100">
+                                                <h6 class="mb-3">{{ $label }}</h6>
+                                                <label class="form-label">Biaya Formulir</label>
+                                                <div class="input-group mb-3"><span class="input-group-text">Rp</span>
+                                                    <input type="number" min="0" name="biaya_formulir_{{ $wilayah }}" class="form-control" value="{{ old('biaya_formulir_'.$wilayah, $spmb['biaya_formulir_'.$wilayah]) }}">
+                                                </div>
+                                                <label class="form-label">Total Biaya</label>
+                                                <div class="input-group mb-3"><span class="input-group-text">Rp</span>
+                                                    <input type="number" min="0" name="biaya_total_{{ $wilayah }}" class="form-control" value="{{ old('biaya_total_'.$wilayah, $spmb['biaya_total_'.$wilayah]) }}">
+                                                </div>
+                                                @php($gambarField = 'gambar_rincian_biaya_'.$wilayah)
+                                                <label class="form-label">Gambar Rincian Biaya</label>
+                                                <input type="file" accept="image/png,image/jpeg" name="{{ $gambarField }}" class="form-control mb-2">
+                                                <div class="form-text">PNG/JPG, maksimum 2 MB. Kosongkan bila tidak ingin mengganti.</div>
+                                                @if($spmb[$gambarField])
+                                                    <a class="d-inline-block mt-2" target="_blank" href="{{ str_starts_with($spmb[$gambarField], 'biaya-spmb/') ? Storage::url($spmb[$gambarField]) : asset($spmb[$gambarField]) }}">Lihat gambar aktif</a>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header text-white" style="background:#fd7e14">
                                 <h6 class="mb-0"><i class="bi bi-bank me-2"></i>Rekening Pembayaran</h6>
