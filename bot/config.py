@@ -1,0 +1,34 @@
+"""Configuration for the read-only SPMB Telegram data bot."""
+from __future__ import annotations
+
+from dataclasses import dataclass
+import os
+
+
+def _ids(value: str) -> tuple[str, ...]:
+    return tuple(part.strip() for part in value.split(',') if part.strip())
+
+
+@dataclass(frozen=True)
+class Config:
+    telegram_bot_token: str = ''
+    spmb_api_base_url: str = 'http://127.0.0.1:8083/api/v1/bot'
+    spmb_data_bot_token: str = ''
+    allowed_group_id: str = 'WAITING'
+    allowed_telegram_user_ids: tuple[str, ...] = ()
+    ai_fallback_model: str = 'cx/gpt-5.6-luna'
+    ai_router_url: str = 'http://127.0.0.1:20128/v1'
+    bot_username: str = 'SPMBAFBSBot'
+
+    @classmethod
+    def from_env(cls) -> 'Config':
+        return cls(
+            telegram_bot_token=os.getenv('TELEGRAM_BOT_TOKEN', ''),
+            spmb_api_base_url=os.getenv('SPMB_API_BASE_URL', cls.spmb_api_base_url),
+            spmb_data_bot_token=os.getenv('SPMB_DATA_BOT_TOKEN', ''),
+            allowed_group_id=os.getenv('ALLOWED_GROUP_ID', 'WAITING'),
+            allowed_telegram_user_ids=_ids(os.getenv('ALLOWED_TELEGRAM_USER_IDS', '')),
+            ai_fallback_model=os.getenv('AI_FALLBACK_MODEL', cls.ai_fallback_model),
+            ai_router_url=os.getenv('AI_ROUTER_URL', cls.ai_router_url),
+            bot_username=os.getenv('BOT_USERNAME', cls.bot_username),
+        )

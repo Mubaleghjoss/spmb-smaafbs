@@ -1,0 +1,21 @@
+[Unit]
+Description=SPMB Read-Only Telegram Data Bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=www-data
+WorkingDirectory=/opt/spmb-smaafbs
+EnvironmentFile=/etc/spmb-data-bot.env
+ExecStart=/usr/bin/python3 -m bot.telegram_runner
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/spmb-smaafbs
+
+[Install]
+WantedBy=multi-user.target
