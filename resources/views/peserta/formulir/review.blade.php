@@ -217,17 +217,17 @@
                             </div>
                         @endforeach
                         <div class="col-md-4">
-                            <label class="form-label">35. Domisili Biaya <span class="text-danger">*</span></label>
+                            <label class="form-label">Nama Daerah <span class="text-danger">*</span></label>
                             <select name="domisili_biaya" class="form-select @error('domisili_biaya') is-invalid @enderror" x-model="domisili">
-                                <option value="">-- Pilih domisili --</option>
-                                <option value="dalam_tangerang_kota">Dalam Tangerang Kota</option>
-                                <option value="luar_tangerang_kota">Luar Tangerang Kota</option>
+                                <option value="">-- Pilih nama daerah --</option>
+                                <option value="dalam_tangerang_kota">Tangerang Kota</option>
+                                <option value="luar_tangerang_kota">Lainnya</option>
                             </select>
                             @error('domisili_biaya')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                         <div class="col-md-4" x-show="domisili === 'luar_tangerang_kota'" x-cloak>
-                            <label class="form-label">Nama Daerah Luar Tangerang Kota <span class="text-danger">*</span></label>
-                            <input type="text" name="nama_daerah_luar" class="form-control @error('nama_daerah_luar') is-invalid @enderror" value="{{ old('nama_daerah_luar', $formulir->nama_daerah_luar) }}" :required="domisili === 'luar_tangerang_kota'">
+                            <label class="form-label">Nama Daerah <span class="text-danger">*</span></label>
+                            <input type="text" name="nama_daerah_luar" class="form-control @error('nama_daerah_luar') is-invalid @enderror" value="{{ old('nama_daerah_luar', $formulir->nama_daerah_luar) }}" placeholder="Contoh: Tangerang Barat" :required="domisili === 'luar_tangerang_kota'">
                             @error('nama_daerah_luar')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
                     </div>

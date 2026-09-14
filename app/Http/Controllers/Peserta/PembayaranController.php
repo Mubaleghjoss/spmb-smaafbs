@@ -32,7 +32,7 @@ class PembayaranController extends Controller
         $rincianBiaya = $this->biayaSpmbService->untukFormulir($spmb, $peserta->formulirSpmb);
         if (! $rincianBiaya['lengkap']) {
             return redirect()->route('peserta.formulir.isi')
-                ->with('error', 'Pilih domisili biaya pada formulir sebelum upload bukti pembayaran.');
+                ->with('error', 'Pilih nama daerah pada formulir sebelum upload bukti pembayaran.');
         }
 
         return view('peserta.pembayaran.formulir', compact('peserta', 'pembayaran', 'spmb', 'rincianBiaya'));
@@ -61,7 +61,7 @@ class PembayaranController extends Controller
         );
         if (! $rincianBiaya['lengkap']) {
             return redirect()->route('peserta.formulir.isi')
-                ->with('error', 'Pilih domisili biaya pada formulir sebelum upload bukti pembayaran.');
+                ->with('error', 'Pilih nama daerah pada formulir sebelum upload bukti pembayaran.');
         }
 
         $pembayaran = $this->pembayaranService->uploadBukti(

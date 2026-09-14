@@ -244,11 +244,14 @@
                             </div>
                             <div class="card-body">
                                 <p class="text-muted small">Nominal formulir dipakai pada tagihan Tahap 3. Nominal total tampil sebagai informasi biaya pada dashboard peserta.</p>
-                                <div class="row g-3">
-                                    @foreach([
+                                @php
+                                    $wilayahBiaya = [
                                         'dalam_kota' => 'Dalam Tangerang Kota',
                                         'luar_kota' => 'Luar Tangerang Kota',
-                                    ] as $wilayah => $label)
+                                    ];
+                                @endphp
+                                <div class="row g-3">
+                                    @foreach($wilayahBiaya as $wilayah => $label)
                                         <div class="col-md-6">
                                             <div class="border rounded p-3 h-100">
                                                 <h6 class="mb-3">{{ $label }}</h6>
@@ -260,7 +263,9 @@
                                                 <div class="input-group mb-3"><span class="input-group-text">Rp</span>
                                                     <input type="number" min="0" name="biaya_total_{{ $wilayah }}" class="form-control" value="{{ old('biaya_total_'.$wilayah, $spmb['biaya_total_'.$wilayah]) }}">
                                                 </div>
-                                                @php($gambarField = 'gambar_rincian_biaya_'.$wilayah)
+                                                @php
+                                                    $gambarField = 'gambar_rincian_biaya_'.$wilayah;
+                                                @endphp
                                                 <label class="form-label">Gambar Rincian Biaya</label>
                                                 <input type="file" accept="image/png,image/jpeg" name="{{ $gambarField }}" class="form-control mb-2">
                                                 <div class="form-text">PNG/JPG, maksimum 2 MB. Kosongkan bila tidak ingin mengganti.</div>

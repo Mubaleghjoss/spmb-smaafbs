@@ -46,7 +46,7 @@
     </div>
     @endif
 
-    {{-- Informasi biaya selalu tersedia setelah domisili dipilih. --}}
+    {{-- Informasi biaya tersedia setelah peserta memilih nama daerah. --}}
     @if($rincianBiaya['lengkap'])
         @php
             $urlGambarBiaya = null;
@@ -58,7 +58,7 @@
         @endphp
         <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
             <div class="card-header bg-warning bg-opacity-25">
-                <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya — {{ $rincianBiaya['label_domisili'] }}</strong>
+                <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya SPMB</strong>
             </div>
             <div class="card-body">
                 <div class="row align-items-center g-3">
@@ -71,7 +71,7 @@
                     @if($urlGambarBiaya)
                         <div class="col-md-7 text-center">
                             <a href="{{ $urlGambarBiaya }}" target="_blank" rel="noopener">
-                                <img src="{{ $urlGambarBiaya }}" alt="Rincian biaya {{ $rincianBiaya['label_domisili'] }}" class="img-fluid rounded border" style="max-height: 420px;">
+                                <img src="{{ $urlGambarBiaya }}" alt="Rincian biaya SPMB" class="img-fluid rounded border" style="max-height: 420px;">
                             </a>
                         </div>
                     @endif
@@ -81,7 +81,7 @@
     @else
         <div class="alert alert-warning border-0 shadow-sm mb-4">
             <i class="bi bi-geo-alt me-1"></i><strong>Informasi biaya belum dapat ditampilkan.</strong>
-            Pilih domisili biaya pada formulir agar rincian biaya yang sesuai dapat ditampilkan.
+            Pilih nama daerah pada formulir agar rincian biaya dapat ditampilkan.
             <a href="{{ route('peserta.formulir.isi') }}" class="alert-link">Isi formulir</a>
         </div>
     @endif
