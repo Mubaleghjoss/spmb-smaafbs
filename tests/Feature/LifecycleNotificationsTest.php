@@ -18,9 +18,15 @@ class LifecycleNotificationsTest extends TestCase
     private function peserta(): Peserta
     {
         $year = TahunAjaran::create(['nama' => '2026/2027', 'aktif' => true]);
+        $admin = \App\Models\Pengguna::create([
+            'nama' => 'Admin Test', 'email' => uniqid().'@example.test', 'password' => 'secret',
+        ]);
+        $admin->id = 99;
+        $admin->save();
+
         return Peserta::withoutGlobalScopes()->create([
             'nomor_pendaftaran' => 'LIFE-'.uniqid(), 'tahun_ajaran_id' => $year->id,
-            'nama' => 'Budi Santoso', 'email' => uniqid().'@example.test', 'password' => 'secret',
+            'nama' => 'BudiTes', 'email' => uniqid().'@example.test', 'password' => 'secret', 'telepon' => '081'.random_int(100000000, 999999999),
         ]);
     }
 
