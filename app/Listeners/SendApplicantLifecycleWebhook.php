@@ -13,16 +13,19 @@ class SendApplicantLifecycleWebhook
         $url = (string) config('services.spmb_data_bot.webhook_url', '');
         $secret = (string) config('services.spmb_data_bot.webhook_secret', '');
         if ($url === '' || $secret === '') {
-            Log::warning('SPMB lifecycle webhook disabled: missing URL or secret', ['event_type' => $event->eventType]);
+            Log::warning('SPMB lifecycle webhook disabled: missing URL or secret', [
+                'event_type' => $event->eventType,
+                'applicant_id' => $event->peserta->id,
+            ]);
             return;
         }
 
-        $body = $event->payload();
-        $encoded = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
-        $timestamp = (string) now()->timestamp;
-        $signature = hash_hmac('sha256', $timestamp.'.'.$encoded, $secret);
-
         try {
+            $body = $event->payload();
+            $encoded = json_encode($body, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+            $timestamp = (string) now()->timestamp;
+            $signature = hash_hmac('sha256', $timestamp.'.'.$encoded, $secret);
+
             Http::asJson()->withHeaders([
                 'X-SPMB-Webhook-Timestamp' => $timestamp,
                 'X-SPMB-Webhook-Signature' => 'sha256='.$signature,
@@ -34,7 +37,7 @@ class SendApplicantLifecycleWebhook
             Log::error('SPMB lifecycle webhook failed', [
                 'event_type' => $event->eventType,
                 'applicant_id' => $event->peserta->id,
-                'error' => $exception->getMessage(),
+                'error_class' => $exception::class,
             ]);
         }
     }
