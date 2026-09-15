@@ -56,6 +56,51 @@ class LifecycleReceiverTest(unittest.TestCase):
         self.assertEqual(len(self.notifier.calls), 2)
         self.assertEqual(self.store.db.execute("SELECT status FROM received_events WHERE dedupe_key = ?", ("stable-1",)).fetchone()[0], "delivered")
 
+    def test_signed_test_event_is_acknowledged_without_notification_or_data_leak(self):
+        payload = {**self.payload, "is_test": True, "name": "TEST-ONLY-NAME", "registration_number": "TEST-ONLY-REG"}
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        timestamp = str(self.now)
+        headers = {
+            "x-spmb-webhook-timestamp": timestamp,
+            "x-spmb-webhook-signature": "sha256=" + hmac.new(
+                self.secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256
+            ).hexdigest(),
+        }
+
+        status, message = process(body, headers, self.secret, self.store, self.notifier, self.now)
+
+        self.assertEqual((status, message), (202, "accepted"))
+        self.assertEqual(self.notifier.calls, [])
+        self.assertNotIn("TEST-ONLY-NAME", message)
+        self.assertNotIn("TEST-ONLY-REG", message)
+        self.assertEqual(
+            self.store.db.execute(
+                "SELECT status FROM received_events WHERE dedupe_key = ?", ("stable-1",)
+            ).fetchone()[0],
+            "delivered",
+        )
+
+    def test_duplicate_signed_test_event_is_safe_and_deduplicated(self):
+        payload = {**self.payload, "is_test": True}
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        timestamp = str(self.now)
+        headers = {
+            "X-SPMB-Webhook-Timestamp": timestamp,
+            "X-SPMB-Webhook-Signature": "sha256=" + hmac.new(
+                self.secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256
+            ).hexdigest(),
+        }
+
+        self.assertEqual(process(body, headers, self.secret, self.store, self.notifier, self.now), (202, "accepted"))
+        self.assertEqual(process(body, headers, self.secret, self.store, self.notifier, self.now), (200, "duplicate"))
+        self.assertEqual(self.notifier.calls, [])
+        self.assertEqual(
+            self.store.db.execute(
+                "SELECT COUNT(*) FROM received_events WHERE dedupe_key = ?", ("stable-1",)
+            ).fetchone()[0],
+            1,
+        )
+
     def test_notifier_failure_isolated(self):
         self.notifier.fail = True
         self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now)[0], 202)
