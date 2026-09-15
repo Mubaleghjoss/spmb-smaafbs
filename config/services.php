@@ -42,6 +42,13 @@ return [
 
     'spmb_data_bot' => [
         'token' => env('SPMB_DATA_BOT_TOKEN'),
+        'webhook_url' => env('SPMB_DATA_BOT_WEBHOOK_URL'),
+        'webhook_secret' => env('SPMB_DATA_BOT_WEBHOOK_SECRET'),
+        'webhook_timeout' => env('SPMB_DATA_BOT_WEBHOOK_TIMEOUT', 5),
+    ],
+
+    'spmb' => [
+        'synthetic_secret' => env('SPMB_SYNTHETIC_SECRET'),
     ],
 
 ];

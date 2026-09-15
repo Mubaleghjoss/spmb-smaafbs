@@ -14,6 +14,8 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use App\Events\ApplicantLifecycleChanged;
 
 class PendaftaranController extends Controller
 {
@@ -69,6 +71,15 @@ class PendaftaranController extends Controller
      */
     public function proses(Request $request): RedirectResponse
     {
+        $synthetic = $this->syntheticMarker($request);
+
+        // Siswa baru selalu masuk kelas 10. Normalisasi sebelum validasi agar
+        // payload lama/tampered dengan kelas 11 tidak ditolak sebelum aturan
+        // kategori menerapkan kebijakan jalur ini.
+        if ($request->input('jenis_pendaftaran') === 'siswa_baru') {
+            $request->merge(['kelas_tujuan' => 10]);
+        }
+
         $validated = $request->validate([
             // Akun & periode
             'nama' => 'required|string|max:255',
@@ -146,6 +157,7 @@ class PendaftaranController extends Controller
                 'password' => $noHp,
                 ...$kategori,
                 ...$kuota,
+                ...$synthetic,
             ]);
 
             // Buat formulir biodata (draft) dari data awal pendaftaran
@@ -176,6 +188,8 @@ class PendaftaranController extends Controller
 
             DB::commit();
 
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'account_created'));
+
             // Auto-login peserta (pakai session yang sama dengan LoginPesertaController)
             \Illuminate\Support\Facades\Auth::guard('pengguna')->logout();
             session()->forget(['token_id', 'tes_id', 'token_global_id', 'ujian_mode']);
@@ -203,6 +217,20 @@ class PendaftaranController extends Controller
                 ->withInput()
                 ->with('error', 'Terjadi kesalahan saat mendaftar: ' . $e->getMessage());
         }
+    }
+
+    private function syntheticMarker(Request $request): array
+    {
+        $runId = (string) $request->attributes->get('test_run_id', '');
+        $secret = (string) config('services.spmb.synthetic_secret', '');
+        $provided = (string) $request->header('X-SPMB-Synthetic-Secret', '');
+        if (! in_array(app()->environment(), ['local', 'testing', 'staging'], true)
+            || $secret === '' || $provided === '' || ! hash_equals($secret, $provided)
+            || ! preg_match('/^[A-Z0-9][A-Z0-9._-]{7,99}$/', $runId)) {
+            return [];
+        }
+
+        return ['test_run_id' => $runId, 'is_test' => true];
     }
 
     /**

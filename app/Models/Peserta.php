@@ -83,6 +83,8 @@ class Peserta extends Authenticatable
 
     protected $fillable = [
         'nomor_pendaftaran',
+        'test_run_id',
+        'is_test',
         'tahun_ajaran_id',
         'gelombang_pendaftaran_id',
         'jenis_pendaftaran',
@@ -113,6 +115,7 @@ class Peserta extends Authenticatable
             'gelombang_pendaftaran_id' => 'integer',
             'kelas_tujuan' => 'integer',
             'urutan_kuota' => 'integer',
+            'is_test' => 'boolean',
         ];
     }
 

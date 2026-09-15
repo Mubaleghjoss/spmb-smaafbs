@@ -9,6 +9,7 @@ use App\Models\Peserta;
 use App\Models\TahunAjaran;
 use App\Services\ImporEksporPesertaService;
 use App\Services\PeriodePendaftaranService;
+use App\Services\JalurContextService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Tests\TestCase;
@@ -21,6 +22,7 @@ class AdminRegistrationCategoryTest extends TestCase
     {
         parent::setUp();
         $this->actingAs(Pengguna::factory()->admin()->create(), 'pengguna');
+        app(JalurContextService::class)->set(JalurContextService::SISWA_BARU);
     }
 
     public function test_admin_dapat_memfilter_peserta_berdasarkan_tahun_ajaran(): void
@@ -166,11 +168,23 @@ class AdminRegistrationCategoryTest extends TestCase
         $tahun = TahunAjaran::query()->findOrFail($kategori['tahun_ajaran_id']);
 
         foreach (range(1, 3) as $index) {
-            Peserta::factory()->create([
+            $peserta = Peserta::factory()->create([
                 'nama' => "PESERTA KUOTA {$index}",
                 'urutan_kuota' => $index,
                 'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
                 ...$kategori,
+            ]);
+            FormulirSpmb::query()->create([
+                'peserta_id' => $peserta->id,
+                'nama_lengkap' => $peserta->nama,
+                'jenis_kelamin' => $index === 2 ? 'P' : 'L',
+            ]);
+            \App\Models\Pembayaran::query()->create([
+                'peserta_id' => $peserta->id,
+                'jenis' => 'formulir',
+                'bukti_file' => "pembayaran/formulir/{$index}.jpg",
+                'nominal' => 200000,
+                'status' => 'menunggu',
             ]);
         }
 

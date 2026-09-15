@@ -7,6 +7,8 @@ use App\Models\TahapanSpmb;
 use App\Models\LogTahapanSpmb;
 use App\Enums\TahapanSpmb as TahapanSpmbEnum;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use App\Events\ApplicantLifecycleChanged;
 
 class SpmbService
 {
@@ -138,6 +140,7 @@ class SpmbService
                 'status_baru' => true,
                 'admin_id' => $adminId,
             ]);
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'selection_stage_changed', ['stage' => $tahap, 'completed' => true]));
         });
     }
 

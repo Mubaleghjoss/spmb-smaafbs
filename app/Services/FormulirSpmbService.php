@@ -6,6 +6,8 @@ use App\Models\FormulirSpmb;
 use App\Models\Pengguna;
 use App\Models\Peserta;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use App\Events\ApplicantLifecycleChanged;
 
 class FormulirSpmbService
 {
@@ -22,6 +24,7 @@ class FormulirSpmbService
     public function simpan(Peserta $peserta, array $data): FormulirSpmb
     {
         $formulir = FormulirSpmb::where('peserta_id', $peserta->id)->first();
+        $created = $formulir === null;
         $jenisKelaminSebelum = $formulir?->jenis_kelamin;
 
         if ($formulir) {
@@ -35,6 +38,16 @@ class FormulirSpmbService
         }
 
         $formulir = $formulir->fresh();
+
+        if ($created) {
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'biodata_completed'));
+        }
+        if (array_intersect(array_keys($data), ['nama_ayah', 'nama_ibu', 'telepon_ayah', 'telepon_ibu'])) {
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'parent_data_completed'));
+        }
+        if (array_intersect(array_keys($data), ['asal_sekolah', 'alamat_sekolah', 'nama_kontak_sekolah', 'telepon_kontak_sekolah'])) {
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'school_origin_completed'));
+        }
 
         if (($data['jenis_kelamin'] ?? null) !== $jenisKelaminSebelum) {
             app(KuotaPendaftaranService::class)->rekalkulasiPeserta($peserta);
@@ -68,6 +81,8 @@ class FormulirSpmbService
                 'diverifikasi_pada' => now(),
             ]);
             $this->spmbService->selesaikanTahapan($peserta, 2);
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'registration_completed'));
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'documents_submitted'));
         });
 
         return $formulir->fresh();
@@ -88,6 +103,7 @@ class FormulirSpmbService
 
             // Selesaikan tahap 2 (Isi Formulir)
             $this->spmbService->selesaikanTahapan($formulir->peserta, 2, $admin->id);
+            Event::dispatch(new ApplicantLifecycleChanged($formulir->peserta, 'verification_changed', ['status' => 'terverifikasi']));
         });
     }
 
@@ -102,6 +118,7 @@ class FormulirSpmbService
             'diverifikasi_oleh' => $admin->id,
             'diverifikasi_pada' => now(),
         ]);
+        Event::dispatch(new ApplicantLifecycleChanged($formulir->peserta, 'verification_changed', ['status' => 'ditolak']));
     }
 
     /**

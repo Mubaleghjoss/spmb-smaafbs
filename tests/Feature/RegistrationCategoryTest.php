@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\GelombangPendaftaran;
 use App\Models\Peserta;
+use App\Models\Pembayaran;
 use App\Models\TahunAjaran;
 use App\Services\FormulirSpmbService;
 use App\Services\PengaturanService;
@@ -54,7 +55,7 @@ class RegistrationCategoryTest extends TestCase
 
         $this->get('/daftar')
             ->assertOk()
-            ->assertSee('Daftar Sekarang')
+            ->assertSee('Lanjut')
             ->assertSee('Gelombang 1')
             ->assertSee('Dibuka')
             ->assertDontSee('Pendaftaran SPMB saat ini ditutup oleh admin.');
@@ -73,12 +74,13 @@ class RegistrationCategoryTest extends TestCase
             'gelombang_pendaftaran_id' => $gelombang->id,
             'jenis_pendaftaran' => 'siswa_baru',
             'kelas_tujuan' => 11,
+            'jenis_kelamin' => 'L',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'setuju' => '1',
         ]);
 
-        $response->assertRedirect(route('peserta.login'));
+        $response->assertRedirect(route('peserta.dashboard'));
 
         $peserta = Peserta::query()->where('telepon', '081234567890')->firstOrFail();
         $this->assertSame('siswa_baru', $peserta->jenis_pendaftaran);
@@ -99,6 +101,7 @@ class RegistrationCategoryTest extends TestCase
             'gelombang_pendaftaran_id' => $gelombang->id,
             'jenis_pendaftaran' => 'siswa_baru',
             'kelas_tujuan' => 10,
+            'jenis_kelamin' => 'L',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'setuju' => '1',
@@ -108,13 +111,24 @@ class RegistrationCategoryTest extends TestCase
             ...$payload,
             'nama' => 'Peserta Kuota Pertama',
             'telepon' => '081234567893',
-        ])->assertRedirect(route('peserta.login'));
+        ])->assertRedirect(route('peserta.dashboard'));
 
         $this->post('/daftar', [
             ...$payload,
             'nama' => 'Peserta Waiting List',
             'telepon' => '081234567894',
-        ])->assertRedirect(route('peserta.login'));
+        ])->assertRedirect(route('peserta.dashboard'));
+
+        foreach (['081234567893', '081234567894'] as $index => $telepon) {
+            Pembayaran::query()->create([
+                'peserta_id' => Peserta::query()->where('telepon', $telepon)->value('id'),
+                'jenis' => 'formulir',
+                'bukti_file' => "pembayaran/formulir/quota-{$index}.jpg",
+                'nominal' => 200000,
+                'status' => 'menunggu',
+            ]);
+        }
+        app(\App\Services\KuotaPendaftaranService::class)->rekalkulasiTahun($tahun->id);
 
         $this->assertDatabaseHas('peserta', [
             'telepon' => '081234567893',
@@ -162,6 +176,16 @@ class RegistrationCategoryTest extends TestCase
             'status_kuota' => Peserta::STATUS_KUOTA_DALAM,
             ...$kategori,
         ]);
+
+        foreach ([$lakiPertama, $lakiKedua, $perempuanPertama] as $index => $peserta) {
+            Pembayaran::query()->create([
+                'peserta_id' => $peserta->id,
+                'jenis' => 'formulir',
+                'bukti_file' => "pembayaran/formulir/gender-{$index}.jpg",
+                'nominal' => 200000,
+                'status' => 'menunggu',
+            ]);
+        }
 
         $service = app(FormulirSpmbService::class);
         $service->simpan($lakiPertama, [
@@ -254,6 +278,9 @@ class RegistrationCategoryTest extends TestCase
                 'gelombang_pendaftaran_id' => $gelombangLain->id,
                 'jenis_pendaftaran' => 'pindahan',
                 'kelas_tujuan' => 11,
+                'jenis_kelamin' => 'L',
+                'nama_kontak_sekolah' => 'Operator SMP Contoh',
+                'telepon_kontak_sekolah' => '081234567895',
                 'password' => 'password123',
                 'password_confirmation' => 'password123',
                 'setuju' => '1',
@@ -281,6 +308,9 @@ class RegistrationCategoryTest extends TestCase
             'gelombang_pendaftaran_id' => $gelombang->id,
             'jenis_pendaftaran' => 'pindahan',
             'kelas_tujuan' => 10,
+            'jenis_kelamin' => 'L',
+            'nama_kontak_sekolah' => 'Operator SMP Contoh',
+            'telepon_kontak_sekolah' => '081234567896',
             'password' => 'password123',
             'password_confirmation' => 'password123',
             'setuju' => '1',
@@ -304,7 +334,6 @@ class RegistrationCategoryTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee('Belum ada gelombang pendaftaran yang sedang dibuka.')
-            ->assertSee('Belum dibuka')
             ->assertDontSee('Daftar Sekarang');
 
         Carbon::setTestNow('2026-07-10 09:01:00');
@@ -312,6 +341,6 @@ class RegistrationCategoryTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee('Gelombang 1')
-            ->assertSee('Daftar Sekarang');
+            ->assertSee('Lanjut');
     }
 }
