@@ -125,6 +125,11 @@ def process(body: bytes, headers: dict[str, str], secret: str, store: DedupeStor
         return 400, "invalid payload"
     if not store.reserve(key):
         return 200, "duplicate"
+    if payload.get("is_test") is True:
+        # Test deliveries are acknowledged and deduplicated, but never forwarded
+        # to Telegram or reflected in the response.
+        store.mark_delivered(key)
+        return 202, "accepted"
     try:
         notifier.send(payload)
     except Exception:
