@@ -13,6 +13,7 @@ ACTIONS = frozenset({
     'get_statistics',
     'search_applicant',
     'get_applicant_detail',
+    'list_applicants',
     'list_by_city',
     'list_by_district',
     'list_by_school',
@@ -41,7 +42,7 @@ DANGEROUS = re.compile(
 )
 
 ACADEMIC_YEAR_PATTERN = re.compile(
-    r'(?<!\d)(\d{4})(?:\s*[/\-]\s*|\s+)(\d{4})(?!\d)'
+    r'(?<!\d)(\d{2,4})(?:\s*[/\-]\s*|\s+)(\d{2,4})(?!\d)'
 )
 
 
@@ -50,15 +51,19 @@ def normalize_academic_year(value: object) -> str | None:
         return None
 
     match = re.fullmatch(
-        r'\s*(\d{4})(?:\s*[/\-]\s*|\s+)(\d{4})\s*',
+        r'\s*(\d{2,4})(?:\s*[/\-]\s*|\s+)(\d{2,4})\s*',
         value,
     )
 
     if not match:
         return None
 
-    start = int(match.group(1))
-    end = int(match.group(2))
+    raw_start, raw_end = match.group(1), match.group(2)
+    start = int(raw_start)
+    end = int(raw_end)
+    if len(raw_start) == 2 and len(raw_end) == 2:
+        start += 2000
+        end += 2000
 
     if end != start + 1:
         return None
@@ -143,6 +148,13 @@ def parse_deterministic(text: str) -> dict | None:
             'action': 'gender_summary',
             'filters': year_filters,
         }
+
+    # Conversation-friendly applicant list requests with optional year.
+    if re.fullmatch(r'(?:siapa\s+)?pendaftar|siapa\s+pendaftar', command):
+        return {'action': 'list_applicants', 'filters': year_filters}
+
+    if re.fullmatch(r'tampilkan\s+biodata\s+pendaftar', command):
+        return {'action': 'list_applicants', 'filters': year_filters}
 
     # Existing exact commands.
     fixed = {
