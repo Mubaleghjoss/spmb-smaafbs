@@ -26,8 +26,13 @@ class MessageHandler:
         if is_write_request(text): return READ_ONLY_MESSAGE
         # Injection-like input is never sent to either the API or AI router.
         if is_dangerous_text(text): return 'Permintaan tidak dapat diproses.'
-        intent = validate_intent(parse_deterministic(text)) or self.ai_parser(text, self.config)
-        if not intent: return 'Maaf, perintah tidak dikenali. Gunakan /kuota, /statistik, /cari, atau /biodata.'
+        intent = validate_intent(parse_deterministic(text))
+
+        if not intent:
+            intent = validate_intent(self.ai_parser(text, self.config))
+
+        if not intent:
+            return 'Maaf, perintah tidak dikenali. Gunakan /kuota, /statistik, /cari, atau /biodata.'
         return format_response(intent, self.api_client.query(intent, str(message_data.get('from', {}).get('id', ''))))
 
     @staticmethod

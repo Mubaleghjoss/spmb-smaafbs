@@ -54,4 +54,116 @@ class DataBotTests(unittest.TestCase):
     def test_21_pagination_over_10(self):
         self.api.payload={'status':'success','data':[applicant(i) for i in range(11)]}; self.assertIn('Menampilkan 10 dari 11',self.bot.handle_message(msg('/cari Ani')))
     def test_22_write_intent_rejection(self): self.assertEqual(self.bot.handle_message(msg('ubah data Ani')),READ_ONLY_MESSAGE); self.assertFalse(self.api.calls)
+
+    def test_23_academic_year_quota_variants(self):
+        cases = (
+            'kuota 2027/2028',
+            'kuota tahun ajaran 2027-2028',
+            'berapa kuota 2027 2028?',
+            '/kuota 2027/2028',
+        )
+
+        for text in cases:
+            with self.subTest(text=text):
+                intent = parse_deterministic(text)
+
+                self.assertEqual(intent['action'], 'get_quota')
+                self.assertEqual(
+                    intent['filters']['tahun_ajaran'],
+                    '2027/2028',
+                )
+
+    def test_24_statistics_and_gender_academic_year(self):
+        cases = (
+            (
+                'statistik pendaftar tahun 2027/2028',
+                'get_statistics',
+            ),
+            (
+                'statistik 2027-2028',
+                'get_statistics',
+            ),
+            (
+                'gender tahun ajaran 2027 2028',
+                'gender_summary',
+            ),
+            (
+                'jenis kelamin 2027/2028',
+                'gender_summary',
+            ),
+        )
+
+        for text, action in cases:
+            with self.subTest(text=text):
+                intent = parse_deterministic(text)
+
+                self.assertEqual(intent['action'], action)
+                self.assertEqual(
+                    intent['filters']['tahun_ajaran'],
+                    '2027/2028',
+                )
+
+    def test_25_ai_fallback_year_is_revalidated_and_normalized(self):
+        api = FakeApi()
+
+        def fake_ai(_text, _config):
+            return {
+                'action': 'get_quota',
+                'filters': {
+                    'tahun_ajaran': '2027-2028',
+                },
+            }
+
+        bot = MessageHandler(
+            self.config,
+            api,
+            ai_parser=fake_ai,
+        )
+
+        bot.handle_message(
+            msg('kupta tahun ajaran 2027/2028')
+        )
+
+        self.assertEqual(
+            api.calls[-1][0],
+            {
+                'action': 'get_quota',
+                'filters': {
+                    'tahun_ajaran': '2027/2028',
+                },
+            },
+        )
+
+    def test_26_invalid_ai_intent_or_year_never_reaches_api(self):
+        self.assertIsNone(
+            validate_intent({
+                'action': 'get_quota',
+                'filters': {
+                    'tahun_ajaran': '2027/2029',
+                },
+            })
+        )
+
+        api = FakeApi()
+
+        def unsafe_ai(_text, _config):
+            return {
+                'action': 'create_applicant',
+                'filters': {},
+            }
+
+        bot = MessageHandler(
+            self.config,
+            api,
+            ai_parser=unsafe_ai,
+        )
+
+        response = bot.handle_message(
+            msg('kupta tahun ajaran 2027/2028')
+        )
+
+        self.assertIn('tidak dikenali', response)
+        self.assertFalse(api.calls)
+
+
 if __name__ == '__main__': unittest.main()
