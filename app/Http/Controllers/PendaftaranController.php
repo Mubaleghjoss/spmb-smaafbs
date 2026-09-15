@@ -188,7 +188,7 @@ class PendaftaranController extends Controller
 
             DB::commit();
 
-            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'account_created'));
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'applicant_registered'));
 
             // Auto-login peserta (pakai session yang sama dengan LoginPesertaController)
             \Illuminate\Support\Facades\Auth::guard('pengguna')->logout();

@@ -31,6 +31,14 @@ class Peserta extends Authenticatable
     {
         static::addGlobalScope(new PeriodeScope);
         static::addGlobalScope(new JalurScope);
+        static::updated(function (self $peserta): void {
+            if ($peserta->wasChanged('status_kuota')) {
+                \App\Events\ApplicantLifecycleChanged::dispatch($peserta, 'quota_status_changed', [
+                    'old_status' => $peserta->getOriginal('status_kuota'),
+                    'new_status' => $peserta->status_kuota,
+                ]);
+            }
+        });
     }
 
     /**

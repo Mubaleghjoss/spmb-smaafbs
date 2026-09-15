@@ -6,6 +6,8 @@ use App\Models\Peserta;
 use App\Models\Grup;
 use App\Models\TahapanSpmb;
 use App\Models\LogTahapanSpmb;
+use App\Events\ApplicantLifecycleChanged;
+use App\Enums\TahapanSpmb as TahapanSpmbEnum;
 use App\Helpers\NomorPendaftaranHelper;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -594,6 +596,13 @@ class PesertaService
                 'status_baru' => (bool) ($tahapan->{"tahap_{$tahapBaru}_selesai"} ?? false),
                 'pesan' => "Tahap diubah dari {$tahapLama} ke {$tahapBaru}" . ($luluskanFinal ? ' dan ditandai lulus.' : '.'),
                 'admin_id' => $adminId,
+            ]);
+
+            ApplicantLifecycleChanged::dispatch($peserta, 'stage_advanced', [
+                'old_stage' => $tahapLama,
+                'new_stage' => $tahapBaru,
+                'stage_name' => TahapanSpmbEnum::tryFrom($tahapBaru)?->label(),
+                'cause' => 'manual_jump',
             ]);
         });
     }

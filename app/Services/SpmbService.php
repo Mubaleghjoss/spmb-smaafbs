@@ -5,10 +5,10 @@ namespace App\Services;
 use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Models\LogTahapanSpmb;
-use App\Enums\TahapanSpmb as TahapanSpmbEnum;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use App\Events\ApplicantLifecycleChanged;
+use App\Enums\TahapanSpmb as TahapanSpmbEnum;
 
 class SpmbService
 {
@@ -119,9 +119,14 @@ class SpmbService
         }
 
         $kolom = "tahap_{$tahap}_selesai";
-        $statusLama = $tahapan->$kolom;
+        $statusLama = (bool) $tahapan->$kolom;
+        $stageLama = (int) $tahapan->tahap_saat_ini;
+
+        if ($statusLama) {
+            return;
+        }
         
-        DB::transaction(function () use ($tahapan, $kolom, $tahap, $peserta, $adminId, $statusLama) {
+        DB::transaction(function () use ($tahapan, $kolom, $tahap, $peserta, $adminId, $statusLama, $stageLama) {
             $tahapan->$kolom = true;
             
             // Update tahap saat ini ke tahap berikutnya
@@ -140,8 +145,21 @@ class SpmbService
                 'status_baru' => true,
                 'admin_id' => $adminId,
             ]);
-            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'selection_stage_changed', ['stage' => $tahap, 'completed' => true]));
+            Event::dispatch(new ApplicantLifecycleChanged($peserta, 'stage_advanced', [
+                'completed_stage' => $tahap,
+                'old_stage' => $stageLama,
+                'new_stage' => (int) $tahapan->tahap_saat_ini,
+                'stage_name' => TahapanSpmbEnum::tryFrom($tahap)?->label(),
+                'progress' => $this->progress($tahapan),
+                'cause' => $adminId ? 'manual_jump' : 'normal',
+            ]));
         });
+    }
+
+    private function progress(TahapanSpmb $tahapan): string
+    {
+        $completed = collect(range(1, 7))->filter(fn (int $stage) => (bool) $tahapan->{"tahap_{$stage}_selesai"})->count();
+        return "{$completed}/7";
     }
 
     /**

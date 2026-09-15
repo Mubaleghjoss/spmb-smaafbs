@@ -45,6 +45,9 @@ return [
         'webhook_url' => env('SPMB_DATA_BOT_WEBHOOK_URL'),
         'webhook_secret' => env('SPMB_DATA_BOT_WEBHOOK_SECRET'),
         'webhook_timeout' => env('SPMB_DATA_BOT_WEBHOOK_TIMEOUT', 5),
+        'webhook_max_age' => env('SPMB_DATA_BOT_WEBHOOK_MAX_AGE', 300),
+        'telegram_bot_token' => env('SPMB_TELEGRAM_BOT_TOKEN'),
+        'telegram_chat_id' => env('SPMB_TELEGRAM_CHAT_ID'),
     ],
 
     'spmb' => [

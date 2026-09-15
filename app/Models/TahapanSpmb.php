@@ -14,6 +14,21 @@ class TahapanSpmb extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::updated(function (self $tahapan): void {
+            if ($tahapan->wasChanged('status_kelulusan')) {
+                $peserta = $tahapan->relationLoaded('peserta') ? $tahapan->peserta : $tahapan->peserta()->first();
+                if ($peserta) {
+                    \App\Events\ApplicantLifecycleChanged::dispatch($peserta, 'graduation_status_changed', [
+                        'old_status' => $tahapan->getOriginal('status_kelulusan'),
+                        'new_status' => $tahapan->status_kelulusan,
+                    ]);
+                }
+            }
+        });
+    }
+
     protected $table = 'tahapan_spmb';
 
     protected $fillable = [
