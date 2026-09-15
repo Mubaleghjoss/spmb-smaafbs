@@ -47,7 +47,12 @@ class SpmbReadApiTest extends TestCase
         foreach ([['city' => 'Tangerang'], ['district' => 'Ciledug'], ['school' => 'Harapan'], ['verification_status' => 'menunggu'], ['document_status' => 'incomplete'], ['registered_today' => true]] as $filters) {
             $this->bot(['action' => 'list_applicants', 'filters' => $filters])->assertOk()->assertJsonPath('data.meta.total', 1);
         }
-        $this->bot(['action' => 'unsupported'])->assertStatus(400)->assertJsonPath('message', 'Unsupported action');
+        foreach ([null, '', 'unsupported', 'get_quota_typo', 'create_applicant', ['get_quota']] as $action) {
+            $this->bot(['action' => $action])
+                ->assertStatus(400)
+                ->assertJsonPath('message', 'Unsupported action');
+        }
+
         $this->bot(['action' => 'list_applicants', 'filters' => ['city' => "Tangerang'; DROP TABLE peserta;--"]])->assertStatus(422);
     }
 

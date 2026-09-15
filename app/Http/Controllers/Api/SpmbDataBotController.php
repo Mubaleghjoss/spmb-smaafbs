@@ -13,9 +13,9 @@ class SpmbDataBotController extends Controller
 
     public function __invoke(Request $request, SpmbReadService $service): JsonResponse
     {
-        $action = (string) $request->input('action');
+        $action = $request->input('action');
         $filters = $request->input('filters', []);
-        if (! in_array($action, self::ACTIONS, true)) return response()->json(['status' => 'error', 'message' => 'Unsupported action'], 400);
+        if (! is_string($action) || ! in_array($action, self::ACTIONS, true)) return response()->json(['status' => 'error', 'message' => 'Unsupported action'], 400);
         if (! is_array($filters) || $this->hasSqlInjectionPattern($filters)) return response()->json(['status' => 'error', 'message' => 'Invalid filter value'], 422);
 
         $limit = $this->limit($filters['limit'] ?? 20);
