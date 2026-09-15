@@ -28,6 +28,16 @@ class LifecycleReceiverTest(unittest.TestCase):
         self.assertTrue(verify_signature(self.body, self.timestamp, self.headers["X-SPMB-Webhook-Signature"], self.secret, self.now))
         self.assertFalse(verify_signature(self.body, self.timestamp, self.headers["X-SPMB-Webhook-Signature"], self.secret, self.now + 301))
         self.assertEqual(process(self.body, {**self.headers, "X-SPMB-Webhook-Signature": "sha256=bad"}, self.secret, self.store, self.notifier, self.now)[0], 401)
+        self.assertFalse(verify_signature(self.body, self.timestamp, self.headers["X-SPMB-Webhook-Signature"], "", self.now))
+        self.assertFalse(verify_signature(self.body, str(self.now + 1), self.headers["X-SPMB-Webhook-Signature"], self.secret, self.now))
+
+    def test_unknown_event_is_rejected_before_notification(self):
+        payload = {**self.payload, "event_type": "admin_secret_dump"}
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        timestamp = str(self.now)
+        headers = {"x-spmb-webhook-timestamp": timestamp, "x-spmb-webhook-signature": "sha256=" + hmac.new(self.secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()}
+        self.assertEqual(process(body, headers, self.secret, self.store, self.notifier, self.now), (400, "invalid event type"))
+        self.assertEqual(self.notifier.calls, [])
 
     def test_idempotency(self):
         self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now)[0], 202)

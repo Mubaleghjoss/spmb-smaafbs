@@ -12,13 +12,31 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
+ALLOWED_EVENT_TYPES = frozenset({
+    "applicant_registered",
+    "stage_advanced",
+    "quota_status_changed",
+    "graduation_status_changed",
+    # Existing application lifecycle events remain supported for compatibility.
+    "account_created",
+    "biodata_completed",
+    "parent_data_completed",
+    "school_origin_completed",
+    "registration_completed",
+    "documents_submitted",
+    "verification_changed",
+})
+
 
 def verify_signature(body: bytes, timestamp: str, signature: str, secret: str, now: int | None = None, max_age: int = 300) -> bool:
+    if not secret or not signature:
+        return False
     try:
         ts = int(timestamp)
     except (TypeError, ValueError):
         return False
-    if abs((now or int(time.time())) - ts) > max_age:
+    current = int(time.time()) if now is None else now
+    if ts > current or current - ts > max_age:
         return False
     expected = "sha256=" + hmac.new(secret.encode(), timestamp.encode() + b"." + body, hashlib.sha256).hexdigest()
     return hmac.compare_digest(expected, signature)
@@ -62,10 +80,13 @@ def format_message(payload: dict) -> str:
 
 
 def process(body: bytes, headers: dict[str, str], secret: str, store: DedupeStore, notifier: TelegramNotifier, now: int | None = None, max_age: int = 300) -> tuple[int, str]:
-    if not verify_signature(body, headers.get("X-SPMB-Webhook-Timestamp", ""), headers.get("X-SPMB-Webhook-Signature", ""), secret, now, max_age):
+    normalized_headers = {key.lower(): value for key, value in headers.items()}
+    if not verify_signature(body, normalized_headers.get("x-spmb-webhook-timestamp", ""), normalized_headers.get("x-spmb-webhook-signature", ""), secret, now, max_age):
         return 401, "invalid signature"
     try:
         payload = json.loads(body)
+        if not isinstance(payload, dict) or payload.get("event_type") not in ALLOWED_EVENT_TYPES:
+            return 400, "invalid event type"
         key = payload["dedupe_key"]
         if not isinstance(key, str) or not key:
             raise ValueError("missing dedupe_key")
