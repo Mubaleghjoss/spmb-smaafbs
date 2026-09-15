@@ -45,16 +45,47 @@ def verify_signature(body: bytes, timestamp: str, signature: str, secret: str, n
 class DedupeStore:
     def __init__(self, path: str):
         self.db = sqlite3.connect(path)
-        self.db.execute("CREATE TABLE IF NOT EXISTS received_events (dedupe_key TEXT PRIMARY KEY, received_at INTEGER NOT NULL)")
+        self.db.execute(
+            "CREATE TABLE IF NOT EXISTS received_events ("
+            "dedupe_key TEXT PRIMARY KEY, received_at INTEGER NOT NULL, "
+            "status TEXT NOT NULL DEFAULT 'pending')"
+        )
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(received_events)")}
+        if "status" not in columns:
+            self.db.execute("ALTER TABLE received_events ADD COLUMN status TEXT NOT NULL DEFAULT 'delivered'")
         self.db.commit()
 
-    def claim(self, key: str) -> bool:
+    def reserve(self, key: str) -> bool:
+        """Reserve a key unless it has already been delivered."""
         try:
-            self.db.execute("INSERT INTO received_events VALUES (?, ?)", (key, int(time.time())))
+            self.db.execute(
+                "INSERT INTO received_events (dedupe_key, received_at, status) VALUES (?, ?, 'pending')",
+                (key, int(time.time())),
+            )
             self.db.commit()
             return True
         except sqlite3.IntegrityError:
+            # Both delivered and in-flight keys are duplicates. Failed sends call
+            # release(), so a normal retry can reserve the key again.
             return False
+
+    def mark_delivered(self, key: str) -> None:
+        self.db.execute(
+            "UPDATE received_events SET status = 'delivered' WHERE dedupe_key = ?",
+            (key,),
+        )
+        self.db.commit()
+
+    def release(self, key: str) -> None:
+        self.db.execute(
+            "DELETE FROM received_events WHERE dedupe_key = ? AND status = 'pending'",
+            (key,),
+        )
+        self.db.commit()
+
+    def claim(self, key: str) -> bool:
+        """Backward-compatible alias for reserving a delivery."""
+        return self.reserve(key)
 
 
 class TelegramNotifier:
@@ -92,13 +123,15 @@ def process(body: bytes, headers: dict[str, str], secret: str, store: DedupeStor
             raise ValueError("missing dedupe_key")
     except (ValueError, KeyError, json.JSONDecodeError, TypeError):
         return 400, "invalid payload"
-    if not store.claim(key):
+    if not store.reserve(key):
         return 200, "duplicate"
     try:
         notifier.send(payload)
     except Exception:
-        # Delivery failure is isolated from the producer; retain the claim to avoid storms.
+        # Release the reservation so the producer can retry the same event safely.
+        store.release(key)
         return 202, "accepted; notification failed"
+    store.mark_delivered(key)
     return 202, "accepted"
 
 

@@ -44,9 +44,22 @@ class LifecycleReceiverTest(unittest.TestCase):
         self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now)[1], "duplicate")
         self.assertEqual(len(self.notifier.calls), 1)
 
+    def test_retry_after_failure_then_delivered_duplicate(self):
+        self.notifier.fail = True
+        self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now), (202, "accepted; notification failed"))
+
+        self.notifier.fail = False
+        self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now), (202, "accepted"))
+        self.assertEqual(len(self.notifier.calls), 2)
+
+        self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now), (200, "duplicate"))
+        self.assertEqual(len(self.notifier.calls), 2)
+        self.assertEqual(self.store.db.execute("SELECT status FROM received_events WHERE dedupe_key = ?", ("stable-1",)).fetchone()[0], "delivered")
+
     def test_notifier_failure_isolated(self):
         self.notifier.fail = True
         self.assertEqual(process(self.body, self.headers, self.secret, self.store, self.notifier, self.now)[0], 202)
+        self.assertIsNone(self.store.db.execute("SELECT 1 FROM received_events WHERE dedupe_key = ?", ("stable-1",)).fetchone())
 
 
 if __name__ == "__main__": unittest.main()
