@@ -42,9 +42,13 @@ class SpmbReadApiTest extends TestCase
         $this->assertDatabaseCount('formulir_spmb', 1);
     }
 
-    public function test_invalid_action_is_rejected(): void
+    public function test_invalid_actions_are_rejected_without_fallback(): void
     {
-        $this->bot(['action' => 'list_applicants'])->assertStatus(400)->assertJsonPath('message', 'Unsupported action');
+        foreach ([null, '', 'get_quota_typo', 'list_applicants', 'create_applicant', ['get_quota']] as $action) {
+            $this->bot(['action' => $action])
+                ->assertStatus(400)
+                ->assertExactJson(['ok' => false, 'message' => 'Unsupported action']);
+        }
     }
 
     public function test_audit_log_is_generated(): void
