@@ -369,24 +369,38 @@ echo "CODE_SHA=$TARGET_SHA"
 echo
 echo "=== AUTOLOAD CHECK ==="
 
-php -r '
-require "vendor/autoload.php";
+AUTOLOAD_PROBE="$APP_ROOT/.deploy-autoload-probe.php"
+
+cat > "$AUTOLOAD_PROBE" <<'PHP'
+<?php
+
+require __DIR__.'/vendor/autoload.php';
 
 $required = [
-    "App\\\\Http\\\\Controllers\\\\Api\\\\SpmbDataBotController",
-    "App\\\\Http\\\\Middleware\\\\SpmbDataBotAuth",
-    "App\\\\Services\\\\SpmbReadService",
+    \App\Http\Controllers\Api\SpmbDataBotController::class,
+    \App\Http\Middleware\SpmbDataBotAuth::class,
+    \App\Services\SpmbReadService::class,
 ];
 
 foreach ($required as $class) {
     if (! class_exists($class)) {
-        fwrite(STDERR, "Autoload failed: ".$class.PHP_EOL);
+        fwrite(STDERR, "Autoload failed: {$class}\n");
         exit(1);
     }
+
+    echo "AUTOLOAD_CLASS_OK={$class}\n";
 }
 
-echo "AUTOLOAD=PASS".PHP_EOL;
-'
+echo "AUTOLOAD=PASS\n";
+PHP
+
+if php "$AUTOLOAD_PROBE"; then
+    rm -f "$AUTOLOAD_PROBE"
+else
+    probe_status=$?
+    rm -f "$AUTOLOAD_PROBE"
+    exit "$probe_status"
+fi
 
 echo
 echo "=== LARAVEL CACHE ==="
