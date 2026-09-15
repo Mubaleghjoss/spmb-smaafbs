@@ -56,6 +56,99 @@ class SpmbReadApiTest extends TestCase
         $this->bot(['action' => 'list_applicants', 'filters' => ['city' => "Tangerang'; DROP TABLE peserta;--"]])->assertStatus(422);
     }
 
+    public function test_academic_year_name_filter_variants_and_active_default(): void
+    {
+        $active = TahunAjaran::create([
+            'nama' => '2026/2027',
+            'aktif' => true,
+            'kuota_peserta' => 30,
+        ]);
+
+        $future = TahunAjaran::create([
+            'nama' => '2027-2028',
+            'aktif' => false,
+            'kuota_peserta' => 40,
+        ]);
+
+        $this->applicant(
+            $active,
+            ['nama' => 'Active Applicant'],
+            ['jenis_kelamin' => 'P']
+        );
+
+        $this->applicant(
+            $future,
+            ['nama' => 'Future Applicant 1'],
+            ['jenis_kelamin' => 'L']
+        );
+
+        $this->applicant(
+            $future,
+            ['nama' => 'Future Applicant 2'],
+            ['jenis_kelamin' => 'L']
+        );
+
+        // Tanpa tahun harus memakai tahun ajaran aktif, bukan seluruh tahun.
+        $this->bot(['action' => 'get_quota'])
+            ->assertOk()
+            ->assertJsonPath('data.registered', 1)
+            ->assertJsonPath('data.quota', 30);
+
+        $this->bot(['action' => 'get_statistics'])
+            ->assertOk()
+            ->assertJsonPath('data.total', 1);
+
+        $this->bot(['action' => 'gender_summary'])
+            ->assertOk()
+            ->assertJsonPath('data.P', 1)
+            ->assertJsonPath('data.L', 0);
+
+        // Format tahun fleksibel tetapi semuanya menuju tahun yang sama.
+        foreach (['2027/2028', '2027-2028', '2027 2028'] as $year) {
+            $this->bot([
+                'action' => 'get_quota',
+                'filters' => ['tahun_ajaran' => $year],
+            ])
+                ->assertOk()
+                ->assertJsonPath('data.registered', 2)
+                ->assertJsonPath('data.quota', 40);
+        }
+
+        $this->bot([
+            'action' => 'get_statistics',
+            'filters' => ['tahun_ajaran' => '2027/2028'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.total', 2);
+
+        $this->bot([
+            'action' => 'gender_summary',
+            'filters' => ['tahun_ajaran' => '2027-2028'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.L', 2)
+            ->assertJsonPath('data.P', 0);
+
+        // Tahun valid tetapi belum tersedia tidak boleh fallback ke tahun aktif.
+        $this->bot([
+            'action' => 'get_quota',
+            'filters' => ['tahun_ajaran' => '2028/2029'],
+        ])
+            ->assertStatus(404)
+            ->assertJsonPath(
+                'message',
+                'Tahun ajaran 2028-2029 belum tersedia'
+            );
+
+        // Format/rentang tidak valid harus ditolak.
+        $this->bot([
+            'action' => 'get_quota',
+            'filters' => ['tahun_ajaran' => '2027/2029'],
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Invalid tahun_ajaran format');
+    }
+
     public function test_audit_log_is_generated(): void
     {
         @unlink(storage_path('logs/data-bot-audit.log'));
@@ -66,7 +159,7 @@ class SpmbReadApiTest extends TestCase
     private function bot(array $payload, array $headers = []) { return $this->withToken($this->token)->postJson('/api/v1/bot/query', $payload, $headers); }
     private function applicant(TahunAjaran $year, array $attributes = [], array $form = []): Peserta
     {
-        $p = Peserta::withoutGlobalScopes()->create(array_merge(['nomor_pendaftaran' => 'REG-'.fake()->unique()->numerify('####'), 'tahun_ajaran_id' => $year->id, 'nama' => 'Applicant', 'email' => fake()->unique()->safeEmail(), 'password' => 'password', 'telepon' => '08123456789'], $attributes));
+        $p = Peserta::withoutGlobalScopes()->create(array_merge(['nomor_pendaftaran' => 'REG-'.fake()->unique()->numerify('####'), 'tahun_ajaran_id' => $year->id, 'nama' => 'Applicant', 'email' => fake()->unique()->safeEmail(), 'password' => 'password', 'telepon' => '081'.fake()->unique()->numerify('#########')], $attributes));
         FormulirSpmb::create(array_merge(['peserta_id' => $p->id, 'nama_lengkap' => $p->nama, 'status_verifikasi' => 'draft'], $form));
         return $p;
     }

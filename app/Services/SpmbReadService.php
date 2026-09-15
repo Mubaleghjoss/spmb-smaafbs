@@ -14,10 +14,45 @@ class SpmbReadService
     private const VERIFICATION_STATUSES = ['draft', 'menunggu', 'terverifikasi', 'ditolak', 'terkirim'];
     private const QUOTA_STATUSES = ['dalam_kuota', 'waiting_list', 'belum_lengkap'];
 
+    public function normalizeAcademicYear(string $value): ?string
+    {
+        $value = trim($value);
+
+        if (! preg_match('/^(\\d{4})(?:\\s*[\\/-]\\s*|\\s+)(\\d{4})$/', $value, $matches)) {
+            return null;
+        }
+
+        $start = (int) $matches[1];
+        $end = (int) $matches[2];
+
+        if ($end !== $start + 1) {
+            return null;
+        }
+
+        return sprintf('%04d/%04d', $start, $end);
+    }
+
+    public function resolveAcademicYearId(string $value): ?int
+    {
+        $normalized = $this->normalizeAcademicYear($value);
+
+        if ($normalized === null) {
+            return null;
+        }
+
+        $year = TahunAjaran::query()
+            ->get(['id', 'nama'])
+            ->first(function (TahunAjaran $year) use ($normalized): bool {
+                return $this->normalizeAcademicYear((string) $year->nama) === $normalized;
+            });
+
+        return $year?->id;
+    }
+
     public function getQuota(?int $tahunAjaranId = null): array
     {
         $year = $tahunAjaranId === null
-            ? TahunAjaran::query()->where('aktif', true)->first()
+            ? $this->activeAcademicYear()
             : TahunAjaran::query()->find($tahunAjaranId);
         if ($year === null) return ['tahun_ajaran' => null, 'quota' => null, 'registered' => 0, 'within_quota' => 0, 'waiting_list' => 0];
 
@@ -86,8 +121,31 @@ class SpmbReadService
         return ['L' => (clone $query)->where('formulir_spmb.jenis_kelamin', 'L')->count(), 'P' => (clone $query)->where('formulir_spmb.jenis_kelamin', 'P')->count(), 'unknown' => (clone $query)->whereNull('formulir_spmb.jenis_kelamin')->count()];
     }
 
+    private function activeAcademicYear(): ?TahunAjaran
+    {
+        return TahunAjaran::query()
+            ->where('aktif', true)
+            ->orderByDesc('nama')
+            ->first();
+    }
+
     private function base(): Builder { return Peserta::withoutGlobalScopes()->with('formulirSpmb')->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id')->select('peserta.*'); }
-    private function forYear(?int $year): Builder { $q = $this->base(); return $year === null ? $q : $q->where('peserta.tahun_ajaran_id', $year); }
+    private function forYear(?int $year): Builder
+    {
+        $query = $this->base();
+
+        if ($year !== null) {
+            return $query->where('peserta.tahun_ajaran_id', $year);
+        }
+
+        $activeYear = $this->activeAcademicYear();
+
+        if ($activeYear === null) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        return $query->where('peserta.tahun_ajaran_id', $activeYear->id);
+    }
     private function documentsCompleteQuery(): \Closure { return function (Builder $q): void { foreach (self::REQUIRED_DOCUMENTS as $document) $q->whereNotNull("formulir_spmb.{$document}")->where("formulir_spmb.{$document}", '!=', ''); }; }
     private function records(Builder $query, int $limit): array { return $query->limit(max(1, min($limit, 100)))->get()->map(fn (Peserta $p) => $this->serialize($p))->all(); }
 

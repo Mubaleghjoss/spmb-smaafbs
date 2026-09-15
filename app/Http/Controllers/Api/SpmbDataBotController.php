@@ -19,7 +19,44 @@ class SpmbDataBotController extends Controller
         if (! is_array($filters) || $this->hasSqlInjectionPattern($filters)) return response()->json(['status' => 'error', 'message' => 'Invalid filter value'], 422);
 
         $limit = $this->limit($filters['limit'] ?? 20);
-        $year = isset($filters['tahun_ajaran_id']) && filter_var($filters['tahun_ajaran_id'], FILTER_VALIDATE_INT) !== false ? (int) $filters['tahun_ajaran_id'] : null;
+        $year = null;
+
+        if (array_key_exists('tahun_ajaran_id', $filters)) {
+            if (filter_var($filters['tahun_ajaran_id'], FILTER_VALIDATE_INT) === false) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid tahun_ajaran_id',
+                ], 422);
+            }
+
+            $year = (int) $filters['tahun_ajaran_id'];
+        } elseif (array_key_exists('tahun_ajaran', $filters)) {
+            if (! is_string($filters['tahun_ajaran'])) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid tahun_ajaran format',
+                ], 422);
+            }
+
+            $normalizedYear = $service->normalizeAcademicYear($filters['tahun_ajaran']);
+
+            if ($normalizedYear === null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid tahun_ajaran format',
+                ], 422);
+            }
+
+            $year = $service->resolveAcademicYearId($normalizedYear);
+
+            if ($year === null) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Tahun ajaran '.str_replace('/', '-', $normalizedYear).' belum tersedia',
+                ], 404);
+            }
+        }
+
         $data = match ($action) {
             'get_quota' => $service->getQuota($year),
             'get_statistics' => $service->getStatistics($year),
