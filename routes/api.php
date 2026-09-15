@@ -17,3 +17,9 @@ Route::prefix('sync')->group(function () {
     Route::get('/export', [\App\Http\Controllers\Admin\SyncController::class, 'eksporData']);
     Route::post('/import', [\App\Http\Controllers\Admin\SyncController::class, 'imporData']);
 });
+
+Route::prefix('v1/bot')
+    ->middleware(['spmb.data.bot', 'throttle:60,1'])
+    ->group(function () {
+        Route::post('/query', \App\Http\Controllers\Api\SpmbDataBotController::class);
+    });

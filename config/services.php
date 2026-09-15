@@ -40,4 +40,8 @@ return [
         'require_https' => env('AKSES_SYNC_REQUIRE_HTTPS', true),
     ],
 
+    'spmb_data_bot' => [
+        'token' => env('SPMB_DATA_BOT_TOKEN'),
+    ],
+
 ];

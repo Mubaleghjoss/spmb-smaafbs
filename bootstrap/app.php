@@ -19,6 +19,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'cek.akses.menu' => \App\Http\Middleware\CekAksesMenu::class,
             'cek.tahap.spmb' => \App\Http\Middleware\PastikanTahapSpmbDibuka::class,
             'akses.sync' => \App\Http\Middleware\AuthenticateAksesSync::class,
+            'spmb.data.bot' => \App\Http\Middleware\SpmbDataBotAuth::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
