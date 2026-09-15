@@ -3,12 +3,15 @@
 namespace Tests\Feature;
 
 use App\Events\ApplicantLifecycleChanged;
+use App\Listeners\SendApplicantLifecycleWebhook;
 use App\Models\Peserta;
 use App\Models\TahapanSpmb;
 use App\Models\TahunAjaran;
 use App\Services\SpmbService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class LifecycleNotificationsTest extends TestCase
@@ -33,6 +36,50 @@ class LifecycleNotificationsTest extends TestCase
     public function test_event_dispatches_after_commit(): void
     {
         $this->assertInstanceOf(\Illuminate\Contracts\Events\ShouldDispatchAfterCommit::class, new ApplicantLifecycleChanged(new Peserta(['id' => 1]), 'applicant_registered'));
+    }
+
+    public function test_listener_signs_and_transmits_the_exact_json_body(): void
+    {
+        $peserta = $this->peserta();
+        $peserta->update(['nama' => 'Élodie']);
+        $event = new ApplicantLifecycleChanged($peserta, 'stage_advanced', [
+            'completed_stage' => 6,
+            'new_stage' => 7,
+            'progress' => '6/7',
+            'cause' => 'normal',
+        ]);
+        $secret = 'listener-regression-secret';
+        $timestamp = Carbon::create(2026, 9, 16, 12, 34, 56, 'UTC');
+        $this->travelTo($timestamp);
+        config([
+            'services.spmb_data_bot.webhook_url' => 'https://receiver.test/lifecycle',
+            'services.spmb_data_bot.webhook_secret' => $secret,
+        ]);
+
+        $rawBody = null;
+        $requestHeaders = null;
+        Http::fake(function ($request) use (&$rawBody, &$requestHeaders) {
+            $rawBody = $request->body();
+            $requestHeaders = $request->headers();
+
+            return Http::response([], 202);
+        });
+
+        $encoded = json_encode($event->payload(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+        $timestampHeader = (string) now()->timestamp;
+
+        try {
+            (new SendApplicantLifecycleWebhook())->handle($event);
+            $expectedSignature = 'sha256='.hash_hmac('sha256', $timestampHeader.'.'.$rawBody, $secret);
+        } finally {
+            $this->travelBack();
+        }
+
+        $this->assertSame($encoded, $rawBody);
+        $this->assertSame('application/json', $requestHeaders['Content-Type'][0]);
+        $this->assertSame($timestampHeader, $requestHeaders['X-SPMB-Webhook-Timestamp'][0]);
+        $this->assertSame($expectedSignature, $requestHeaders['X-SPMB-Webhook-Signature'][0]);
+        $this->assertSame('stage_advanced', $requestHeaders['X-SPMB-Event-Type'][0]);
     }
 
     public function test_payload_is_minimal_and_name_is_masked(): void
