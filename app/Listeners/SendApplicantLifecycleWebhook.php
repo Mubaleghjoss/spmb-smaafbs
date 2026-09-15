@@ -26,12 +26,12 @@ class SendApplicantLifecycleWebhook
             $timestamp = (string) now()->timestamp;
             $signature = hash_hmac('sha256', $timestamp.'.'.$encoded, $secret);
 
-            Http::asJson()->withHeaders([
+            Http::withBody($encoded, 'application/json')->withHeaders([
                 'X-SPMB-Webhook-Timestamp' => $timestamp,
                 'X-SPMB-Webhook-Signature' => 'sha256='.$signature,
                 'X-SPMB-Event-Type' => $event->eventType,
             ])->timeout((int) config('services.spmb_data_bot.webhook_timeout', 5))
-                ->post($url, $body)
+                ->post($url)
                 ->throw();
         } catch (\Throwable $exception) {
             Log::error('SPMB lifecycle webhook failed', [
