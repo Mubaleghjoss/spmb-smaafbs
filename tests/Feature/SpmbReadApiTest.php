@@ -149,6 +149,28 @@ class SpmbReadApiTest extends TestCase
             ->assertJsonPath('message', 'Invalid tahun_ajaran format');
     }
 
+    public function test_list_applicants_filters_explicit_year_and_defaults_to_active_year(): void
+    {
+        $active = TahunAjaran::create(['nama' => '2026/2027', 'aktif' => true]);
+        $future = TahunAjaran::create(['nama' => '2027/2028', 'aktif' => false]);
+
+        $this->applicant($active, ['nama' => 'Active Applicant']);
+        $this->applicant($future, ['nama' => 'Future Applicant']);
+
+        $this->bot([
+            'action' => 'list_applicants',
+            'filters' => ['tahun_ajaran' => '2027/2028'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.data.0.nama', 'Future Applicant');
+
+        $this->bot(['action' => 'list_applicants'])
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.data.0.nama', 'Active Applicant');
+    }
+
     public function test_audit_log_is_generated(): void
     {
         @unlink(storage_path('logs/data-bot-audit.log'));

@@ -57,12 +57,17 @@ class SpmbDataBotController extends Controller
             }
         }
 
+        $listFilters = $filters;
+        if ($year !== null) {
+            $listFilters['tahun_ajaran_id'] = $year;
+        }
+
         $data = match ($action) {
             'get_quota' => $service->getQuota($year),
             'get_statistics' => $service->getStatistics($year),
             'search_applicant' => $service->searchApplicant((string) ($filters['query'] ?? ''), $limit),
             'get_applicant_detail' => $service->getApplicantDetail((string) ($filters['identifier'] ?? '')),
-            'list_applicants' => $service->listApplicants($filters, $limit, max(1, (int) ($filters['page'] ?? 1))),
+            'list_applicants' => $service->listApplicants($listFilters, $limit, max(1, (int) ($filters['page'] ?? 1))),
             'list_by_city' => $service->listByCity((string) ($filters['city'] ?? $filters['kota'] ?? ''), $limit),
             'list_by_district' => $service->listByDistrict((string) ($filters['district'] ?? $filters['kecamatan'] ?? ''), $limit),
             'list_by_school' => $service->listBySchool((string) ($filters['school'] ?? $filters['asal_sekolah'] ?? ''), $limit),

@@ -101,6 +101,11 @@ class SpmbReadService
 
     public function listApplicants(array $filters = [], int $perPage = 20, int $page = 1): array
     {
+        if (! array_key_exists('tahun_ajaran_id', $filters)) {
+            $activeYear = $this->activeAcademicYear();
+            $filters['tahun_ajaran_id'] = $activeYear?->id;
+        }
+
         $query = $this->applyFilters($this->base(), $filters);
         $perPage = max(1, min($perPage, 100)); $page = max(1, $page);
         $total = $query->count();
