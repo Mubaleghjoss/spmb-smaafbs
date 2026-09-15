@@ -274,10 +274,17 @@ def parse_with_ai(text: str, config: Config) -> dict | None:
         'temperature': 0,
     }).encode()
 
+    headers = {
+        'Content-Type': 'application/json',
+    }
+
+    if config.ai_router_api_key:
+        headers['Authorization'] = 'Bearer ' + config.ai_router_api_key
+
     req = request.Request(
         config.ai_router_url.rstrip('/') + '/chat/completions',
         data=payload,
-        headers={'Content-Type': 'application/json'},
+        headers=headers,
         method='POST',
     )
 

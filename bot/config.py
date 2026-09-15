@@ -18,6 +18,7 @@ class Config:
     allowed_telegram_user_ids: tuple[str, ...] = ()
     ai_fallback_model: str = 'cx/gpt-5.6-luna'
     ai_router_url: str = 'http://127.0.0.1:20128/v1'
+    ai_router_api_key: str = ''
     bot_username: str = 'SPMBAFBSBot'
 
     @classmethod
@@ -30,5 +31,6 @@ class Config:
             allowed_telegram_user_ids=_ids(os.getenv('ALLOWED_TELEGRAM_USER_IDS', '')),
             ai_fallback_model=os.getenv('AI_FALLBACK_MODEL', cls.ai_fallback_model),
             ai_router_url=os.getenv('AI_ROUTER_URL', cls.ai_router_url),
+            ai_router_api_key=os.getenv('AI_ROUTER_API_KEY', ''),
             bot_username=os.getenv('BOT_USERNAME', cls.bot_username),
         )

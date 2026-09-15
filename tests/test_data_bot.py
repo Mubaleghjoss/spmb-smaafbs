@@ -1,7 +1,7 @@
 import unittest
 from bot.config import Config
 from bot.handler import MessageHandler
-from bot.parser import parse_deterministic, validate_intent
+from bot.parser import parse_deterministic, parse_with_ai, validate_intent
 from bot.security import READ_ONLY_MESSAGE
 
 class FakeApi:
@@ -164,6 +164,74 @@ class DataBotTests(unittest.TestCase):
 
         self.assertIn('tidak dikenali', response)
         self.assertFalse(api.calls)
+
+
+
+    def test_27_ai_router_authorization_header(self):
+        import io
+        import json
+        from unittest.mock import patch
+
+        config = Config(
+            ai_fallback_model='cx/gpt-5.6-luna',
+            ai_router_url='http://127.0.0.1:20128/v1',
+            ai_router_api_key='test-router-secret',
+        )
+
+        class FakeResponse(io.BytesIO):
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+        def fake_urlopen(req, timeout=10):
+            self.assertEqual(timeout, 10)
+
+            authorization = (
+                req.get_header('Authorization')
+                or req.headers.get('Authorization')
+            )
+
+            self.assertEqual(
+                authorization,
+                'Bearer test-router-secret',
+            )
+
+            return FakeResponse(
+                json.dumps({
+                    'choices': [{
+                        'message': {
+                            'content': json.dumps({
+                                'action': 'get_quota',
+                                'filters': {
+                                    'tahun_ajaran': '2026/2027',
+                                },
+                            }),
+                        },
+                    }],
+                }).encode()
+            )
+
+        with patch(
+            'bot.parser.request.urlopen',
+            side_effect=fake_urlopen,
+        ):
+            result = parse_with_ai(
+                'kupta tahun ajaran 2026/2027',
+                config,
+            )
+
+        self.assertEqual(
+            result,
+            {
+                'action': 'get_quota',
+                'filters': {
+                    'tahun_ajaran': '2026/2027',
+                },
+            },
+        )
+
 
 
 if __name__ == '__main__': unittest.main()
