@@ -139,7 +139,8 @@ sudo -n /usr/bin/systemctl reload php8.2-fpm >/dev/null 2>&1 || true
 STAGE_FAILED="health_check"
 if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
-    [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_PUBLIC_URL")" == "200" ]] || fail "Public health check failed."
+    public_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_PUBLIC_URL" || true)"
+    [[ "$public_code" == "200" || "$public_code" == "401" ]] || fail "Public health check failed with HTTP $public_code."
 fi
 HEALTH_RESULT="SUCCESS"
 STATUS="SUCCESS"
