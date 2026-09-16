@@ -6,34 +6,40 @@ use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 
 abstract class TestCase extends BaseTestCase
 {
-    protected function setUp(): void
+    protected function refreshApplication()
     {
+        parent::refreshApplication();
         $this->assertTestDatabaseIsIsolated();
-        parent::setUp();
     }
 
     private function assertTestDatabaseIsIsolated(): void
     {
-        $database = (string) ($_ENV['DB_DATABASE'] ?? getenv('DB_DATABASE') ?: '');
-        $connection = (string) ($_ENV['DB_CONNECTION'] ?? getenv('DB_CONNECTION') ?: '');
-        $username = (string) ($_ENV['DB_USERNAME'] ?? getenv('DB_USERNAME') ?: '');
-        $forbiddenDatabases = [
-            'spmb_alfurqon',
-            'spmb_staging',
-            'sman5479_spmb',
-            'pkgenerus_testing',
-        ];
+        $config = $this->app['config'];
+        $environment = (string) $config->get('app.env', '');
+        $defaultConnection = (string) $config->get('database.default', '');
+        $connection = $config->get("database.connections.{$defaultConnection}");
+        $database = is_array($connection) ? (string) ($connection['database'] ?? '') : '';
+        $username = is_array($connection) ? (string) ($connection['username'] ?? '') : '';
+        $host = is_array($connection) ? (string) ($connection['host'] ?? '') : '';
 
-        if ($database !== 'spmb_testing' || in_array($database, $forbiddenDatabases, true)) {
-            throw new \RuntimeException('Refusing tests: DB_DATABASE must be exactly spmb_testing.');
+        if ($environment !== 'testing') {
+            throw new \RuntimeException('Refusing tests: APP_ENV must be exactly testing.');
         }
 
-        if ($connection !== 'mysql') {
-            throw new \RuntimeException('Refusing tests: DB_CONNECTION must be mysql.');
+        if ($defaultConnection !== 'mysql' || ! is_array($connection)) {
+            throw new \RuntimeException('Refusing tests: the resolved testing database connection must be mysql.');
         }
 
-        if ($username !== 'spmb_testing_user' || $username === 'root') {
-            throw new \RuntimeException('Refusing tests: DB_USERNAME must be the dedicated spmb_testing_user.');
+        if (preg_match('/^spmb_testing(?:_[A-Za-z0-9_-]+)?$/', $database) !== 1) {
+            throw new \RuntimeException('Refusing tests: the resolved testing database is not isolated.');
+        }
+
+        if ($username !== 'spmb_testing_user') {
+            throw new \RuntimeException('Refusing tests: the resolved testing database user must be spmb_testing_user.');
+        }
+
+        if (! in_array($host, ['localhost', '127.0.0.1'], true)) {
+            throw new \RuntimeException('Refusing tests: the resolved testing database host must be local.');
         }
 
         $password = (string) ($_ENV['SPMB_TEST_DB_PASSWORD'] ?? getenv('SPMB_TEST_DB_PASSWORD') ?: '');
