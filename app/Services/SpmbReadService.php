@@ -18,12 +18,15 @@ class SpmbReadService
     {
         $value = trim($value);
 
-        if (! preg_match('/^(\\d{4})(?:\\s*[\\/-]\\s*|\\s+)(\\d{4})$/', $value, $matches)) {
+        if (preg_match('/^(\d{2})(?:\s*\/\s*|\s+)(\d{2})$/', $value, $matches)) {
+            $start = 2000 + (int) $matches[1];
+            $end = 2000 + (int) $matches[2];
+        } elseif (preg_match('/^(\d{4})(?:\s*[\/-]\s*|\s+)(\d{4})$/', $value, $matches)) {
+            $start = (int) $matches[1];
+            $end = (int) $matches[2];
+        } else {
             return null;
         }
-
-        $start = (int) $matches[1];
-        $end = (int) $matches[2];
 
         if ($end !== $start + 1) {
             return null;
@@ -67,9 +70,9 @@ class SpmbReadService
         ];
     }
 
-    public function getStatistics(?int $tahunAjaranId = null): array
+    public function getStatistics(?int $tahunAjaranId = null, array $filters = []): array
     {
-        $query = $this->forYear($tahunAjaranId);
+        $query = $this->applyFilters($this->forYear($tahunAjaranId), $filters);
         return [
             'total' => $query->count(),
             'verified' => (clone $query)->where('formulir_spmb.status_verifikasi', 'terverifikasi')->count(),
@@ -113,16 +116,16 @@ class SpmbReadService
         return ['data' => $items, 'meta' => ['total' => $total, 'per_page' => $perPage, 'current_page' => $page, 'last_page' => max(1, (int) ceil($total / $perPage))]];
     }
 
-    public function listByCity(string $city, int $limit = 20): array { return $this->records($this->base()->where('formulir_spmb.alamat_kota', 'like', "%{$city}%"), $limit); }
-    public function listByDistrict(string $district, int $limit = 20): array { return $this->records($this->base()->where('formulir_spmb.alamat_kecamatan', 'like', "%{$district}%"), $limit); }
-    public function listBySchool(string $school, int $limit = 20): array { return $this->records($this->base()->where(function (Builder $q) use ($school) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$school}%")->orWhere('peserta.asal_sekolah', 'like', "%{$school}%"); }), $limit); }
-    public function listByDocumentStatus(string $status, int $limit = 20): array { return $this->records($this->applyFilters($this->base(), ['document_status' => $status]), $limit); }
-    public function listByVerificationStatus(string $status, int $limit = 20): array { return $this->records($this->applyFilters($this->base(), ['verification_status' => $status]), $limit); }
-    public function listRegisteredToday(int $limit = 20): array { return $this->records($this->applyFilters($this->base(), ['registered_today' => true]), $limit); }
+    public function listByCity(string $city, int $limit = 20, ?int $year = null): array { return $this->records($this->forYear($year)->where('formulir_spmb.alamat_kota', 'like', "%{$city}%"), $limit); }
+    public function listByDistrict(string $district, int $limit = 20, ?int $year = null): array { return $this->records($this->forYear($year)->where('formulir_spmb.alamat_kecamatan', 'like', "%{$district}%"), $limit); }
+    public function listBySchool(string $school, int $limit = 20, ?int $year = null): array { return $this->records($this->forYear($year)->where(function (Builder $q) use ($school) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$school}%")->orWhere('peserta.asal_sekolah', 'like', "%{$school}%"); }), $limit); }
+    public function listByDocumentStatus(string $status, int $limit = 20, ?int $year = null): array { return $this->records($this->applyFilters($this->forYear($year), ['document_status' => $status]), $limit); }
+    public function listByVerificationStatus(string $status, int $limit = 20, ?int $year = null): array { return $this->records($this->applyFilters($this->forYear($year), ['verification_status' => $status]), $limit); }
+    public function listRegisteredToday(int $limit = 20, ?int $year = null): array { return $this->records($this->applyFilters($this->forYear($year), ['registered_today' => true]), $limit); }
 
-    public function genderSummary(?int $tahunAjaranId = null): array
+    public function genderSummary(?int $tahunAjaranId = null, array $filters = []): array
     {
-        $query = $this->forYear($tahunAjaranId);
+        $query = $this->applyFilters($this->forYear($tahunAjaranId), $filters);
         return ['L' => (clone $query)->where('formulir_spmb.jenis_kelamin', 'L')->count(), 'P' => (clone $query)->where('formulir_spmb.jenis_kelamin', 'P')->count(), 'unknown' => (clone $query)->whereNull('formulir_spmb.jenis_kelamin')->count()];
     }
 
@@ -134,7 +137,7 @@ class SpmbReadService
             ->first();
     }
 
-    private function base(): Builder { return Peserta::withoutGlobalScopes()->with('formulirSpmb')->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id')->select('peserta.*'); }
+    private function base(): Builder { return Peserta::withoutGlobalScopes()->with(['formulirSpmb', 'tahunAjaran', 'tahapanSpmb'])->leftJoin('formulir_spmb', 'formulir_spmb.peserta_id', '=', 'peserta.id')->leftJoin('tahapan_spmb', 'tahapan_spmb.peserta_id', '=', 'peserta.id')->select('peserta.*'); }
     private function forYear(?int $year): Builder
     {
         $query = $this->base();
@@ -161,9 +164,13 @@ class SpmbReadService
             switch ($key) {
                 case 'nama': $query->where('peserta.nama', 'like', "%{$value}%"); break;
                 case 'nomor_pendaftaran': $query->where('peserta.nomor_pendaftaran', 'like', "%{$value}%"); break;
+                case 'asal_sekolah': $query->where(function (Builder $q) use ($value) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$value}%")->orWhere('peserta.asal_sekolah', 'like', "%{$value}%"); }); break;
+                case 'jenis_pendaftaran': $query->where('peserta.jenis_pendaftaran', $value); break;
+                case 'kelas_tujuan': $query->where('peserta.kelas_tujuan', (int) $value); break;
+                case 'tahapan': $query->where('tahapan_spmb.tahap_saat_ini', (int) $value); break;
                 case 'city': case 'kota': $query->where('formulir_spmb.alamat_kota', 'like', "%{$value}%"); break;
                 case 'district': case 'kecamatan': $query->where('formulir_spmb.alamat_kecamatan', 'like', "%{$value}%"); break;
-                case 'school': case 'asal_sekolah': $query->where(function (Builder $q) use ($value) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$value}%")->orWhere('peserta.asal_sekolah', 'like', "%{$value}%"); }); break;
+                case 'school': $query->where(function (Builder $q) use ($value) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$value}%")->orWhere('peserta.asal_sekolah', 'like', "%{$value}%"); }); break;
                 case 'verification_status': if (in_array($value, self::VERIFICATION_STATUSES, true)) $query->where('formulir_spmb.status_verifikasi', $value); break;
                 case 'document_status': if ($value === 'complete') $query->where($this->documentsCompleteQuery()); elseif ($value === 'incomplete') $query->whereNot($this->documentsCompleteQuery()); break;
                 case 'gender': case 'jenis_kelamin': if (in_array($value, ['L', 'P'], true)) $query->where('formulir_spmb.jenis_kelamin', $value); break;
@@ -178,8 +185,16 @@ class SpmbReadService
     private function serialize(Peserta $p, bool $detail = false): array
     {
         $f = $p->formulirSpmb;
-        $data = ['id' => $p->id, 'nomor_pendaftaran' => $p->nomor_pendaftaran, 'nama' => $p->nama, 'telepon' => $p->telepon, 'asal_sekolah' => $f?->asal_sekolah ?? $p->asal_sekolah, 'city' => $f?->alamat_kota, 'district' => $f?->alamat_kecamatan, 'gender' => $f?->jenis_kelamin, 'verification_status' => $f?->status_verifikasi, 'document_status' => $f !== null && $this->formDocumentsComplete($f) ? 'complete' : 'incomplete', 'status_kuota' => $p->status_kuota, 'registered_at' => $p->created_at?->toDateString()];
-        if ($detail) $data['tahun_ajaran_id'] = $p->tahun_ajaran_id;
+        $data = ['id' => $p->id, 'nomor_pendaftaran' => $p->nomor_pendaftaran, 'nama' => $p->nama, 'telepon' => $p->telepon, 'asal_sekolah' => $f?->asal_sekolah ?? $p->asal_sekolah, 'city' => $f?->alamat_kota, 'district' => $f?->alamat_kecamatan, 'gender' => $f?->jenis_kelamin, 'jenis_pendaftaran' => $p->jenis_pendaftaran, 'kelas_tujuan' => $p->kelas_tujuan, 'verification_status' => $f?->status_verifikasi, 'document_status' => $f !== null && $this->formDocumentsComplete($f) ? 'complete' : 'incomplete', 'status_kuota' => $p->status_kuota, 'tahap_saat_ini' => $p->tahapanSpmb?->tahap_saat_ini, 'registered_at' => $p->created_at?->toDateString()];
+        if ($detail) {
+            $data['tahun_ajaran_id'] = $p->tahun_ajaran_id;
+            $data['tahun_ajaran'] = $p->tahunAjaran?->nama;
+            $data['registration_type'] = $p->jenis_pendaftaran;
+            $data['target_class'] = $p->kelas_tujuan;
+            $data['school'] = $data['asal_sekolah'];
+            $data['stage'] = $data['tahap_saat_ini'];
+            $data['quota_status'] = $p->status_kuota;
+        }
         return $data;
     }
     private function formDocumentsComplete(object $form): bool { foreach (self::REQUIRED_DOCUMENTS as $document) if (empty($form->{$document})) return false; return true; }

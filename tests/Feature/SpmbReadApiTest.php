@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\FormulirSpmb;
 use App\Models\Peserta;
 use App\Models\TahunAjaran;
+use App\Models\TahapanSpmb;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -169,6 +170,54 @@ class SpmbReadApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.meta.total', 1)
             ->assertJsonPath('data.data.0.nama', 'Active Applicant');
+    }
+
+    public function test_strict_action_filter_contract_rejects_unknown_missing_and_invalid_filters(): void
+    {
+        $cases = [
+            [['action' => 'get_quota', 'filters' => ['query' => 'x']], 'Unknown filter: query'],
+            [['action' => 'search_applicant'], 'Missing required filter'],
+            [['action' => 'list_by_city', 'filters' => []], 'Missing required filter'],
+            [['action' => 'list_by_verification_status', 'filters' => ['status' => 'bogus']], 'Invalid status'],
+            [['action' => 'list_applicants', 'filters' => ['limit' => 101]], 'Invalid limit'],
+            [['action' => 'list_applicants', 'filters' => ['page' => 0]], 'Invalid page'],
+            [['action' => 'list_applicants', 'filters' => ['registered_date' => '2026/01/01']], 'Invalid registered_date'],
+            [['action' => 'get_quota', 'filters' => ['tahun_ajaran' => 2026]], 'Invalid tahun_ajaran format'],
+        ];
+
+        foreach ($cases as [$payload, $message]) {
+            $this->bot($payload)->assertStatus(422)->assertJsonPath('message', $message);
+        }
+    }
+
+    public function test_two_digit_year_jalur_stage_combined_filters_and_pagination(): void
+    {
+        $year = TahunAjaran::create(['nama' => '2030/2031', 'aktif' => true]);
+        $first = $this->applicant($year, ['nama' => 'Siswa Baru 1', 'jenis_pendaftaran' => 'siswa_baru', 'kelas_tujuan' => 10]);
+        $second = $this->applicant($year, ['nama' => 'Pindahan 1', 'jenis_pendaftaran' => 'pindahan', 'kelas_tujuan' => 11]);
+        $third = $this->applicant($year, ['nama' => 'Pindahan 2', 'jenis_pendaftaran' => 'pindahan', 'kelas_tujuan' => 11]);
+        TahapanSpmb::forceCreate(['peserta_id' => $first->id, 'tahap_saat_ini' => 3]);
+        TahapanSpmb::forceCreate(['peserta_id' => $second->id, 'tahap_saat_ini' => 4]);
+        TahapanSpmb::forceCreate(['peserta_id' => $third->id, 'tahap_saat_ini' => 4]);
+
+        $this->bot(['action' => 'list_applicants', 'filters' => [
+            'tahun_ajaran' => '30/31', 'jenis_pendaftaran' => 'pindahan', 'kelas_tujuan' => 11,
+            'tahapan' => 4, 'limit' => 1, 'page' => 2,
+        ]])->assertOk()->assertJsonPath('data.meta.total', 2)->assertJsonPath('data.meta.per_page', 1)->assertJsonPath('data.meta.current_page', 2);
+
+        $this->bot(['action' => 'get_statistics', 'filters' => [
+            'tahun_ajaran_id' => $year->id, 'jenis_pendaftaran' => 'pindahan', 'kelas_tujuan' => 11, 'tahapan' => 4,
+        ]])->assertOk()->assertJsonPath('data.total', 2);
+
+        $this->bot(['action' => 'gender_summary', 'filters' => ['tahun_ajaran' => '30/31', 'jenis_pendaftaran' => 'siswa_baru', 'tahapan' => 3]])
+            ->assertOk()->assertJsonPath('data.unknown', 1);
+    }
+
+    public function test_security_filters_are_whitelist_bound_and_search_is_read_only(): void
+    {
+        $this->bot(['action' => 'search_applicant', 'filters' => ['query' => "x' UNION SELECT * FROM peserta"]])->assertStatus(422);
+        $this->bot(['action' => 'list_applicants', 'filters' => ['nama' => ['nested' => 'value']]])->assertStatus(422);
+        $this->bot(['action' => 'list_applicants', 'filters' => ['jenis_pendaftaran' => 'siswa_baru', 'kelas_tujuan' => 11]])->assertStatus(422);
     }
 
     public function test_audit_log_is_generated(): void
