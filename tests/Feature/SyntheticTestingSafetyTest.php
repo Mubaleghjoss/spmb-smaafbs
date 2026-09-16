@@ -79,10 +79,13 @@ class SyntheticTestingSafetyTest extends TestCase
             'services.spmb_data_bot.webhook_secret' => 'secret',
         ]);
         Http::fake();
-        $peserta = new Peserta(['id' => 44, 'nama' => 'Invalid '.chr(0xB1).' payload']);
+        $peserta = new Peserta(['id' => 44, 'nama' => 'Valid applicant']);
+        $invalidPayload = 'Invalid '.chr(0xB1).' payload';
+        $event = new ApplicantLifecycleChanged($peserta, 'stage_advanced', ['stage_name' => $invalidPayload]);
 
-        // Encoding failures must be swallowed before any HTTP request is sent.
-        (new SendApplicantLifecycleWebhook())->handle(new ApplicantLifecycleChanged($peserta, 'account_created'));
+        // Keep the invalid byte in an unmasked lifecycle context field so json_encode rejects it.
+        $this->assertSame($invalidPayload, $event->payload()['stage_name']);
+        (new SendApplicantLifecycleWebhook())->handle($event);
 
         Http::assertNothingSent();
     }
