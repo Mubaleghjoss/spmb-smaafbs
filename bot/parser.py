@@ -127,19 +127,19 @@ def parse_deterministic(text: str) -> dict | None:
 
     if command in {'reset', '/reset', 'mulai lagi', 'hapus konteks'}:
         return {'action': 'reset', 'filters': {}}
-    if command in {'lanjut', 'berikutnya', 'selanjutnya', 'next'}:
+    if command in {'lanjut', 'berikutnya', 'selanjutnya', 'next', 'next page', 'halaman berikutnya'}:
         return {'action': 'next_page', 'filters': {}}
-    if command in {'kembali', 'sebelumnya', 'previous', 'prev'}:
+    if command in {'kembali', 'sebelumnya', 'previous', 'prev', 'previous page', 'halaman sebelumnya'}:
         return {'action': 'previous_page', 'filters': {}}
     if command in {'siapa aja', 'siapa saja', 'tampilkan', 'lihat datanya', 'daftarnya', 'lihat daftar'}:
         return {'action': 'list_applicants', 'filters': year_filters}
 
     # Deterministic conversational filters. Values intentionally match the API contract.
     filter_patterns = (
-        (r'(?:siswa\s+baru|baru)', 'jenis_pendaftaran', 'siswa_baru'),
-        (r'(?:siswa\s+pindahan|pindahan|transfer)', 'jenis_pendaftaran', 'pindahan'),
-        (r'(?:laki[ -]?laki|laki|pria)', 'gender', 'L'),
-        (r'(?:perempuan|wanita)', 'gender', 'P'),
+        (r'(?:jalur\s+)?(?:siswa\s+baru|baru)', 'jenis_pendaftaran', 'siswa_baru'),
+        (r'(?:jalur\s+)?(?:siswa\s+pindahan|pindahan|transfer)', 'jenis_pendaftaran', 'pindahan'),
+        (r'(?:jenis\s+kelamin\s+)?(?:laki[ -]?laki|laki|pria|\bL\b)', 'gender', 'L'),
+        (r'(?:jenis\s+kelamin\s+)?(?:perempuan|wanita|\bP\b)', 'gender', 'P'),
         (r'(?:sudah|telah)\s+verifikasi|terverifikasi', 'verification_status', 'terverifikasi'),
         (r'(?:belum|menunggu)\s+verifikasi', 'verification_status', 'menunggu'),
         (r'(?:berkas|dokumen)\s+lengkap', 'document_status', 'complete'),
@@ -157,7 +157,7 @@ def parse_deterministic(text: str) -> dict | None:
     if class_match:
         extracted['kelas_tujuan'] = int(class_match.group(1))
         remaining = remaining[:class_match.start()] + ' ' + remaining[class_match.end():]
-    if extracted and (remaining.strip() in {'', 'pendaftar', 'siswa', 'data pendaftar', 'data siswa'}):
+    if extracted and (remaining.strip() in {'', 'pendaftar', 'siswa', 'data pendaftar', 'data siswa', 'jalur'}):
         if extracted.get('jenis_pendaftaran') == 'siswa_baru' and extracted.get('kelas_tujuan') == 11:
             return {'action': 'incompatible_filter', 'filters': extracted}
         return {'action': 'list_applicants', 'filters': extracted}
@@ -253,6 +253,32 @@ def parse_deterministic(text: str) -> dict | None:
             }
 
     return None
+
+
+def parse_number_selection(text: str) -> int | None:
+    """Return a 1-based list position for supported conversational forms."""
+    value = _clean_command(text)
+    match = re.fullmatch(
+        r'(?:cek\s+)?(?:biodata\s+)?(?:nomor|no|yang\s+(?:nomor|ke)|yg\s+(?:nomor|ke)|yang)\s*'
+        r'(\d+|pertama|satu|kedua|dua|ketiga|tiga|keempat|empat|kelima|lima)(?:\s+itu)?',
+        value,
+        re.I,
+    )
+    if not match:
+        match = re.fullmatch(
+            r'(?:cek\s+)?(?:yang|yg)\s+'
+            r'(\d+|pertama|satu|kedua|dua|ketiga|tiga|keempat|empat|kelima|lima)(?:\s+itu)?',
+            value,
+            re.I,
+        )
+    if not match:
+        return None
+    raw = match.group(1).lower()
+    return int(raw) if raw.isdigit() else {
+        'pertama': 1, 'satu': 1, 'kedua': 2, 'dua': 2,
+        'ketiga': 3, 'tiga': 3, 'keempat': 4, 'empat': 4,
+        'kelima': 5, 'lima': 5,
+    }[raw]
 
 
 def is_dangerous_text(text: str) -> bool:
