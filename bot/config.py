@@ -20,6 +20,8 @@ class Config:
     ai_router_url: str = 'http://127.0.0.1:20128/v1'
     ai_router_api_key: str = ''
     bot_username: str = 'SPMBAFBSBot'
+    context_db_path: str = 'context.sqlite3'
+    context_ttl_seconds: int = 86400
 
     @classmethod
     def from_env(cls) -> 'Config':
@@ -33,4 +35,6 @@ class Config:
             ai_router_url=os.getenv('AI_ROUTER_URL', cls.ai_router_url),
             ai_router_api_key=os.getenv('AI_ROUTER_API_KEY', ''),
             bot_username=os.getenv('BOT_USERNAME', cls.bot_username),
+            context_db_path=os.getenv('CONTEXT_DB_PATH', cls.context_db_path),
+            context_ttl_seconds=int(os.getenv('CONTEXT_TTL_SECONDS', str(cls.context_ttl_seconds))),
         )

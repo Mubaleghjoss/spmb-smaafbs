@@ -6,12 +6,16 @@ def _applicant(item: dict, index: int | None = None) -> str:
     head = ('%d. ' % index) if index else ''
     return head + '*%s* (`%s`)\n%s | %s | %s' % (_esc(item.get('nama')), _esc(item.get('nomor_pendaftaran', item.get('id'))), _esc(item.get('asal_sekolah')), _esc(item.get('city')), _esc(item.get('verification_status')))
 def _list(data) -> str:
-    if isinstance(data, dict) and 'data' in data: data, total = data['data'], data.get('meta', {}).get('total', len(data['data']))
+    meta = data.get('meta', {}) if isinstance(data, dict) else {}
+    if isinstance(data, dict) and 'data' in data: data, total = data['data'], meta.get('total', len(data['data']))
     else: total = len(data) if isinstance(data, list) else 0
     if not data: return 'Tidak ada pendaftar yang ditemukan.'
     shown = data[:10]
     text = '*Daftar Pendaftar*\n' + '\n\n'.join(_applicant(x, i) for i, x in enumerate(shown, 1))
-    return text + ('\n\nMenampilkan 10 dari %d pendaftar' % total if total > 10 else '')
+    page = meta.get('current_page') or meta.get('page')
+    pages = meta.get('last_page') or meta.get('total_pages')
+    if page and pages: text += '\n\nHalaman %s dari %s' % (_esc(page), _esc(pages))
+    return text + ('\n\nMenampilkan %d dari %d pendaftar' % (len(shown), total) if total > len(shown) else '')
 def format_response(intent: dict, payload: dict) -> str:
     if payload.get('status') != 'success':
         return '*Terjadi Kesalahan*\n' + _esc(payload.get('message', 'API Error'))

@@ -31,3 +31,5 @@ yarn-error.log
 /.zed
 __pycache__/
 *.pyc
+*.sqlite
+context.sqlite3

@@ -32,6 +32,13 @@ FILTERS = frozenset({
     'document_status',
     'verification_status',
     'tahun_ajaran',
+    'jenis_pendaftaran',
+    'kelas_tujuan',
+    'gender',
+    'tahapan',
+    'status_kuota',
+    'page',
+    'limit',
 })
 
 CONTROL_COMMANDS = frozenset({'/setupid', '/whoami'})
@@ -118,6 +125,43 @@ def parse_deterministic(text: str) -> dict | None:
 
     year_filters = {'tahun_ajaran': year} if year else {}
 
+    if command in {'reset', '/reset', 'mulai lagi', 'hapus konteks'}:
+        return {'action': 'reset', 'filters': {}}
+    if command in {'lanjut', 'berikutnya', 'selanjutnya', 'next'}:
+        return {'action': 'next_page', 'filters': {}}
+    if command in {'kembali', 'sebelumnya', 'previous', 'prev'}:
+        return {'action': 'previous_page', 'filters': {}}
+    if command in {'siapa aja', 'siapa saja', 'tampilkan', 'lihat datanya', 'daftarnya', 'lihat daftar'}:
+        return {'action': 'list_applicants', 'filters': year_filters}
+
+    # Deterministic conversational filters. Values intentionally match the API contract.
+    filter_patterns = (
+        (r'(?:siswa\s+baru|baru)', 'jenis_pendaftaran', 'siswa_baru'),
+        (r'(?:siswa\s+pindahan|pindahan|transfer)', 'jenis_pendaftaran', 'pindahan'),
+        (r'(?:laki[ -]?laki|laki|pria)', 'gender', 'L'),
+        (r'(?:perempuan|wanita)', 'gender', 'P'),
+        (r'(?:sudah|telah)\s+verifikasi|terverifikasi', 'verification_status', 'terverifikasi'),
+        (r'(?:belum|menunggu)\s+verifikasi', 'verification_status', 'menunggu'),
+        (r'(?:berkas|dokumen)\s+lengkap', 'document_status', 'complete'),
+        (r'(?:berkas|dokumen)\s+belum\s+lengkap', 'document_status', 'incomplete'),
+        (r'dalam\s+kuota', 'status_kuota', 'dalam_kuota'),
+        (r'waiting\s*list', 'status_kuota', 'waiting_list'),
+    )
+    extracted = dict(year_filters)
+    remaining = command
+    for pattern, key, val in filter_patterns:
+        if re.search(pattern, remaining, re.I):
+            extracted[key] = val
+            remaining = re.sub(pattern, ' ', remaining, flags=re.I)
+    class_match = re.search(r'kelas\s*(10|11|12)', remaining, re.I)
+    if class_match:
+        extracted['kelas_tujuan'] = int(class_match.group(1))
+        remaining = remaining[:class_match.start()] + ' ' + remaining[class_match.end():]
+    if extracted and (remaining.strip() in {'', 'pendaftar', 'siswa', 'data pendaftar', 'data siswa'}):
+        if extracted.get('jenis_pendaftaran') == 'siswa_baru' and extracted.get('kelas_tujuan') == 11:
+            return {'action': 'incompatible_filter', 'filters': extracted}
+        return {'action': 'list_applicants', 'filters': extracted}
+
     # Read-only summary commands with optional academic year.
     if re.fullmatch(
         r'(?:/kuota|kuota|berapa\s+kuota)(?:\s+spmb)?',
@@ -150,7 +194,10 @@ def parse_deterministic(text: str) -> dict | None:
         }
 
     # Conversation-friendly applicant list requests with optional year.
-    if re.fullmatch(r'(?:siapa\s+)?pendaftar|siapa\s+pendaftar', command):
+    if re.fullmatch(r'(?:siapa\s+(?:aja|saja)\s+)?pendaftar|siapa\s+pendaftar', command):
+        return {'action': 'list_applicants', 'filters': year_filters}
+
+    if re.fullmatch(r'(?:lihat|tampilkan)\s+(?:data\s+)?pendaftar', command):
         return {'action': 'list_applicants', 'filters': year_filters}
 
     if re.fullmatch(r'tampilkan\s+biodata\s+pendaftar', command):
