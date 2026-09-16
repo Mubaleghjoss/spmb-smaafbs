@@ -31,7 +31,9 @@ class Config:
             spmb_data_bot_token=os.getenv('SPMB_DATA_BOT_TOKEN', ''),
             allowed_group_id=os.getenv('ALLOWED_GROUP_ID', 'WAITING'),
             allowed_telegram_user_ids=_ids(os.getenv('ALLOWED_TELEGRAM_USER_IDS', '')),
-            ai_fallback_model=os.getenv('AI_FALLBACK_MODEL', cls.ai_fallback_model),
+            # Runtime fallback is intentionally pinned to Luna; deployment
+            # configuration must not silently change the model contract.
+            ai_fallback_model=cls.ai_fallback_model,
             ai_router_url=os.getenv('AI_ROUTER_URL', cls.ai_router_url),
             ai_router_api_key=os.getenv('AI_ROUTER_API_KEY', ''),
             bot_username=os.getenv('BOT_USERNAME', cls.bot_username),

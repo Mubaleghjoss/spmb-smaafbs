@@ -1,6 +1,7 @@
 """Framework-neutral incoming Telegram message orchestrator."""
 from __future__ import annotations
 
+import inspect
 import re
 from typing import Callable, Optional
 
@@ -15,6 +16,7 @@ from .parser import (
     parse_number_selection,
     parse_with_ai,
     validate_intent,
+    FALLBACK_MESSAGE,
 )
 from .privacy import should_process
 from .security import (
@@ -88,6 +90,23 @@ class MessageHandler:
             'last_results': items,
         })
 
+    def _call_ai(self, text: str, state: dict) -> dict | None:
+        # Keep compatibility with phase-1/2 test callbacks while allowing the
+        # production parser to receive only sanitized current context.
+        context = {
+            key: state[key] for key in ('filters', 'page', 'last_page', 'last_action')
+            if key in state
+        }
+        try:
+            signature = inspect.signature(self.ai_parser)
+            try:
+                signature.bind(text, self.config, context)
+            except TypeError:
+                return self.ai_parser(text, self.config)
+            return self.ai_parser(text, self.config, context)
+        except Exception:
+            return None
+
     def handle_message(self, message_data: dict) -> Optional[str]:
         if not should_process(message_data, self.config.bot_username, self.config.allowed_group_id, self.config.allowed_telegram_user_ids):
             return None
@@ -114,11 +133,13 @@ class MessageHandler:
         key = self._conversation_key(message_data)
         state = self._state(key)
         selection = parse_number_selection(text)
-        if selection is not None and state.get('last_results'):
-            items = state['last_results']
-            if 1 <= selection <= len(items):
-                return self._detail_from_item(items[selection - 1], message_data)
-            return 'Nomor itu tidak ada pada daftar terakhir.'
+        if selection is not None:
+            if state.get('last_results'):
+                items = state['last_results']
+                if 1 <= selection <= len(items):
+                    return self._detail_from_item(items[selection - 1], message_data)
+                return 'Nomor itu tidak ada pada daftar terakhir.'
+            return 'Belum ada daftar sebelumnya. Coba minta daftar peserta terlebih dahulu.'
 
         parsed = parse_deterministic(text)
         if parsed and parsed['action'] == 'reset':
@@ -162,17 +183,17 @@ class MessageHandler:
 
         intent = validate_intent(parsed)
         if not intent:
-            candidate = self.ai_parser(text, self.config)
+            candidate = self._call_ai(text, state)
             intent = validate_intent(candidate)
         if not intent:
-            return 'Maaf, perintah tidak dikenali. Gunakan /kuota, /statistik, /cari, atau /biodata.'
+            return FALLBACK_MESSAGE
 
         if intent['action'] not in _LIST_ACTIONS:
             payload = self.api_client.query(intent, str(message_data.get('from', {}).get('id', '')))
             return format_response(intent, payload)
 
         explicit_filters = dict(intent.get('filters', {}))
-        if intent['action'] == 'list_applicants' and parsed and parsed.get('action') == 'list_applicants' and state.get('intent'):
+        if intent['action'] == 'list_applicants' and state.get('intent'):
             merged = dict(state.get('filters', {}))
             previous_type = merged.get('jenis_pendaftaran')
             merged.update(explicit_filters)

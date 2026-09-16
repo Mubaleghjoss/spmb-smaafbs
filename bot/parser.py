@@ -330,44 +330,56 @@ def validate_intent(intent: object) -> dict | None:
     }
 
 
-def parse_with_ai(text: str, config: Config) -> dict | None:
+FALLBACK_MESSAGE = 'Maaf, saya belum memahami pertanyaan itu. Coba tulis lebih spesifik.'
+RUNTIME_AI_MODEL = 'cx/gpt-5.6-luna'
+
+
+def _trusted_router_url(value: object) -> str | None:
+    if not isinstance(value, str):
+        return None
+    from urllib.parse import urlparse
+    candidate = value.strip().rstrip('/')
+    parsed = urlparse(candidate)
+    if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+        return None
+    if parsed.username or parsed.password or parsed.query or parsed.fragment:
+        return None
+    return candidate
+
+
+def parse_with_ai(text: str, config: Config, context: dict | None = None) -> dict | None:
+    router_url = _trusted_router_url(config.ai_router_url)
+    if not router_url or not isinstance(text, str) or not text.strip():
+        return None
+    safe_context = {}
+    if isinstance(context, dict):
+        safe_context = {key: value for key, value in context.items()
+                        if key in {'filters', 'page', 'last_page', 'last_action'}}
     prompt = (
-        'Return ONLY JSON with exactly action and filters. '
-        'You are an intent parser for a READ-ONLY admissions bot. '
-        'Allowed actions: '
-        + ', '.join(sorted(ACTIONS))
-        + '. Allowed filter keys: '
-        + ', '.join(sorted(FILTERS))
-        + '. '
-        'If the user specifies an academic year, include '
-        '"tahun_ajaran":"YYYY/YYYY" and normalize variants such as '
-        '2027-2028 or 2027 2028 to 2027/2028. '
-        'If no academic year is specified, omit tahun_ajaran. '
-        'Never propose writes, SQL, or extra keys. '
-        'User: '
-        + text
+        'You classify one user request for a READ-ONLY SPMB admissions bot. '
+        'Return ONLY one JSON object with exactly the keys action and filters; '
+        'no markdown, explanation, SQL, or other keys. Allowed actions: '
+        + ', '.join(sorted(ACTIONS)) + '. Allowed filter keys: '
+        + ', '.join(sorted(FILTERS)) + '. Normalize academic years (26/27, '
+        '2026-2027, 2026 2027) to YYYY/YYYY. Interpret typos kupta/statitisk, '
+        'jalur siswa baru/pindahan, and gender laki-laki/perempuan. Use only '
+        'requested or context-compatible filters; never invent PII. Sanitized '
+        'context: ' + json.dumps(safe_context, ensure_ascii=False, separators=(',', ':'))
+        + '. User request: ' + text
     )
 
     payload = json.dumps({
-        'model': config.ai_fallback_model,
-        'messages': [
-            {
-                'role': 'user',
-                'content': prompt,
-            }
-        ],
+        'model': RUNTIME_AI_MODEL,
+        'messages': [{'role': 'system', 'content': prompt}],
         'temperature': 0,
+        'max_tokens': 256,
     }).encode()
-
-    headers = {
-        'Content-Type': 'application/json',
-    }
-
+    headers = {'Content-Type': 'application/json'}
     if config.ai_router_api_key:
         headers['Authorization'] = 'Bearer ' + config.ai_router_api_key
 
     req = request.Request(
-        config.ai_router_url.rstrip('/') + '/chat/completions',
+        router_url + '/chat/completions',
         data=payload,
         headers=headers,
         method='POST',
@@ -378,7 +390,8 @@ def parse_with_ai(text: str, config: Config) -> dict | None:
             body = json.load(response)
 
         content = body['choices'][0]['message']['content']
+        if not isinstance(content, str) or not content.strip().startswith('{') or not content.strip().endswith('}'):
+            return None
         return validate_intent(json.loads(content))
-
-    except (OSError, ValueError, KeyError, TypeError):
+    except (OSError, ValueError, KeyError, TypeError, json.JSONDecodeError):
         return None

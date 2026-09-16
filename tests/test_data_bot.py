@@ -162,7 +162,7 @@ class DataBotTests(unittest.TestCase):
             msg('kupta tahun ajaran 2027/2028')
         )
 
-        self.assertIn('tidak dikenali', response)
+        self.assertEqual(response, 'Maaf, saya belum memahami pertanyaan itu. Coba tulis lebih spesifik.')
         self.assertFalse(api.calls)
 
 
