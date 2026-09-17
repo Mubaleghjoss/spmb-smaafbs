@@ -97,6 +97,29 @@
                     <div class="col-lg-4">
                         <div class="card mb-4 border-0 shadow-sm">
                             <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="bi bi-shield-check me-2"></i>Popup Persetujuan /daftar</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-check form-switch mb-3">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="popupPersetujuanAktif" name="popup_persetujuan_aktif" value="1" {{ old('popup_persetujuan_aktif', $spmb['popup_persetujuan_aktif']) ? 'checked' : '' }}>
+                                    <label class="form-check-label fw-semibold" for="popupPersetujuanAktif">Tampilkan sebelum formulir</label>
+                                </div>
+                                <label class="form-label" for="popupPersetujuanJudul">Judul</label>
+                                <input class="form-control mb-3" id="popupPersetujuanJudul" name="popup_persetujuan_judul" maxlength="120" value="{{ old('popup_persetujuan_judul', $spmb['popup_persetujuan_judul']) }}">
+                                <label class="form-label" for="popupPersetujuanTeks">Pernyataan persetujuan</label>
+                                <textarea class="form-control mb-3" id="popupPersetujuanTeks" name="popup_persetujuan_teks" rows="5" maxlength="1000">{{ old('popup_persetujuan_teks', $spmb['popup_persetujuan_teks']) }}</textarea>
+                                <label class="form-label" for="popupPersetujuanGambar">Gambar latar (opsional)</label>
+                                <input class="form-control" type="file" id="popupPersetujuanGambar" name="popup_persetujuan_gambar" accept="image/png,image/jpeg,image/webp">
+                                <div class="form-text">PNG, JPG, atau WEBP maksimal 3 MB. Kosongkan untuk memakai logo/branding SMA AFBS.</div>
+                                @if(!empty($spmb['popup_persetujuan_gambar']))
+                                    <div class="small text-success mt-2"><i class="bi bi-image me-1"></i>Gambar khusus sudah dipakai.</div>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card mb-4 border-0 shadow-sm">
+                            <div class="card-header bg-success text-white">
                                 <h6 class="mb-0"><i class="bi bi-power me-2"></i>Status Umum Pendaftaran</h6>
                             </div>
                             <div class="card-body">

@@ -46,7 +46,11 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('2026-2027')
             ->assertSee('Gelombang 1')
             ->assertSee('Siswa Baru')
-            ->assertSee('Pindahan');
+            ->assertSee('Pindahan')
+            // Mengunci markup popup dan hook persetujuannya agar tidak hilang saat refactor.
+            ->assertSee('id="modalKomitmen"', false)
+            ->assertSee('Saya Bersedia, Lanjutkan Pendaftaran')
+            ->assertSee('x-on:komitmen-disetujui.window="setuju = true"', false);
     }
 
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void

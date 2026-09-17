@@ -350,6 +350,10 @@ class PengaturanController extends Controller
             'nomor_rekening' => 'nullable|string|max:50',
             'nama_rekening' => 'nullable|string|max:255',
             'keterangan_kuota_publik' => 'nullable|string|max:1000',
+            'popup_persetujuan_aktif' => 'nullable|boolean',
+            'popup_persetujuan_judul' => 'nullable|string|max:120',
+            'popup_persetujuan_teks' => 'nullable|string|max:1000',
+            'popup_persetujuan_gambar' => 'nullable|image|mimes:png,jpg,jpeg,webp|max:3072',
             'kontak_tim' => 'nullable|array',
             'kontak_tim.*.nama' => 'nullable|string|max:100',
             'kontak_tim.*.whatsapp' => 'nullable|string|max:20',
@@ -405,8 +409,10 @@ class PengaturanController extends Controller
         $data = $request->except([
             'tahap_2', 'tahap_3', 'tahap_4', 'tahap_5', 'tahap_6', 'tahap_7',
             '_token', 'kontak_tim', 'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
+            'popup_persetujuan_gambar',
         ]);
         $data['pendaftaran_buka'] = $request->boolean('pendaftaran_buka');
+        $data['popup_persetujuan_aktif'] = $request->boolean('popup_persetujuan_aktif');
 
         foreach (['dalam_kota', 'luar_kota'] as $wilayah) {
             $field = "gambar_rincian_biaya_{$wilayah}";
@@ -417,6 +423,14 @@ class PengaturanController extends Controller
                 }
                 $data[$field] = $request->file($field)->store('biaya-spmb', 'public');
             }
+        }
+
+        if ($request->hasFile('popup_persetujuan_gambar')) {
+            $lama = $this->pengaturanService->ambilSpmb()['popup_persetujuan_gambar'] ?? null;
+            if ($lama && str_starts_with($lama, 'popup-persetujuan/') && Storage::disk('public')->exists($lama)) {
+                Storage::disk('public')->delete($lama);
+            }
+            $data['popup_persetujuan_gambar'] = $request->file('popup_persetujuan_gambar')->store('popup-persetujuan', 'public');
         }
         
         // Proses kontak tim SPMB
