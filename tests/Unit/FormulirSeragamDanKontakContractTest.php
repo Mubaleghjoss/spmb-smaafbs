@@ -50,6 +50,8 @@ class FormulirSeragamDanKontakContractTest extends TestCase
         $this->assertStringContainsString('https://wa.me/', $view);
         $this->assertStringContainsString('Nama KI Kelompok', $view);
         $this->assertStringContainsString('No. HP KI Kelompok', $view);
+        $this->assertStringNotContainsString('@php($suratOrtu', $view);
+        $this->assertStringContainsString('@endphp', $view);
     }
 
     public function test_ekspor_biodata_adalah_workbook_excel_dengan_data_seragam_dan_ki(): void

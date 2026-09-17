@@ -360,7 +360,9 @@
                     </div>
 
                     {{-- Surat Pernyataan Orang Tua --}}
-                    @php($suratOrtu = $peserta->wawancara?->surat_pernyataan_ortu ?? [])
+                    @php
+                        $suratOrtu = $peserta->wawancara?->surat_pernyataan_ortu ?? [];
+                    @endphp
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-person me-2"></i>Surat Pernyataan Orang Tua</h6>
                     <div class="row g-3 mb-4">
                         <div class="col-md-6"><small class="text-muted d-block">Nama KI Kelompok</small><strong>{{ $suratOrtu['nama_ki'] ?? '-' }}</strong></div>
