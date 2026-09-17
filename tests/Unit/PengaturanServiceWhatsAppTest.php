@@ -35,4 +35,17 @@ class PengaturanServiceWhatsAppTest extends TestCase
 
         $this->assertSame('Saya Ahmad (SPMB-2026-00001) sudah transfer Rp 125.000 untuk Biaya Formulir.', $pesan);
     }
+
+    public function test_merender_template_pengingat_ketika_nominal_pembayaran_lama_kosong(): void
+    {
+        $pesan = PengaturanService::renderTemplatePengingatPembayaran(
+            'Nominal: {nominal}',
+            'Ina',
+            'SPMB-2026-00053',
+            null,
+            'Biaya Formulir'
+        );
+
+        $this->assertSame('Nominal: Rp 0', $pesan);
+    }
 }

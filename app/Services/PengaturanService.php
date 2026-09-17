@@ -302,12 +302,12 @@ class PengaturanService
     /**
      * Render template pengingat pembayaran dengan nilai server.
      */
-    public static function renderTemplatePengingatPembayaran(string $template, string $nama, string $nomorPendaftaran, float|int $nominal, string $jenisPembayaran): string
+    public static function renderTemplatePengingatPembayaran(string $template, string $nama, string $nomorPendaftaran, float|int|null $nominal, string $jenisPembayaran): string
     {
         return strtr($template, [
             '{nama}' => $nama,
             '{nomor_pendaftaran}' => $nomorPendaftaran,
-            '{nominal}' => 'Rp '.number_format($nominal, 0, ',', '.'),
+            '{nominal}' => 'Rp '.number_format($nominal ?? 0, 0, ',', '.'),
             '{jenis_pembayaran}' => $jenisPembayaran,
         ]);
     }
