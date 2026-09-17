@@ -687,7 +687,17 @@
                                 </button>
                             </div>
                             <div class="card-body">
-                                <p class="text-muted small mb-3">Daftar kontak Tim SPMB yang dapat dihubungi peserta untuk bantuan.</p>
+                                <div class="card border-success mb-4">
+                                    <div class="card-header bg-success text-white"><i class="bi bi-cash-coin me-2"></i>Bendahara SMA AL FURQON BOARDING SCHOOL</div>
+                                    <div class="card-body">
+                                        <p class="text-muted small">Kontak ini hanya tampil saat bukti pembayaran menunggu verifikasi, bukan sebagai Tim SPMB.</p>
+                                        <div class="row g-2">
+                                            <div class="col-md-6"><label class="form-label small">Nama Bendahara</label><input type="text" name="nama_bendahara_spmb" class="form-control form-control-sm" value="{{ $spmb['nama_bendahara_spmb'] ?? '' }}"></div>
+                                            <div class="col-md-6"><label class="form-label small">No. WhatsApp</label><input type="text" name="whatsapp_bendahara_spmb" class="form-control form-control-sm" value="{{ $spmb['whatsapp_bendahara_spmb'] ?? '' }}" placeholder="082299507730"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-muted small mb-3">Daftar kontak Tim SPMB yang dapat dihubungi peserta untuk bantuan teknis aplikasi.</p>
                                 
                                 <div id="kontakContainer">
                                     @php

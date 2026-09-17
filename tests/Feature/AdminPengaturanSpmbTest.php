@@ -35,6 +35,20 @@ class AdminPengaturanSpmbTest extends TestCase
         ]);
     }
 
+    public function test_admin_dapat_menyimpan_kontak_bendahara_terpisah_dari_tim_spmb(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->post(route('admin.pengaturan.spmb.simpan'), [
+            'nama_bendahara_spmb' => 'M. Herianto, S.E.',
+            'whatsapp_bendahara_spmb' => '082299507730',
+        ])->assertRedirect(route('admin.pengaturan.spmb'));
+
+        $this->assertDatabaseHas('pengaturan', ['kunci' => 'nama_bendahara_spmb', 'nilai' => 'M. Herianto, S.E.']);
+        $this->assertDatabaseHas('pengaturan', ['kunci' => 'whatsapp_bendahara_spmb', 'nilai' => '082299507730']);
+        $this->assertDatabaseMissing('pengaturan', ['kunci' => 'kontak_tim_spmb', 'nilai' => json_encode([['nama' => 'M. Herianto, S.E.', 'whatsapp' => '082299507730']])]);
+    }
+
     public function test_admin_dapat_mengatur_popup_persetujuan_pendaftaran(): void
     {
         $this->withoutMiddleware();

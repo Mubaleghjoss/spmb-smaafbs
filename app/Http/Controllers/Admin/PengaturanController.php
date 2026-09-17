@@ -349,6 +349,8 @@ class PengaturanController extends Controller
             'rekening_bank' => 'nullable|string|max:100',
             'nomor_rekening' => 'nullable|string|max:50',
             'nama_rekening' => 'nullable|string|max:255',
+            'nama_bendahara_spmb' => 'nullable|string|max:100',
+            'whatsapp_bendahara_spmb' => 'nullable|string|max:20|regex:/^[0-9+() .-]*$/',
             'keterangan_kuota_publik' => 'nullable|string|max:1000',
             'template_wa_pengingat_formulir' => 'nullable|string|max:2000',
             'template_wa_pengingat_pelunasan' => 'nullable|string|max:2000',

@@ -94,8 +94,9 @@ class PembayaranController extends Controller
 
         $spmb = $this->pengaturanService->ambilSpmb();
         $kontakTimSpmb = $this->pengaturanService->ambilKontakTimSpmb();
+        $bendaharaSpmb = ['nama' => $spmb['nama_bendahara_spmb'] ?? '', 'whatsapp' => $spmb['whatsapp_bendahara_spmb'] ?? ''];
 
-        return view('peserta.pembayaran.status-formulir', compact('peserta', 'pembayaran', 'kwitansi', 'spmb', 'kontakTimSpmb'));
+        return view('peserta.pembayaran.status-formulir', compact('peserta', 'pembayaran', 'kwitansi', 'spmb', 'kontakTimSpmb', 'bendaharaSpmb'));
     }
 
     /**
@@ -201,8 +202,9 @@ class PembayaranController extends Controller
         $branding = $this->pengaturanService->ambilBranding();
         $spmb = $this->pengaturanService->ambilSpmb();
         $kontakTimSpmb = $this->pengaturanService->ambilKontakTimSpmb();
+        $bendaharaSpmb = ['nama' => $spmb['nama_bendahara_spmb'] ?? '', 'whatsapp' => $spmb['whatsapp_bendahara_spmb'] ?? ''];
 
-        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi', 'ringkasan', 'riwayat', 'pembayaranKwitansi', 'branding', 'spmb', 'kontakTimSpmb'));
+        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi', 'ringkasan', 'riwayat', 'pembayaranKwitansi', 'branding', 'spmb', 'kontakTimSpmb', 'bendaharaSpmb'));
     }
 
     /**
