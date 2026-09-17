@@ -378,7 +378,7 @@
         $waFloat = app(\App\Services\PengaturanService::class)->ambil('whatsapp_spmb', '');
     @endphp
     @if(!empty($waFloat))
-    <a href="https://wa.me/62{{ ltrim($waFloat, '0') }}" target="_blank" rel="noopener"
+    <a href="https://wa.me/{{ \App\Services\PengaturanService::nomorWhatsAppInternasional($waFloat) }}" target="_blank" rel="noopener"
        class="float-wa" aria-label="Hubungi via WhatsApp" title="Hubungi Tim SPMB">
         <i class="bi bi-whatsapp"></i>
     </a>

@@ -157,15 +157,15 @@
                 <div class="list-group">
                     @foreach($kontakTim as $kontak)
                     @if(!empty($kontak['whatsapp']))
-                    <a href="https://wa.me/62{{ ltrim($kontak['whatsapp'], '0') }}?text={{ urlencode($pesanBantuan) }}" 
-                       target="_blank" 
+                    <a href="https://wa.me/{{ \App\Services\PengaturanService::nomorWhatsAppInternasional($kontak['whatsapp']) }}?text={{ urlencode($pesanBantuan) }}"
+                       target="_blank" rel="noopener"
                        class="list-group-item list-group-item-action d-flex align-items-center">
                         <div class="rounded-circle bg-success text-white d-flex align-items-center justify-content-center me-3" style="width: 45px; height: 45px;">
                             <i class="bi bi-whatsapp"></i>
                         </div>
                         <div>
                             <h6 class="mb-0">{{ $kontak['nama'] ?: 'Tim SPMB' }}</h6>
-                            <small class="text-muted">+62{{ $kontak['whatsapp'] }}</small>
+                            <small class="text-muted">+{{ \App\Services\PengaturanService::nomorWhatsAppInternasional($kontak['whatsapp']) }}</small>
                         </div>
                         <i class="bi bi-chevron-right ms-auto text-muted"></i>
                     </a>

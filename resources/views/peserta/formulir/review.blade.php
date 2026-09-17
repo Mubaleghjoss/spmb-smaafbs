@@ -377,10 +377,7 @@
                         <div class="d-flex flex-wrap justify-content-center gap-2">
                             @foreach($timList as $tim)
                                 @php
-                                    $waDigits = preg_replace('/[^0-9]/', '', $tim['whatsapp'] ?? '');
-                                    if (str_starts_with($waDigits, '62')) { $waDigits = substr($waDigits, 2); }
-                                    $waDigits = ltrim($waDigits, '0');
-                                    $waLink = 'https://wa.me/62' . $waDigits . '?text=' . urlencode($pesanWa);
+                                    $waLink = 'https://wa.me/' . \App\Services\PengaturanService::nomorWhatsAppInternasional($tim['whatsapp'] ?? '') . '?text=' . urlencode($pesanWa);
                                 @endphp
                                 <a href="{{ $waLink }}" target="_blank" rel="noopener" class="btn btn-success btn-lg">
                                     <i class="bi bi-whatsapp me-2"></i>Kabari {{ $tim['nama'] ?? 'Tim SPMB' }}

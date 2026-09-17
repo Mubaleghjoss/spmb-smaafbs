@@ -283,6 +283,21 @@ class PengaturanService
     }
 
     /**
+     * Normalisasi nomor Indonesia untuk URL https://wa.me/.
+     * Menerima format 08..., 62..., maupun +62..., tanpa mengubah data setting.
+     */
+    public static function nomorWhatsAppInternasional(string $nomor): string
+    {
+        $digits = preg_replace('/\D+/', '', $nomor) ?? '';
+
+        if (str_starts_with($digits, '62')) {
+            return '62'.ltrim(substr($digits, 2), '0');
+        }
+
+        return '62'.ltrim($digits, '0');
+    }
+
+    /**
      * Simpan pengaturan SPMB
      */
     public function simpanSpmb(array $data): void

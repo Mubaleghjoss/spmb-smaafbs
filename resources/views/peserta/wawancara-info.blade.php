@@ -78,11 +78,9 @@
                     <div class="d-flex flex-wrap gap-2 mt-2">
                         @foreach($timListW as $tim)
                             @php
-                                $d = preg_replace('/[^0-9]/', '', $tim['whatsapp'] ?? '');
-                                if (str_starts_with($d, '62')) { $d = substr($d, 2); }
-                                $d = ltrim($d, '0');
+                                $d = \App\Services\PengaturanService::nomorWhatsAppInternasional($tim['whatsapp'] ?? '');
                             @endphp
-                            <a href="https://wa.me/62{{ $d }}?text={{ urlencode($pesanW) }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
+                            <a href="https://wa.me/{{ $d }}?text={{ urlencode($pesanW) }}" target="_blank" rel="noopener" class="btn btn-sm btn-success">
                                 <i class="bi bi-whatsapp me-1"></i>Tanya Jadwal ke {{ $tim['nama'] ?? 'Tim SPMB' }}
                             </a>
                         @endforeach
