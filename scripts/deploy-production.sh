@@ -52,6 +52,18 @@ cd "$REPO_ROOT"
 PREFLIGHT="$REPO_ROOT/scripts/prod-preflight.sh"
 [[ -x "$PREFLIGHT" ]] || fail "prod-preflight.sh tidak ditemukan/executable."
 
+# Allow the approved production SSH destination to be supplied by the runtime.
+# Default preserves existing operator setups that use the rumahweb-smaafbs alias.
+DEPLOY_SSH_TARGET="${DEPLOY_SSH_TARGET:-rumahweb-smaafbs}"
+DEPLOY_SSH_PORT="${DEPLOY_SSH_PORT:-}"
+ssh_production() {
+    if [[ -n "$DEPLOY_SSH_PORT" ]]; then
+        ssh -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_TARGET" "$@"
+    else
+        ssh "$DEPLOY_SSH_TARGET" "$@"
+    fi
+}
+
 echo "=== PRODUCTION DEPLOYMENT GATE ==="
 echo "MODE=$MODE"
 echo "TARGET_SHA=$TARGET_SHA"
@@ -62,7 +74,7 @@ echo
 git fetch --quiet origin
 
 CURRENT_PROD_SHA="$(
-    ssh rumahweb-smaafbs \
+    ssh_production \
       'cd /home/sman5479/spmb-app && git rev-parse HEAD'
 )"
 
@@ -82,20 +94,23 @@ git merge-base --is-ancestor "$TARGET_SHA" "$REMOTE_STAGING_SHA" \
 echo
 echo "=== DEPENDENCY / ASSET GATE ==="
 
+# RumahWeb tidak menjalankan build. Tolak hanya perubahan yang benar-benar
+# mengubah hasil Vite/dependency; Blade/PHP adalah server-rendered dan aman
+# dikirim bersama aset build yang sudah ter-commit.
 if ! git diff --quiet "$CURRENT_PROD_SHA" "$TARGET_SHA" -- \
     composer.json composer.lock \
     package.json package-lock.json \
     vite.config.js vite.config.* \
-    resources/ \
-    public/
+    resources/js/ resources/css/ resources/sass/ \
+    public/build/ public/
 then
-    echo "Perubahan dependency/frontend/public ditemukan:"
+    echo "Perubahan dependency atau aset build/public ditemukan:"
     git diff --name-status "$CURRENT_PROD_SHA" "$TARGET_SHA" -- \
         composer.json composer.lock \
         package.json package-lock.json \
         vite.config.js vite.config.* \
-        resources/ \
-        public/
+        resources/js/ resources/css/ resources/sass/ \
+        public/build/ public/
     fail "RumahWeb tidak memiliki composer/npm; target ini tidak boleh dideploy dengan pipeline ini."
 fi
 
@@ -142,7 +157,7 @@ echo
 echo "Approval SHA cocok."
 echo "Memulai deployment production..."
 
-ssh rumahweb-smaafbs bash -s -- \
+ssh_production bash -s -- \
     "$TARGET_SHA" \
     "$CURRENT_PROD_SHA" \
     "$ALLOW_MIGRATIONS" <<'REMOTE'

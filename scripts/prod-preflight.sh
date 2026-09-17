@@ -9,6 +9,16 @@ fail() {
 [[ $# -eq 1 ]] || fail "Usage: $0 <40-char SHA>"
 TARGET_SHA="$1"
 [[ "$TARGET_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || fail "SHA harus 40 karakter."
+# Default keeps the established operator alias; automation may provide it directly.
+DEPLOY_SSH_TARGET="${DEPLOY_SSH_TARGET:-rumahweb-smaafbs}"
+DEPLOY_SSH_PORT="${DEPLOY_SSH_PORT:-}"
+ssh_production() {
+    if [[ -n "$DEPLOY_SSH_PORT" ]]; then
+        ssh -p "$DEPLOY_SSH_PORT" "$DEPLOY_SSH_TARGET" "$@"
+    else
+        ssh "$DEPLOY_SSH_TARGET" "$@"
+    fi
+}
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
 cd "$REPO_ROOT"
@@ -26,7 +36,7 @@ git merge-base --is-ancestor "$TARGET_SHA" origin/staging \
     || fail "Target SHA bukan bagian dari origin/staging."
 
 CURRENT_PROD_SHA="$(
-    ssh rumahweb-smaafbs \
+    ssh_production \
       'cd /home/sman5479/spmb-app && git rev-parse HEAD'
 )"
 
@@ -57,7 +67,7 @@ fi
 echo
 echo "=== REMOTE PRODUCTION PREFLIGHT ==="
 
-ssh rumahweb-smaafbs bash -s -- "$TARGET_SHA" <<'REMOTE'
+ssh_production bash -s -- "$TARGET_SHA" <<'REMOTE'
 set -euo pipefail
 
 TARGET_SHA="$1"
