@@ -3,6 +3,12 @@
 @section('title', 'Detail Peserta')
 
 @section('content')
+@php
+    $waUrl = static function ($nomor): ?string {
+        $normal = \App\Services\PengaturanService::nomorWhatsAppInternasional((string) $nomor);
+        return preg_match('/^62[0-9]{7,14}$/', $normal) ? 'https://wa.me/'.$normal : null;
+    };
+@endphp
 <div class="container-fluid">
     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
         <h1 class="h3 mb-0">Detail Peserta</h1>
@@ -53,7 +59,13 @@
                                 </tr>
                                 <tr>
                                     <td class="text-muted">Telepon</td>
-                                    <td>{{ $peserta->telepon ?? '-' }}</td>
+                                    <td>
+                                        @if($urlWa = $waUrl($peserta->telepon))
+                                            <a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $peserta->telepon }}</a>
+                                        @else
+                                            {{ $peserta->telepon ?? '-' }}
+                                        @endif
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td class="text-muted">Password</td>
@@ -222,6 +234,23 @@
                         </div>
                     </div>
 
+                    {{-- Data Fisik & Perencanaan Seragam --}}
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-rulers me-2"></i>Data Fisik & Perencanaan Seragam</h6>
+                    <div class="row g-3 mb-4">
+                        @foreach([
+                            'Lingkar Dada' => $f->lingkar_dada ? $f->lingkar_dada.' cm' : null,
+                            'Lingkar Pinggang' => $f->lingkar_pinggang ? $f->lingkar_pinggang.' cm' : null,
+                            'Lingkar Kepala' => $f->lingkar_kepala ? $f->lingkar_kepala.' cm' : null,
+                            'Panjang Celana/Rok' => $f->panjang_celana ? $f->panjang_celana.' cm' : null,
+                            'Tinggi Badan' => $f->tinggi_badan ? $f->tinggi_badan.' cm' : null,
+                            'Berat Badan' => $f->berat_badan ? $f->berat_badan.' kg' : null,
+                            'Rencana Ukuran Baju' => $f->ukuran_baju,
+                            'Rencana Ukuran Celana' => $f->ukuran_celana,
+                        ] as $label => $nilai)
+                            <div class="col-md-3"><small class="text-muted d-block">{{ $label }}</small><strong>{{ $nilai ?? '-' }}</strong></div>
+                        @endforeach
+                    </div>
+
                     {{-- Data Orang Tua --}}
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-people me-2"></i>Data Orang Tua</h6>
                     <div class="row g-3 mb-4">
@@ -274,22 +303,30 @@
 
                     {{-- Data Kontak --}}
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-telephone me-2"></i>Data Kontak</h6>
+                    @php
+                        $kontakBiodata = [
+                            'telp_rumah' => $f->telp_rumah,
+                            'telepon' => $f->telepon,
+                            'telepon_ayah' => $f->telepon_ayah,
+                            'telepon_ibu' => $f->telepon_ibu,
+                        ];
+                    @endphp
                     <div class="row g-3 mb-4">
                         <div class="col-md-3">
                             <small class="text-muted d-block">26. No Telepon Rumah</small>
-                            <strong>{{ $f->telp_rumah ?? '-' }}</strong>
+                            @if($urlWa = $waUrl($kontakBiodata['telp_rumah']))<a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $kontakBiodata['telp_rumah'] }}</a>@else<strong>{{ $kontakBiodata['telp_rumah'] ?? '-' }}</strong>@endif
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted d-block">27. No HP/WA Siswa</small>
-                            <strong>{{ $f->telepon ?? '-' }}</strong>
+                            @if($urlWa = $waUrl($kontakBiodata['telepon']))<a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $kontakBiodata['telepon'] }}</a>@else<strong>{{ $kontakBiodata['telepon'] ?? '-' }}</strong>@endif
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted d-block">28. No HP/WA Ayah</small>
-                            <strong>{{ $f->telepon_ayah ?? '-' }}</strong>
+                            @if($urlWa = $waUrl($kontakBiodata['telepon_ayah']))<a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $kontakBiodata['telepon_ayah'] }}</a>@else<strong>{{ $kontakBiodata['telepon_ayah'] ?? '-' }}</strong>@endif
                         </div>
                         <div class="col-md-3">
                             <small class="text-muted d-block">29. No HP/WA Ibu</small>
-                            <strong>{{ $f->telepon_ibu ?? '-' }}</strong>
+                            @if($urlWa = $waUrl($kontakBiodata['telepon_ibu']))<a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $kontakBiodata['telepon_ibu'] }}</a>@else<strong>{{ $kontakBiodata['telepon_ibu'] ?? '-' }}</strong>@endif
                         </div>
                     </div>
 
@@ -320,6 +357,14 @@
                             <small class="text-muted d-block">35. Nama Daerah</small>
                             <strong>{{ $f->daerah ?? '-' }}</strong>
                         </div>
+                    </div>
+
+                    {{-- Surat Pernyataan Orang Tua --}}
+                    @php($suratOrtu = $peserta->wawancara?->surat_pernyataan_ortu ?? [])
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-file-earmark-person me-2"></i>Surat Pernyataan Orang Tua</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6"><small class="text-muted d-block">Nama KI Kelompok</small><strong>{{ $suratOrtu['nama_ki'] ?? '-' }}</strong></div>
+                        <div class="col-md-6"><small class="text-muted d-block">No. HP KI Kelompok</small>@if($urlWa = $waUrl($suratOrtu['no_hp_ki'] ?? null))<a href="{{ $urlWa }}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>{{ $suratOrtu['no_hp_ki'] }}</a>@else<strong>{{ $suratOrtu['no_hp_ki'] ?? '-' }}</strong>@endif</div>
                     </div>
 
                     {{-- Dokumen --}}

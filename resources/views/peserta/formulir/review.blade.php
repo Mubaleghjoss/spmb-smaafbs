@@ -141,7 +141,7 @@
                         </div>
                     </div>
 
-                    <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-heart-pulse me-2"></i>Data Fisik</h6>
+                    <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-rulers me-2"></i>Data Fisik & Perencanaan Seragam</h6>
                     <div class="row g-3 mb-4">
                         @foreach([
                             'lingkar_dada' => ['12. Lingkar Dada', 'cm'],
@@ -153,10 +153,30 @@
                         ] as $field => [$label, $satuan])
                             <div class="col-md-4">
                                 <label class="form-label">{{ $label }} ({{ $satuan }})</label>
-                                <input type="number" step="0.1" inputmode="decimal" name="{{ $field }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field, $formulir->$field) }}">
+                                <input type="number" step="0.1" inputmode="decimal" name="{{ $field }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field, $formulir->$field) }}" required>
                                 @error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         @endforeach
+                        <div class="col-md-6">
+                            <label class="form-label">18. Rencana Ukuran Baju <span class="text-danger">*</span></label>
+                            <select name="ukuran_baju" class="form-select @error('ukuran_baju') is-invalid @enderror" required>
+                                <option value="">-- Pilih ukuran --</option>
+                                @foreach(\App\Services\FormulirSpmbService::ukuranSeragam() as $pilihan)
+                                    <option value="{{ $pilihan }}" @selected(old('ukuran_baju', $formulir->ukuran_baju) === $pilihan)>{{ $pilihan }}</option>
+                                @endforeach
+                            </select>
+                            @error('ukuran_baju')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">19. Rencana Ukuran Celana <span class="text-danger">*</span></label>
+                            <select name="ukuran_celana" class="form-select @error('ukuran_celana') is-invalid @enderror" required>
+                                <option value="">-- Pilih ukuran --</option>
+                                @foreach(\App\Services\FormulirSpmbService::ukuranSeragam() as $pilihan)
+                                    <option value="{{ $pilihan }}" @selected(old('ukuran_celana', $formulir->ukuran_celana) === $pilihan)>{{ $pilihan }}</option>
+                                @endforeach
+                            </select>
+                            @error('ukuran_celana')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
                     </div>
 
                     <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-star me-2"></i>Data Tambahan</h6>

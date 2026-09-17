@@ -264,8 +264,12 @@ class DashboardSpmbController extends Controller
                 $msg = 'Surat pernyataan siswa berhasil disimpan.';
                 break;
             case 4:
+                $request->validate([
+                    'sp_ortu.nama_ki' => 'required|string|max:100',
+                    'sp_ortu.no_hp_ki' => 'required|string|max:20',
+                ]);
                 $suratOrtu = $request->input('sp_ortu', []);
-                // Identitas ikut formulir; nama_ki tetap disimpan (tidak ada di formulir).
+                // Identitas ikut formulir; data KI dan revisi sambung tetap disimpan di surat.
                 $suratOrtu = $this->buangKolomIkutFormulir($suratOrtu, 'ortu');
                 $suratOrtu['tanggal_surat'] = $suratOrtu['tanggal_surat']
                     ?? ($wawancara->surat_pernyataan_ortu['tanggal_surat'] ?? now()->toDateString());

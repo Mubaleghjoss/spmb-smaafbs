@@ -110,6 +110,7 @@ class DataSuratPernyataanService
                     ? $lama
                     : trim((string) ($cadanganAkun[$kunci] ?? ''));
             }
+
             return $utama;
         };
 
@@ -119,8 +120,17 @@ class DataSuratPernyataanService
                 $wawancara?->surat_pernyataan_siswa ?? [],
                 $dariAkun['siswa'],
             ),
+            // Kelompok/desa/daerah diprefill dari formulir, tetapi revisi yang
+            // disimpan orang tua pada surat tetap menjadi nilai suratnya sendiri.
             'ortu' => $gabung(
-                $dariFormulir['ortu'],
+                array_replace(
+                    $dariFormulir['ortu'],
+                    array_filter(
+                        $wawancara?->surat_pernyataan_ortu ?? [],
+                        fn ($nilai, $kunci) => in_array($kunci, ['kelompok', 'desa', 'daerah'], true) && trim((string) $nilai) !== '',
+                        ARRAY_FILTER_USE_BOTH,
+                    ),
+                ),
                 $wawancara?->surat_pernyataan_ortu ?? [],
                 $dariAkun['ortu'],
             ),
@@ -137,7 +147,7 @@ class DataSuratPernyataanService
     {
         return [
             'siswa' => ['nama_lengkap', 'tempat_tgl_lahir', 'alamat', 'nama_ortu', 'no_telp_ortu'],
-            'ortu' => ['nama_lengkap', 'alamat', 'kelompok', 'desa', 'daerah', 'no_hp', 'nama_siswa', 'asal_sekolah'],
+            'ortu' => ['nama_lengkap', 'alamat', 'no_hp', 'nama_siswa', 'asal_sekolah'],
         ];
     }
 }

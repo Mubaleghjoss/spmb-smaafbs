@@ -15,7 +15,9 @@ class FormulirSpmb extends Model
     use HasFactory;
 
     public const DOMISILI_DALAM_TANGERANG_KOTA = 'dalam_tangerang_kota';
+
     public const DOMISILI_LUAR_TANGERANG_KOTA = 'luar_tangerang_kota';
+
     public const DOMISILI_VALID = [
         self::DOMISILI_DALAM_TANGERANG_KOTA,
         self::DOMISILI_LUAR_TANGERANG_KOTA,
@@ -39,6 +41,8 @@ class FormulirSpmb extends Model
         'lingkar_dada',
         'lingkar_pinggang',
         'panjang_celana',
+        'ukuran_baju',
+        'ukuran_celana',
         // Data tambahan siswa
         'hobi',
         'cita_cita',

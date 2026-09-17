@@ -368,19 +368,23 @@
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Kelompok</label>
-                            <input type="text" name="sp_ortu[kelompok]" class="form-control bg-light" value="{{ ($spOrtu['kelompok'] ?? '') ?: ($prefillWawancara['ortu']['kelompok'] ?? '') }}" readonly>
+                            <input type="text" name="sp_ortu[kelompok]" class="form-control" value="{{ ($spOrtu['kelompok'] ?? '') ?: ($prefillWawancara['ortu']['kelompok'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label fw-semibold">Nama KI Kelompok + No. HP</label>
-                            <input type="text" name="sp_ortu[nama_ki]" class="form-control" value="{{ $spOrtu['nama_ki'] ?? '' }}">
+                            <label class="form-label fw-semibold">Nama KI Kelompok <span class="text-danger">*</span></label>
+                            <input type="text" name="sp_ortu[nama_ki]" class="form-control" value="{{ $spOrtu['nama_ki'] ?? '' }}" required maxlength="100">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label fw-semibold">No. HP/WhatsApp KI Kelompok <span class="text-danger">*</span></label>
+                            <input type="tel" name="sp_ortu[no_hp_ki]" class="form-control" value="{{ $spOrtu['no_hp_ki'] ?? '' }}" required maxlength="20" inputmode="numeric" placeholder="08xxxxxxxxxx">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Desa</label>
-                            <input type="text" name="sp_ortu[desa]" class="form-control bg-light" value="{{ ($spOrtu['desa'] ?? '') ?: ($prefillWawancara['ortu']['desa'] ?? '') }}" readonly>
+                            <input type="text" name="sp_ortu[desa]" class="form-control" value="{{ ($spOrtu['desa'] ?? '') ?: ($prefillWawancara['ortu']['desa'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">Daerah</label>
-                            <input type="text" name="sp_ortu[daerah]" class="form-control bg-light" value="{{ ($spOrtu['daerah'] ?? '') ?: ($prefillWawancara['ortu']['daerah'] ?? '') }}" readonly>
+                            <input type="text" name="sp_ortu[daerah]" class="form-control" value="{{ ($spOrtu['daerah'] ?? '') ?: ($prefillWawancara['ortu']['daerah'] ?? '') }}">
                         </div>
                         <div class="col-md-4">
                             <label class="form-label fw-semibold">No. HP Orang tua/Wali</label>

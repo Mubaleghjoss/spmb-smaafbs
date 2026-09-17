@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\BiodataPesertaExport;
 use App\Http\Controllers\Controller;
 use App\Models\LogAktivitas;
 use App\Models\Peserta;
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
@@ -151,6 +153,7 @@ class PesertaController extends Controller
             'tahapanSpmb',
             'grup',
             'formulirSpmb',
+            'wawancara',
             'pembayaran',
             'logTahapan',
             'tahunAjaran',
@@ -905,99 +908,13 @@ class PesertaController extends Controller
     }
 
     /**
-     * Download semua biodata peserta lengkap (CSV)
+     * Download semua biodata peserta dalam workbook Excel terstruktur.
      */
-    public function downloadBiodata(): \Symfony\Component\HttpFoundation\StreamedResponse
+    public function downloadBiodata()
     {
-        $peserta = Peserta::with([
-            'formulirSpmb',
-            'tahapanSpmb',
-            'tahunAjaran',
-            'gelombangPendaftaran',
-        ])
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $filename = 'biodata_peserta_spmb_' . date('Y-m-d_His') . '.csv';
-
-        return response()->streamDownload(function () use ($peserta) {
-            $handle = fopen('php://output', 'w');
-            
-            // BOM for UTF-8
-            fprintf($handle, chr(0xEF).chr(0xBB).chr(0xBF));
-            
-            // Header
-            fputcsv($handle, [
-                'No Pendaftaran', 'Nama Lengkap', 'Jenis Kelamin',
-                'Tahun Ajaran', 'Gelombang', 'Jenis Pendaftaran', 'Kelas Tujuan', 'Kelas Penempatan', 'Status Kuota',
-                'Tempat Lahir', 'Provinsi Lahir', 'Tanggal Lahir',
-                'Asal Sekolah', 'NISN', 'Prestasi',
-                'Tinggi Badan', 'Berat Badan', 'Lingkar Kepala',
-                'Lingkar Dada', 'Lingkar Pinggang', 'Panjang Celana',
-                'Hobi', 'Cita-cita',
-                'Nama Ayah', 'Pekerjaan Ayah', 'Pendidikan Ayah',
-                'Nama Ibu', 'Pekerjaan Ibu', 'Pendidikan Ibu',
-                'Kelurahan', 'Kecamatan', 'Kota/Kab', 'Provinsi',
-                'Telp Rumah', 'HP/WA Siswa', 'HP/WA Ayah', 'HP/WA Ibu',
-                'Jumlah Saudara', 'Kelompok', 'Desa', 'Daerah',
-                'Tanggal Daftar', 'Email', 'Tahap', 'Status Verifikasi',
-            ], ';');
-            
-            // Data
-            foreach ($peserta as $p) {
-                $f = $p->formulirSpmb;
-                fputcsv($handle, [
-                    $p->nomor_pendaftaran,
-                    $f?->nama_lengkap ?? $p->nama,
-                    $f?->jenis_kelamin ?? '-',
-                    $p->tahunAjaran?->nama ?? '-',
-                    $p->gelombangPendaftaran?->nama ?? '-',
-                    $p->jenis_pendaftaran_label,
-                    $p->kelas_tujuan ? 'Kelas ' . $p->kelas_tujuan : '-',
-                    $p->kelas_penempatan ?? '-',
-                    $p->status_kuota_label,
-                    $f?->tempat_lahir ?? '-',
-                    $f?->provinsi_lahir ?? '-',
-                    $f?->tanggal_lahir?->format('d/m/Y') ?? '-',
-                    $f?->asal_sekolah ?? '-',
-                    $f?->nisn ?? '-',
-                    $f?->prestasi ?? '-',
-                    $f?->tinggi_badan ?? '-',
-                    $f?->berat_badan ?? '-',
-                    $f?->lingkar_kepala ?? '-',
-                    $f?->lingkar_dada ?? '-',
-                    $f?->lingkar_pinggang ?? '-',
-                    $f?->panjang_celana ?? '-',
-                    $f?->hobi ?? '-',
-                    $f?->cita_cita ?? '-',
-                    $f?->nama_ayah ?? '-',
-                    $f?->pekerjaan_ayah ?? '-',
-                    $f?->pendidikan_ayah ?? '-',
-                    $f?->nama_ibu ?? '-',
-                    $f?->pekerjaan_ibu ?? '-',
-                    $f?->pendidikan_ibu ?? '-',
-                    $f?->alamat_kelurahan ?? '-',
-                    $f?->alamat_kecamatan ?? '-',
-                    $f?->alamat_kota ?? '-',
-                    $f?->alamat_provinsi ?? '-',
-                    $f?->telp_rumah ?? '-',
-                    $f?->telepon ?? $p->telepon ?? '-',
-                    $f?->telepon_ayah ?? '-',
-                    $f?->telepon_ibu ?? '-',
-                    $f?->jumlah_saudara ?? '-',
-                    $f?->kelompok ?? '-',
-                    $f?->desa ?? '-',
-                    $f?->daerah ?? '-',
-                    $f?->tanggal_daftar?->format('d/m/Y') ?? $p->created_at->format('d/m/Y'),
-                    $p->email ?? '-',
-                    'Tahap ' . $p->tahap_saat_ini,
-                    ucfirst($f?->status_verifikasi ?? 'belum isi'),
-                ], ';');
-            }
-            
-            fclose($handle);
-        }, $filename, [
-            'Content-Type' => 'text/csv; charset=UTF-8',
-        ]);
+        return Excel::download(
+            new BiodataPesertaExport,
+            'biodata_peserta_spmb_' . now()->format('Y-m-d_His') . '.xlsx'
+        );
     }
 }

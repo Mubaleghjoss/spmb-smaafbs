@@ -104,43 +104,66 @@
                             </div>
                         </div>
 
-                        {{-- Baris 4: Data Fisik / Ukuran Baju --}}
+                        {{-- Baris 4: Data Fisik & Perencanaan Seragam --}}
+                        <h6 class="text-primary border-bottom pb-2 mb-3"><i class="bi bi-rulers me-2"></i>Data Fisik & Perencanaan Seragam</h6>
                         <div class="alert alert-warning py-2 mb-3">
                             <i class="bi bi-exclamation-triangle me-1"></i>
-                            <strong>Penting!</strong> Data pengukuran baju sangat diperlukan untuk pembuatan seragam. Silakan isi sekarang atau update setelah submit.
+                            <strong>Penting!</strong> Seluruh data pengukuran dan rencana ukuran seragam wajib diisi untuk pembuatan seragam.
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 8 + $tambahanNomorPindahan }}. Lingkar Dada (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_dada') is-invalid @enderror" 
-                                       name="lingkar_dada" value="{{ old('lingkar_dada', $formulir?->lingkar_dada) }}" placeholder="cth: 85">
+                                       name="lingkar_dada" value="{{ old('lingkar_dada', $formulir?->lingkar_dada) }}" placeholder="cth: 85" required>
                             </div>
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 9 + $tambahanNomorPindahan }}. Lingkar Pinggang (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_pinggang') is-invalid @enderror" 
-                                       name="lingkar_pinggang" value="{{ old('lingkar_pinggang', $formulir?->lingkar_pinggang) }}" placeholder="cth: 70">
+                                       name="lingkar_pinggang" value="{{ old('lingkar_pinggang', $formulir?->lingkar_pinggang) }}" placeholder="cth: 70" required>
                             </div>
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 10 + $tambahanNomorPindahan }}. Lingkar Kepala (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('lingkar_kepala') is-invalid @enderror" 
-                                       name="lingkar_kepala" value="{{ old('lingkar_kepala', $formulir?->lingkar_kepala) }}" placeholder="cth: 55">
+                                       name="lingkar_kepala" value="{{ old('lingkar_kepala', $formulir?->lingkar_kepala) }}" placeholder="cth: 55" required>
                             </div>
                         </div>
                         <div class="row g-3 mb-3">
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 11 + $tambahanNomorPindahan }}. Panjang Celana/Rok (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('panjang_celana') is-invalid @enderror" 
-                                       name="panjang_celana" value="{{ old('panjang_celana', $formulir?->panjang_celana) }}" placeholder="cth: 100">
+                                       name="panjang_celana" value="{{ old('panjang_celana', $formulir?->panjang_celana) }}" placeholder="cth: 100" required>
                             </div>
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 12 + $tambahanNomorPindahan }}. Tinggi Badan (cm)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('tinggi_badan') is-invalid @enderror" 
-                                       name="tinggi_badan" value="{{ old('tinggi_badan', $formulir?->tinggi_badan) }}" placeholder="cth: 170">
+                                       name="tinggi_badan" value="{{ old('tinggi_badan', $formulir?->tinggi_badan) }}" placeholder="cth: 170" required>
                             </div>
                             <div class="col-sm-4">
                                 <label class="form-label">{{ 13 + $tambahanNomorPindahan }}. Berat Badan (kg)</label>
                                 <input type="number" step="0.1" inputmode="decimal" class="form-control @error('berat_badan') is-invalid @enderror" 
-                                       name="berat_badan" value="{{ old('berat_badan', $formulir?->berat_badan) }}" placeholder="cth: 60">
+                                       name="berat_badan" value="{{ old('berat_badan', $formulir?->berat_badan) }}" placeholder="cth: 60" required>
+                            </div>
+                        </div>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label class="form-label">{{ 14 + $tambahanNomorPindahan }}. Rencana Ukuran Baju <span class="text-danger">*</span></label>
+                                <select name="ukuran_baju" class="form-select @error('ukuran_baju') is-invalid @enderror" required>
+                                    <option value="">-- Pilih ukuran --</option>
+                                    @foreach(\App\Services\FormulirSpmbService::ukuranSeragam() as $pilihan)
+                                        <option value="{{ $pilihan }}" @selected(old('ukuran_baju', $formulir?->ukuran_baju) === $pilihan)>{{ $pilihan }}</option>
+                                    @endforeach
+                                </select>
+                                @error('ukuran_baju')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            </div>
+                            <div class="col-sm-6">
+                                <label class="form-label">{{ 15 + $tambahanNomorPindahan }}. Rencana Ukuran Celana <span class="text-danger">*</span></label>
+                                <select name="ukuran_celana" class="form-select @error('ukuran_celana') is-invalid @enderror" required>
+                                    <option value="">-- Pilih ukuran --</option>
+                                    @foreach(\App\Services\FormulirSpmbService::ukuranSeragam() as $pilihan)
+                                        <option value="{{ $pilihan }}" @selected(old('ukuran_celana', $formulir?->ukuran_celana) === $pilihan)>{{ $pilihan }}</option>
+                                    @endforeach
+                                </select>
+                                @error('ukuran_celana')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                         </div>
 

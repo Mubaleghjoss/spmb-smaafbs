@@ -2,15 +2,33 @@
 
 namespace App\Services;
 
+use App\Events\ApplicantLifecycleChanged;
 use App\Models\FormulirSpmb;
 use App\Models\Pengguna;
 use App\Models\Peserta;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
-use App\Events\ApplicantLifecycleChanged;
 
 class FormulirSpmbService
 {
+    /** @return string[] */
+    public static function ukuranSeragam(): array
+    {
+        return ['S', 'M', 'L', 'XL', 'XXL', 'XXXL'];
+    }
+
+    /** @param array<string,mixed> $data */
+    public static function daerahEfektif(array $data): ?string
+    {
+        if (! array_key_exists('domisili_biaya', $data)) {
+            return null;
+        }
+
+        return $data['domisili_biaya'] === 'dalam_tangerang_kota'
+            ? 'Tangerang Kota'
+            : trim((string) ($data['nama_daerah_luar'] ?? ''));
+    }
+
     private SpmbService $spmbService;
 
     public function __construct(SpmbService $spmbService)
@@ -23,6 +41,10 @@ class FormulirSpmbService
      */
     public function simpan(Peserta $peserta, array $data): FormulirSpmb
     {
+        if (($daerah = self::daerahEfektif($data)) !== null) {
+            $data['daerah'] = $daerah;
+        }
+
         $formulir = FormulirSpmb::where('peserta_id', $peserta->id)->first();
         $created = $formulir === null;
         $jenisKelaminSebelum = $formulir?->jenis_kelamin;
@@ -177,12 +199,14 @@ class FormulirSpmbService
             'jenis_kelamin' => 'nullable|in:L,P',
             'agama' => 'nullable|string|max:50',
             // Data fisik
-            'tinggi_badan' => 'nullable|numeric|min:50|max:250',
-            'berat_badan' => 'nullable|numeric|min:10|max:200',
-            'lingkar_kepala' => 'nullable|numeric|min:30|max:80',
-            'lingkar_dada' => 'nullable|numeric|min:30|max:200',
-            'lingkar_pinggang' => 'nullable|numeric|min:30|max:200',
-            'panjang_celana' => 'nullable|numeric|min:30|max:200',
+            'tinggi_badan' => 'required|numeric|min:50|max:250',
+            'berat_badan' => 'required|numeric|min:10|max:200',
+            'lingkar_kepala' => 'required|numeric|min:30|max:80',
+            'lingkar_dada' => 'required|numeric|min:30|max:200',
+            'lingkar_pinggang' => 'required|numeric|min:30|max:200',
+            'panjang_celana' => 'required|numeric|min:30|max:200',
+            'ukuran_baju' => 'required|in:S,M,L,XL,XXL,XXXL',
+            'ukuran_celana' => 'required|in:S,M,L,XL,XXL,XXXL',
             // Data tambahan
             'hobi' => 'nullable|string|max:255',
             'cita_cita' => 'nullable|string|max:255',
