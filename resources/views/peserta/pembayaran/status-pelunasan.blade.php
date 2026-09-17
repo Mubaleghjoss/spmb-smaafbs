@@ -61,6 +61,11 @@
                             @endif
                         </div>
 
+                        @include('peserta.pembayaran.partials.pengingat-verifikasi-wa', [
+                            'templateKey' => 'template_wa_pengingat_pelunasan',
+                            'jenisPembayaran' => 'Pelunasan',
+                        ])
+
                         <hr>
                         
                         @if($pembayaran->catatan && str_contains($pembayaran->catatan, 'Diupload oleh Tim SPMB'))

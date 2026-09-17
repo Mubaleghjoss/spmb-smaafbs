@@ -22,4 +22,17 @@ class PengaturanServiceWhatsAppTest extends TestCase
             'awalan 62' => ['6281234567890'],
         ];
     }
+
+    public function test_merender_template_pengingat_pembayaran_dengan_placeholder_peserta(): void
+    {
+        $pesan = PengaturanService::renderTemplatePengingatPembayaran(
+            'Saya {nama} ({nomor_pendaftaran}) sudah transfer {nominal} untuk {jenis_pembayaran}.',
+            'Ahmad',
+            'SPMB-2026-00001',
+            125000,
+            'Biaya Formulir'
+        );
+
+        $this->assertSame('Saya Ahmad (SPMB-2026-00001) sudah transfer Rp 125.000 untuk Biaya Formulir.', $pesan);
+    }
 }

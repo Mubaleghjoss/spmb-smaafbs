@@ -92,7 +92,10 @@ class PembayaranController extends Controller
             $kwitansi = $kwitansiService->ambilKwitansi($pembayaran);
         }
 
-        return view('peserta.pembayaran.status-formulir', compact('peserta', 'pembayaran', 'kwitansi'));
+        $spmb = $this->pengaturanService->ambilSpmb();
+        $kontakTimSpmb = $this->pengaturanService->ambilKontakTimSpmb();
+
+        return view('peserta.pembayaran.status-formulir', compact('peserta', 'pembayaran', 'kwitansi', 'spmb', 'kontakTimSpmb'));
     }
 
     /**
@@ -196,8 +199,10 @@ class PembayaranController extends Controller
         }
 
         $branding = $this->pengaturanService->ambilBranding();
+        $spmb = $this->pengaturanService->ambilSpmb();
+        $kontakTimSpmb = $this->pengaturanService->ambilKontakTimSpmb();
 
-        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi', 'ringkasan', 'riwayat', 'pembayaranKwitansi', 'branding'));
+        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi', 'ringkasan', 'riwayat', 'pembayaranKwitansi', 'branding', 'spmb', 'kontakTimSpmb'));
     }
 
     /**

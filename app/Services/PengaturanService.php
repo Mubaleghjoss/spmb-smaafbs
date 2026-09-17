@@ -252,6 +252,8 @@ class PengaturanService
             'nama_rekening' => $this->ambil('nama_rekening', ''),
             'whatsapp_spmb' => $this->ambil('whatsapp_spmb', ''),
             'kontak_tim_spmb' => $this->ambil('kontak_tim_spmb', '[]'),
+            'template_wa_pengingat_formulir' => $this->ambil('template_wa_pengingat_formulir', "Assalamu'alaikum, saya {nama} dengan nomor pendaftaran {nomor_pendaftaran} sudah transfer senilai {nominal} untuk {jenis_pembayaran}. Mohon segera diverifikasi. Terima kasih."),
+            'template_wa_pengingat_pelunasan' => $this->ambil('template_wa_pengingat_pelunasan', "Assalamu'alaikum, saya {nama} dengan nomor pendaftaran {nomor_pendaftaran} sudah transfer senilai {nominal} untuk {jenis_pembayaran}. Mohon segera diverifikasi. Terima kasih."),
             'keterangan_kuota_publik' => $this->ambil(
                 'keterangan_kuota_publik',
                 'Lengkapi formulir dan unggah bukti pembayaran formulir untuk memperoleh urutan kuota. Masuk kuota bukan keputusan diterima; keputusan resmi disampaikan melalui SK Kelulusan.'
@@ -298,6 +300,19 @@ class PengaturanService
     }
 
     /**
+     * Render template pengingat pembayaran dengan nilai server.
+     */
+    public static function renderTemplatePengingatPembayaran(string $template, string $nama, string $nomorPendaftaran, float|int $nominal, string $jenisPembayaran): string
+    {
+        return strtr($template, [
+            '{nama}' => $nama,
+            '{nomor_pendaftaran}' => $nomorPendaftaran,
+            '{nominal}' => 'Rp '.number_format($nominal, 0, ',', '.'),
+            '{jenis_pembayaran}' => $jenisPembayaran,
+        ]);
+    }
+
+    /**
      * Simpan pengaturan SPMB
      */
     public function simpanSpmb(array $data): void
@@ -309,7 +324,7 @@ class PengaturanService
             'biaya_total_dalam_kota', 'biaya_total_luar_kota',
             'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
-            'whatsapp_spmb', 'kontak_tim_spmb', 'keterangan_kuota_publik',
+            'whatsapp_spmb', 'kontak_tim_spmb', 'template_wa_pengingat_formulir', 'template_wa_pengingat_pelunasan', 'keterangan_kuota_publik',
             'popup_persetujuan_aktif', 'popup_persetujuan_judul',
             'popup_persetujuan_teks', 'popup_persetujuan_gambar'
         ];

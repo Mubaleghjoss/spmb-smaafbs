@@ -53,6 +53,7 @@ class DashboardSpmbController extends Controller
         $spmb = $pengaturanService->ambilSpmb();
         $whatsappSpmb = $spmb['whatsapp_spmb'] ?? '';
         $rincianBiaya = $this->biayaSpmbService->untukFormulir($spmb, $peserta->formulirSpmb);
+        $ringkasanTahapEnam = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
 
         return view('peserta.dashboard', [
             'peserta' => $peserta,
@@ -64,7 +65,9 @@ class DashboardSpmbController extends Controller
             'kelengkapanPascakelulusan' => $kelengkapanPascakelulusan,
             'kontakTimSpmb' => $kontakTimSpmb,
             'whatsappSpmb' => $whatsappSpmb,
+            'spmb' => $spmb,
             'rincianBiaya' => $rincianBiaya,
+            'ringkasanTahapEnam' => $ringkasanTahapEnam,
         ]);
     }
 

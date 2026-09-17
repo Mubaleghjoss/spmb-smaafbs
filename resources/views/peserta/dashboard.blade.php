@@ -355,18 +355,18 @@
                                     @if($nomor == 7 && $statusKelulusan === 'tidak_lulus')
                                         {{-- Tahap 7 tidak lulus --}}
                                         <h6 class="mb-1 text-danger">
-                                            <i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
+                                            <span class="stage-title-number">Tahap {{ $nomor }} — </span><i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
                                         </h6>
                                         <p class="text-danger small mb-2">Maaf, Anda belum diqodar menjadi peserta didik {{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
                                     @elseif($nomor == 7 && $statusKelulusan === 'lulus' && ($tahapan->tahap_7_selesai ?? false))
                                         {{-- Tahap 7 lulus --}}
                                         <h6 class="mb-1 text-success">
-                                            <i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
+                                            <span class="stage-title-number">Tahap {{ $nomor }} — </span><i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
                                         </h6>
                                         <p class="text-success small mb-2">Selamat! Anda resmi menjadi peserta didik {{ $branding['nama_institusi'] ?? 'SMA Al Furqon Boarding School' }}</p>
                                     @else
                                         <h6 class="mb-1 {{ $item['selesai'] ? 'text-success' : '' }}">
-                                            <i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
+                                            <span class="stage-title-number">Tahap {{ $nomor }} — </span><i class="bi bi-{{ $item['icon'] }} me-2"></i>{{ $item['label'] }}
                                         </h6>
                                         <p class="text-muted small mb-2">{{ $item['deskripsi'] ?? '' }}</p>
                                     @endif
@@ -384,6 +384,23 @@
                                         </div>
                                     @endif
                                     
+                                    @if($nomor == 3 && ($item['dibuka'] || $item['selesai']) && ($rincianBiaya['lengkap'] ?? false))
+                                        <div class="alert alert-warning border mt-2 mb-0 py-2 px-3 small">
+                                            <div class="fw-semibold mb-1"><i class="bi bi-bank me-1"></i>Pembayaran Biaya Formulir</div>
+                                            <div>Bank: <strong>{{ $spmb['rekening_bank'] ?? '-' }}</strong> · No. Rekening: <code>{{ $spmb['nomor_rekening'] ?? '-' }}</code></div>
+                                            <div>Atas nama: <strong>{{ $spmb['nama_rekening'] ?? '-' }}</strong> · Nominal: <strong class="text-success">Rp {{ number_format($rincianBiaya['formulir'], 0, ',', '.') }}</strong></div>
+                                        </div>
+                                    @endif
+
+                                    @if($nomor == 6 && ($item['dibuka'] || $item['selesai']))
+                                        <div class="alert alert-info border mt-2 mb-0 py-2 px-3 small">
+                                            <div class="fw-semibold mb-1"><i class="bi bi-bank me-1"></i>Pembayaran Pelunasan</div>
+                                            <div>Bank: <strong>{{ $spmb['rekening_bank'] ?? '-' }}</strong> · No. Rekening: <code>{{ $spmb['nomor_rekening'] ?? '-' }}</code></div>
+                                            <div>Atas nama: <strong>{{ $spmb['nama_rekening'] ?? '-' }}</strong></div>
+                                            <div class="mt-1">Tagihan: <strong>Rp {{ number_format($ringkasanTahapEnam['tagihan'], 0, ',', '.') }}</strong> · Terverifikasi: Rp {{ number_format($ringkasanTahapEnam['terverifikasi'], 0, ',', '.') }} · Sisa: <strong class="text-danger">Rp {{ number_format($ringkasanTahapEnam['sisa'], 0, ',', '.') }}</strong></div>
+                                        </div>
+                                    @endif
+
                                     {{-- Info berkas belum lengkap untuk tahap 2 (Isi Formulir) --}}
                                     @if($nomor == 2 && $item['selesai'] && isset($berkasBelumLengkap) && $berkasBelumLengkap['count'] > 0)
                                         <div class="alert alert-warning py-2 px-3 mb-2 small">

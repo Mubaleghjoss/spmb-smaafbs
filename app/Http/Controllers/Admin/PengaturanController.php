@@ -350,6 +350,8 @@ class PengaturanController extends Controller
             'nomor_rekening' => 'nullable|string|max:50',
             'nama_rekening' => 'nullable|string|max:255',
             'keterangan_kuota_publik' => 'nullable|string|max:1000',
+            'template_wa_pengingat_formulir' => 'nullable|string|max:2000',
+            'template_wa_pengingat_pelunasan' => 'nullable|string|max:2000',
             'popup_persetujuan_aktif' => 'nullable|boolean',
             'popup_persetujuan_judul' => 'nullable|string|max:120',
             'popup_persetujuan_teks' => 'nullable|string|max:1000',

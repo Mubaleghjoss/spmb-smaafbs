@@ -337,6 +337,13 @@
                                     <input type="text" name="nama_rekening" class="form-control" 
                                            value="{{ old('nama_rekening', $spmb['nama_rekening']) }}" placeholder="Yayasan Al Furqon">
                                 </div>
+                                <hr>
+                                <label class="form-label fw-semibold">Template WA pengingat biaya formulir</label>
+                                <textarea name="template_wa_pengingat_formulir" class="form-control" rows="5" maxlength="2000">{{ old('template_wa_pengingat_formulir', $spmb['template_wa_pengingat_formulir']) }}</textarea>
+                                <div class="form-text">Placeholder: <code>{nama}</code>, <code>{nomor_pendaftaran}</code>, <code>{nominal}</code>, <code>{jenis_pembayaran}</code>.</div>
+                                <label class="form-label fw-semibold mt-3">Template WA pengingat pelunasan</label>
+                                <textarea name="template_wa_pengingat_pelunasan" class="form-control" rows="5" maxlength="2000">{{ old('template_wa_pengingat_pelunasan', $spmb['template_wa_pengingat_pelunasan']) }}</textarea>
+                                <div class="form-text">Pesan hanya ditampilkan ke peserta ketika bukti pembayaran masih menunggu verifikasi.</div>
                             </div>
                         </div>
                     </div>
