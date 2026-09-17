@@ -18,7 +18,7 @@
             <h6 class="mb-0"><i class="bi bi-whatsapp me-2"></i>Bantuan Upload (Peserta Belum Upload)</h6>
         </div>
         <div class="card-body">
-            <p class="text-muted small mb-3">Peserta yang menghubungi Tim SPMB via WhatsApp untuk bantuan upload bukti pelunasan.</p>
+            <p class="text-muted small mb-3">Bantuan upload dari Tim SPMB selalu masuk daftar <strong>Menunggu Verifikasi</strong>. Tahap peserta tidak berubah sampai bukti diterima pada tabel di bawah.</p>
             @php
                 $spmb = app(\App\Services\PengaturanService::class)->ambilSpmb();
             @endphp
@@ -58,14 +58,14 @@
                                             <div class="alert alert-info small">
                                                 <i class="bi bi-info-circle me-1"></i>
                                                 Upload bukti pelunasan untuk peserta <strong>{{ $p->nama }}</strong> ({{ $p->nomor_pendaftaran }}).
-                                                Bukti akan langsung terverifikasi dan peserta resmi diterima.
+                                                Setelah diupload, bukti masuk daftar <strong>Menunggu Verifikasi</strong>. Periksa lalu tekan Terima pada tabel verifikasi.
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Nominal Pembayaran <span class="text-danger">*</span></label>
                                                 <div class="input-group">
                                                     <span class="input-group-text">Rp</span>
                                                     <input type="number" class="form-control" name="nominal" 
-                                                           value="{{ $spmb['biaya_pelunasan'] ?? 0 }}" min="0" required>
+                                                           value="{{ $spmb['biaya_pelunasan'] ?? 0 }}" min="1" required>
                                                 </div>
                                             </div>
                                             <div class="mb-3">
@@ -77,7 +77,7 @@
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                             <button type="submit" class="btn btn-success">
-                                                <i class="bi bi-check-lg me-1"></i>Upload & Verifikasi
+                                                <i class="bi bi-upload me-1"></i>Upload ke Antrian
                                             </button>
                                         </div>
                                     </form>
@@ -132,7 +132,7 @@
                                         <form action="{{ route('admin.verifikasi.pelunasan.terima', $p) }}" method="POST" class="d-inline">
                                             @csrf
                                             <button type="submit" class="btn btn-sm btn-success"
-                                                    onclick="return confirm('Verifikasi pelunasan ini? Peserta akan resmi diterima.')">
+                                                    onclick="return confirm('Terima pembayaran ini? Saldo tagihan akan berkurang. Tahap 6 hanya selesai jika total pembayaran telah lunas; status lulus tetap menunggu SK.')">
                                                 <i class="bi bi-check-lg me-1"></i>Terima
                                             </button>
                                         </form>

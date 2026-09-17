@@ -108,16 +108,22 @@ class PembayaranController extends Controller
                 ->with('error', 'Selesaikan tahap wawancara terlebih dahulu');
         }
 
+        $ringkasan = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
         $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'pertama');
+        $adaMenunggu = \App\Models\Pembayaran::where('peserta_id', $peserta->id)
+            ->where('jenis', 'pertama')
+            ->where('status', StatusPembayaran::MENUNGGU->value)
+            ->exists();
 
-        // Jika sudah upload, redirect ke status
-        if ($pembayaran && $pembayaran->status !== StatusPembayaran::DITOLAK->value) {
+        // Satu bukti menunggu pada satu waktu, tetapi cicilan berikutnya tetap
+        // dapat diupload setelah pembayaran sebelumnya diverifikasi.
+        if ($ringkasan['lunas'] || $adaMenunggu) {
             return redirect()->route('peserta.pembayaran.status-pelunasan');
         }
 
         $spmb = $this->pengaturanService->ambilSpmb();
 
-        return view('peserta.pembayaran.pelunasan', compact('peserta', 'spmb', 'pembayaran'));
+        return view('peserta.pembayaran.pelunasan', compact('peserta', 'spmb', 'pembayaran', 'ringkasan'));
     }
 
     /**
@@ -127,7 +133,8 @@ class PembayaranController extends Controller
     {
         $request->validate([
             'bukti' => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'nominal' => 'required|numeric|min:0',
+            'metode_bayar' => 'required|in:lunas,cicilan',
+            'nominal' => 'nullable|numeric|min:1',
         ], [
             'bukti.required' => 'Bukti pembayaran wajib diupload',
             'bukti.image' => 'File harus berupa gambar',
@@ -143,7 +150,24 @@ class PembayaranController extends Controller
                 ->with('error', 'Selesaikan tahap wawancara terlebih dahulu');
         }
 
-        $this->pembayaranService->uploadBukti($peserta, 'pertama', $request->file('bukti'), $request->nominal);
+        $ringkasan = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
+        if ($ringkasan['lunas']) {
+            return redirect()->route('peserta.pembayaran.status-pelunasan')
+                ->with('error', 'Tagihan tahap pertama sudah lunas.');
+        }
+        if (\App\Models\Pembayaran::where('peserta_id', $peserta->id)->where('jenis', 'pertama')->where('status', StatusPembayaran::MENUNGGU->value)->exists()) {
+            return redirect()->route('peserta.pembayaran.status-pelunasan')
+                ->with('error', 'Masih ada bukti pembayaran yang menunggu verifikasi.');
+        }
+
+        $nominal = $request->metode_bayar === 'lunas'
+            ? $ringkasan['sisa']
+            : (float) $request->nominal;
+        if ($nominal > $ringkasan['sisa']) {
+            return back()->withInput()->withErrors(['nominal' => 'Nominal cicilan tidak boleh melebihi sisa tagihan Rp '.number_format($ringkasan['sisa'], 0, ',', '.').'.']);
+        }
+
+        $this->pembayaranService->uploadBukti($peserta, 'pertama', $request->file('bukti'), $nominal);
 
         return redirect()->route('peserta.pembayaran.status-pelunasan')
             ->with('success', 'Bukti pembayaran berhasil diupload. Tunggu verifikasi dari admin.');
@@ -155,16 +179,25 @@ class PembayaranController extends Controller
     public function statusPelunasan(): View
     {
         $peserta = Peserta::find(session('peserta_id'));
-        $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'pertama');
+        $tahapEnam = app(\App\Services\TahapEnamPembayaranService::class);
+        $ringkasan = $tahapEnam->ringkasan($peserta);
+        $riwayat = $tahapEnam->riwayat($peserta);
+        $pembayaran = $riwayat->first();
 
-        // Ambil data kwitansi jika pembayaran sudah terverifikasi
+        // Kwitansi hanya terbit setelah total tagihan benar-benar lunas.
         $kwitansi = null;
-        if ($pembayaran && $pembayaran->status === 'terverifikasi') {
+        $pembayaranKwitansi = $riwayat->first(fn ($item) => $item->status === StatusPembayaran::TERVERIFIKASI->value);
+        if ($ringkasan['lunas'] && $pembayaranKwitansi) {
             $kwitansiService = app(\App\Services\KwitansiService::class);
-            $kwitansi = $kwitansiService->ambilKwitansi($pembayaran);
+            $kwitansi = $kwitansiService->ambilKwitansi($pembayaranKwitansi);
+            if ($kwitansi) {
+                $kwitansi['nominal'] = $ringkasan['tagihan'];
+            }
         }
 
-        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi'));
+        $branding = $this->pengaturanService->ambilBranding();
+
+        return view('peserta.pembayaran.status-pelunasan', compact('peserta', 'pembayaran', 'kwitansi', 'ringkasan', 'riwayat', 'pembayaranKwitansi', 'branding'));
     }
 
     /**
@@ -180,12 +213,16 @@ class PembayaranController extends Controller
         }
 
         // Hanya bisa cetak jika sudah terverifikasi
-        if ($pembayaran->status !== 'terverifikasi') {
+        $ringkasan = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
+        if ($pembayaran->status !== 'terverifikasi' || ! $ringkasan['lunas']) {
             abort(404, 'Kwitansi tidak tersedia');
         }
 
         $kwitansiService = app(\App\Services\KwitansiService::class);
         $kwitansi = $kwitansiService->ambilKwitansi($pembayaran);
+        if ($kwitansi) {
+            $kwitansi['nominal'] = $ringkasan['tagihan'];
+        }
 
         return view('admin.verifikasi.cetak-kwitansi', compact('kwitansi', 'pembayaran'));
     }

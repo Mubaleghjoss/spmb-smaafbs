@@ -11,6 +11,11 @@
                     <h5 class="mb-0"><i class="bi bi-receipt me-2"></i>Status Pembayaran Tahap Pertama</h5>
                 </div>
                 <div class="card-body">
+                    <div class="row text-center g-2 mb-4">
+                        <div class="col-4"><div class="border rounded p-2"><small class="text-muted d-block">Tagihan</small><strong>Rp {{ number_format($ringkasan['tagihan'], 0, ',', '.') }}</strong></div></div>
+                        <div class="col-4"><div class="border rounded p-2"><small class="text-muted d-block">Terverifikasi</small><strong class="text-success">Rp {{ number_format($ringkasan['terverifikasi'], 0, ',', '.') }}</strong></div></div>
+                        <div class="col-4"><div class="border rounded p-2"><small class="text-muted d-block">Sisa</small><strong class="text-danger">Rp {{ number_format($ringkasan['sisa'], 0, ',', '.') }}</strong></div></div>
+                    </div>
                     @if(!$pembayaran)
                         <div class="text-center py-4">
                             <i class="bi bi-inbox text-muted" style="font-size: 3rem;"></i>
@@ -31,8 +36,8 @@
                                 <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
                                     <i class="bi bi-check-circle text-success" style="font-size: 2rem;"></i>
                                 </div>
-                                <h5 class="text-success">Terverifikasi</h5>
-                                <p class="text-muted">Pembayaran Anda sudah diverifikasi</p>
+                                <h5 class="text-success">Pembayaran Terverifikasi</h5>
+                                <p class="text-muted">Pembayaran Anda sudah diverifikasi. Periksa sisa tagihan di atas.</p>
                                 <div class="alert alert-success mt-3 text-start">
                                     <div class="mb-1">
                                         <i class="bi bi-check-circle me-2"></i>
@@ -66,7 +71,7 @@
                         @endif
                         
                         {{-- Kwitansi Section --}}
-                        @if($pembayaran->status === 'terverifikasi' && isset($kwitansi) && $kwitansi)
+                        @if($ringkasan['lunas'] && isset($kwitansi) && $kwitansi)
                         <div class="card bg-light mb-3">
                             <div class="card-body">
                                 <h6 class="card-title"><i class="bi bi-receipt me-2"></i>Kwitansi Pembayaran</h6>
@@ -84,20 +89,29 @@
                                         <td><strong>Rp {{ number_format($kwitansi['nominal'], 0, ',', '.') }}</strong></td>
                                     </tr>
                                 </table>
-                                <a href="{{ route('peserta.pembayaran.kwitansi', $pembayaran) }}" target="_blank" class="btn btn-info btn-sm w-100">
+                                <a href="{{ route('peserta.pembayaran.kwitansi', $pembayaranKwitansi) }}" target="_blank" class="btn btn-info btn-sm w-100">
                                     <i class="bi bi-printer me-2"></i>Cetak Kwitansi
                                 </a>
                             </div>
                         </div>
                         @endif
                         
-                        @if($pembayaran->nominal)
-                            <p class="small text-muted mb-1">Nominal:</p>
-                            <p class="fw-bold mb-3">Rp {{ number_format($pembayaran->nominal, 0, ',', '.') }}</p>
+                        <h6 class="mt-4">Riwayat pembayaran</h6>
+                        <div class="list-group list-group-flush border rounded">
+                            @foreach($riwayat as $item)
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between gap-2">
+                                        <div><strong>Rp {{ number_format($item->nominal, 0, ',', '.') }}</strong><br><small class="text-muted">Upload {{ $item->created_at?->format('d M Y H:i') }}</small></div>
+                                        <span class="badge align-self-start bg-{{ $item->status === 'terverifikasi' ? 'success' : ($item->status === 'ditolak' ? 'danger' : 'warning text-dark') }}">{{ ucfirst($item->status) }}</span>
+                                    </div>
+                                    @if($item->status === 'terverifikasi')<small class="text-success"><i class="bi bi-patch-check me-1"></i>Diverifikasi {{ $item->diverifikasi_pada?->format('d M Y H:i') }}</small>@endif
+                                    @if($item->status === 'ditolak' && $item->catatan)<small class="text-danger d-block">{{ $item->catatan }}</small>@endif
+                                </div>
+                            @endforeach
+                        </div>
+                        @if(!$ringkasan['lunas'] && !$riwayat->contains('status', 'menunggu'))
+                            <a href="{{ route('peserta.pembayaran.pelunasan') }}" class="btn btn-success w-100 mt-3"><i class="bi bi-plus-circle me-1"></i>Tambah pembayaran</a>
                         @endif
-                        
-                        <p class="small text-muted mb-1">Bukti yang diupload:</p>
-                        <img src="{{ Storage::url($pembayaran->bukti_file) }}" class="img-fluid rounded border" alt="Bukti Pembayaran">
                     @endif
                 </div>
             </div>

@@ -428,6 +428,14 @@ class DashboardSpmbController extends Controller
         foreach ($tahapanConfig as $num => $config) {
             $kolomSelesai = "tahap_{$num}_selesai";
             $statusInfo = $this->cekTahapanDibukaDetail($pengaturanTahapan, $num, $tahapan);
+
+            // Tahap 7 adalah halaman status/SK, bukan tindakan yang menunggu
+            // jadwal. Setelah Tahap 6 lunas peserta selalu dapat membukanya,
+            // namun status selesai tetap hanya ditentukan oleh SK kelulusan.
+            if ($num === 7 && ($tahapan?->tahap_6_selesai ?? false)) {
+                $statusInfo['dibuka'] = true;
+                $statusInfo['alasan'] = null;
+            }
             
             $selesai = $num === 1 ? ($tahapan?->$kolomSelesai ?? true) : ($tahapan?->$kolomSelesai ?? false);
             

@@ -52,9 +52,9 @@ class PembayaranService
     public function verifikasi(Pembayaran $pembayaran, Pengguna $admin): void
     {
         DB::transaction(function () use ($pembayaran, $admin) {
-            // Generate nomor kwitansi
-            $kwitansiService = app(KwitansiService::class);
-            $nomorKwitansi = $kwitansiService->generateNomorKwitansi();
+            $nomorKwitansi = $pembayaran->jenis === 'formulir'
+                ? app(KwitansiService::class)->generateNomorKwitansi()
+                : null;
 
             $pembayaran->update([
                 'status' => StatusPembayaran::TERVERIFIKASI->value,
@@ -62,9 +62,15 @@ class PembayaranService
                 'diverifikasi_pada' => now(),
                 'nomor_kwitansi' => $nomorKwitansi,
             ]);
-            // Tahap 3 = Bayar Formulir, Tahap 6 = Bayar Pertama (Pelunasan)
-            $tahap = $pembayaran->jenis === 'formulir' ? 3 : 6;
-            $this->spmbService->selesaikanTahapan($pembayaran->peserta, $tahap, $admin->id);
+            if ($pembayaran->jenis === 'formulir') {
+                $this->spmbService->selesaikanTahapan($pembayaran->peserta, 3, $admin->id);
+                return;
+            }
+
+            $ringkasan = app(TahapEnamPembayaranService::class)->ringkasan($pembayaran->peserta);
+            if ($ringkasan['lunas']) {
+                $this->spmbService->selesaikanTahapan($pembayaran->peserta, 6, $admin->id);
+            }
         });
     }
 

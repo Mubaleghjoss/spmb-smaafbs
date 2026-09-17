@@ -565,6 +565,10 @@
                                         <a href="{{ route('peserta.konfirmasi-diterima') }}" class="btn btn-sm btn-outline-success">
                                             <i class="bi bi-eye me-1"></i>Lihat Detail
                                         </a>
+                                    @elseif($nomor == 7 && ($tahapan->tahap_6_selesai ?? false))
+                                        <a href="{{ route('peserta.konfirmasi-diterima') }}" class="btn btn-sm btn-outline-warning">
+                                            <i class="bi bi-clock-history me-1"></i>Lihat Status
+                                        </a>
                                     @elseif($item['selesai'] && $item['route'])
                                         <a href="{{ route($item['route']) }}" class="btn btn-sm btn-outline-success">
                                             <i class="bi bi-eye me-1"></i>Lihat

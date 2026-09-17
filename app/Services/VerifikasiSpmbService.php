@@ -122,9 +122,6 @@ class VerifikasiSpmbService
     {
         DB::transaction(function () use ($pembayaran, $admin) {
             $this->pembayaranService->verifikasi($pembayaran, $admin);
-
-            // Setelah pelunasan terverifikasi, peserta resmi diterima (tahap 7)
-            $this->spmbService->selesaikanTahapan($pembayaran->peserta, 7, $admin->id);
         });
     }
 

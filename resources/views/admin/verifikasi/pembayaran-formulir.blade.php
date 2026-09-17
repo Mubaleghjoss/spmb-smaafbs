@@ -55,7 +55,7 @@
                                             <div class="alert alert-info small">
                                                 <i class="bi bi-info-circle me-1"></i>
                                                 Upload bukti pembayaran untuk peserta <strong>{{ $p->nama }}</strong> ({{ $p->nomor_pendaftaran }}).
-                                                Bukti akan langsung terverifikasi dan peserta dapat melanjutkan ke tahap berikutnya.
+                                                Bukti akan masuk daftar <strong>Menunggu Verifikasi</strong>. Peserta hanya dapat melanjutkan setelah admin memeriksa dan menerima bukti tersebut.
                                             </div>
                                             <div class="mb-3">
                                                 <label class="form-label">Bukti Pembayaran <span class="text-danger">*</span></label>
@@ -66,7 +66,7 @@
                                         <div class="modal-footer">
                                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                                             <button type="submit" class="btn btn-success">
-                                                <i class="bi bi-check-lg me-1"></i>Upload & Verifikasi
+                                                <i class="bi bi-upload me-1"></i>Upload ke Antrian
                                             </button>
                                         </div>
                                     </form>

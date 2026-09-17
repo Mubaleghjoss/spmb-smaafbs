@@ -309,10 +309,11 @@
                     @elseif($hasil['is_mbti'] ?? false)
                     {{-- Hasil MBTI --}}
                     @php
-                        $mbti = $hasil['mbti'];
+                        $mbti = $hasil['mbti'] ?? null;
                         $mbtiDeskripsi = $hasil['mbti_deskripsi'] ?? null;
                     @endphp
-                    
+
+                    @if($mbti)
                     {{-- Hasil Utama --}}
                     <div class="text-center mb-4">
                         <div class="d-inline-block p-4 rounded-circle bg-success bg-opacity-10 mb-3">
@@ -498,6 +499,17 @@
                     @endif
 
                     <hr>
+                    @else
+                    <div class="alert alert-warning border-0 shadow-sm" role="alert">
+                        <div class="d-flex gap-3 align-items-start">
+                            <i class="bi bi-hourglass-split fs-4"></i>
+                            <div>
+                                <h5 class="alert-heading mb-1">Hasil MBTI belum tersedia</h5>
+                                <p class="mb-0">Jawaban tes Anda sudah diterima. Hasil MBTI sedang diproses; silakan cek kembali beberapa saat lagi atau hubungi Tim SPMB bila status ini berlanjut.</p>
+                            </div>
+                        </div>
+                    </div>
+                    @endif
                     @endif
 
                     @if($hasil['is_profiling'] ?? false)

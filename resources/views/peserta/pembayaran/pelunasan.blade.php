@@ -34,20 +34,30 @@
                         <p class="mb-1"><strong>Bank:</strong> {{ $spmb['rekening_bank'] ?? 'BSI' }}</p>
                         <p class="mb-1"><strong>No. Rekening:</strong> <code class="fs-5">{{ $spmb['nomor_rekening'] ?? '-' }}</code></p>
                         <p class="mb-1"><strong>Atas Nama:</strong> {{ $spmb['nama_rekening'] ?? '-' }}</p>
-                        @if(!empty($spmb['biaya_pelunasan']))
-                        <p class="mb-0"><strong>Nominal:</strong> <span class="text-success fw-bold">Rp {{ number_format($spmb['biaya_pelunasan'], 0, ',', '.') }}</span></p>
-                        @endif
+                        <p class="mb-1"><strong>Total tagihan:</strong> <span class="text-success fw-bold">Rp {{ number_format($ringkasan['tagihan'], 0, ',', '.') }}</span></p>
+                        <p class="mb-1"><strong>Sudah terverifikasi:</strong> Rp {{ number_format($ringkasan['terverifikasi'], 0, ',', '.') }}</p>
+                        <p class="mb-0"><strong>Sisa tagihan:</strong> <span class="text-danger fw-bold">Rp {{ number_format($ringkasan['sisa'], 0, ',', '.') }}</span></p>
                     </div>
 
                     <form action="{{ route('peserta.pembayaran.simpan-pelunasan') }}" method="POST" enctype="multipart/form-data" x-data="uploadForm()">
                         @csrf
                         <div class="mb-3">
-                            <label class="form-label">Nominal Pembayaran <span class="text-danger">*</span></label>
+                            <label class="form-label d-block">Pilih cara bayar <span class="text-danger">*</span></label>
+                            <div class="btn-group w-100" role="group">
+                                <input type="radio" class="btn-check" name="metode_bayar" id="metodeLunas" value="lunas" checked @change="metode = 'lunas'">
+                                <label class="btn btn-outline-success" for="metodeLunas">Bayar lunas<br><small>Rp {{ number_format($ringkasan['sisa'], 0, ',', '.') }}</small></label>
+                                <input type="radio" class="btn-check" name="metode_bayar" id="metodeCicilan" value="cicilan" @change="metode = 'cicilan'">
+                                <label class="btn btn-outline-primary" for="metodeCicilan">Bayar cicilan</label>
+                            </div>
+                        </div>
+                        <div class="mb-3" x-show="metode === 'cicilan'">
+                            <label class="form-label">Nominal cicilan <span class="text-danger">*</span></label>
                             <div class="input-group">
                                 <span class="input-group-text">Rp</span>
                                 <input type="number" class="form-control @error('nominal') is-invalid @enderror" 
-                                       name="nominal" value="{{ old('nominal') }}" required>
+                                       name="nominal" value="{{ old('nominal') }}" min="1" max="{{ $ringkasan['sisa'] }}" :required="metode === 'cicilan'">
                             </div>
+                            <div class="form-text">Maksimal sisa tagihan Rp {{ number_format($ringkasan['sisa'], 0, ',', '.') }}.</div>
                             @error('nominal')
                                 <div class="invalid-feedback d-block">{{ $message }}</div>
                             @enderror
@@ -212,6 +222,7 @@ let alpineFormInstance = null;
 
 function uploadForm() {
     return {
+        metode: 'lunas',
         preview: null,
         loading: false,
         hasFile: false,

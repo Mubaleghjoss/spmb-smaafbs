@@ -160,10 +160,8 @@ class VerifikasiSpmbController extends Controller
         return $this->uploadBuktiBantuan($request, $peserta, [
             'jenis'            => 'formulir',
             'storage_folder'   => 'pembayaran/formulir',
-            'tahap_selesai'    => [3],
-            'with_kwitansi'    => true,
             'redirect_route'   => 'admin.verifikasi.pembayaran-formulir',
-            'pesan_sukses'     => "Bukti pembayaran untuk {$peserta->nama} berhasil diupload dan diverifikasi.",
+            'pesan_sukses'     => "Bukti pembayaran untuk {$peserta->nama} berhasil diupload dan masuk daftar menunggu verifikasi.",
         ]);
     }
 
@@ -434,7 +432,7 @@ class VerifikasiSpmbController extends Controller
     {
         $request->validate([
             'bukti'   => 'required|image|mimes:jpeg,png,jpg|max:2048',
-            'nominal' => 'required|numeric|min:0',
+            'nominal' => 'required|numeric|min:1',
         ], [
             'bukti.required'   => 'Bukti pembayaran wajib diupload',
             'bukti.image'      => 'File harus berupa gambar',
@@ -447,10 +445,8 @@ class VerifikasiSpmbController extends Controller
         return $this->uploadBuktiBantuan($request, $peserta, [
             'jenis'          => 'pertama',
             'storage_folder' => 'pembayaran/pertama',
-            'tahap_selesai'  => [6, 7],
-            'with_kwitansi'  => false,
             'redirect_route' => 'admin.verifikasi.pelunasan',
-            'pesan_sukses'   => "Bukti pelunasan untuk {$peserta->nama} berhasil diupload. Peserta resmi diterima.",
+            'pesan_sukses'   => "Bukti pembayaran tahap pertama untuk {$peserta->nama} berhasil diupload dan masuk daftar menunggu verifikasi.",
             'nominal'        => $request->nominal,
         ]);
     }
@@ -459,41 +455,24 @@ class VerifikasiSpmbController extends Controller
      * Helper untuk upload bukti pembayaran oleh Tim SPMB.
      * Digunakan oleh uploadBuktiFormulir dan uploadBuktiPelunasan.
      *
-     * @param array{jenis: string, storage_folder: string, tahap_selesai: int[], with_kwitansi: bool, redirect_route: string, pesan_sukses: string, nominal?: numeric} $config
+     * Upload bantuan harus tetap mengikuti pemeriksaan dua langkah: simpan sebagai
+     * menunggu, kemudian admin lain/aksi verifikasi yang secara eksplisit menerima.
+     * @param array{jenis: string, storage_folder: string, redirect_route: string, pesan_sukses: string, nominal?: numeric} $config
      */
     private function uploadBuktiBantuan(Request $request, Peserta $peserta, array $config): RedirectResponse
     {
-        $admin = auth('pengguna')->user();
         $path  = $request->file('bukti')->store($config['storage_folder'], 'public');
-
-        $nomorKwitansi = null;
-        if ($config['with_kwitansi']) {
-            $nomorKwitansi = app(\App\Services\KwitansiService::class)->generateNomorKwitansi();
-        }
 
         Pembayaran::create(array_filter([
             'peserta_id'        => $peserta->id,
             'jenis'             => $config['jenis'],
             'bukti_file'        => $path,
             'nominal'           => $config['nominal'] ?? null,
-            'status'            => StatusPembayaran::TERVERIFIKASI->value,
-            'nomor_kwitansi'    => $nomorKwitansi,
-            'diverifikasi_oleh' => $admin->id,
-            'diverifikasi_pada' => now(),
-            'catatan'           => 'Diupload oleh Tim SPMB: ' . $admin->nama,
+            'status'            => StatusPembayaran::MENUNGGU->value,
+            'catatan'           => 'Diupload oleh Tim SPMB; menunggu verifikasi.',
         ], fn($v) => !is_null($v)));
 
-        $spmbService = app(\App\Services\SpmbService::class);
-        foreach ($config['tahap_selesai'] as $tahap) {
-            $spmbService->selesaikanTahapan($peserta, $tahap, $admin->id);
-        }
-
-        $pesan = $config['pesan_sukses'];
-        if ($nomorKwitansi) {
-            $pesan .= " No. Kwitansi: {$nomorKwitansi}";
-        }
-
-        return redirect()->route($config['redirect_route'])->with('success', $pesan);
+        return redirect()->route($config['redirect_route'])->with('success', $config['pesan_sukses']);
     }
 
     /**

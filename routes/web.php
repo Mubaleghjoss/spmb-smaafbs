@@ -100,7 +100,7 @@ Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(fun
     Route::get('/pembayaran/status-pelunasan', [\App\Http\Controllers\Peserta\PembayaranController::class, 'statusPelunasan'])->name('pembayaran.status-pelunasan');
     
     // Konfirmasi Diterima (Tahap 7)
-    Route::get('/konfirmasi-diterima', [DashboardSpmbController::class, 'konfirmasiDiterima'])->middleware('cek.tahap.spmb:7')->name('konfirmasi-diterima');
+    Route::get('/konfirmasi-diterima', [DashboardSpmbController::class, 'konfirmasiDiterima'])->name('konfirmasi-diterima');
     Route::get('/konfirmasi-diterima/sk', [DashboardSpmbController::class, 'downloadSuratKelulusan'])->name('surat-kelulusan.download');
     
     // Info Wawancara (Tahap 5)
