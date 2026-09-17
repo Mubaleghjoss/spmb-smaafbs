@@ -47,6 +47,16 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee(route('peserta.login'));
     }
 
+    public function test_default_popup_persetujuan_mencantumkan_ldii_dan_asrama(): void
+    {
+        $spmb = app(PengaturanService::class)->ambilSpmb();
+
+        $this->assertSame(
+            'SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.',
+            $spmb['popup_persetujuan_teks']
+        );
+    }
+
     public function test_form_menampilkan_periode_yang_sedang_dibuka(): void
     {
         $this->get('/daftar')

@@ -258,7 +258,7 @@ class PengaturanService
             ),
             'popup_persetujuan_aktif' => (bool) $this->ambil('popup_persetujuan_aktif', true),
             'popup_persetujuan_judul' => $this->ambil('popup_persetujuan_judul', 'Komitmen Calon Peserta Didik'),
-            'popup_persetujuan_teks' => $this->ambil('popup_persetujuan_teks', 'Saya bersedia mengikuti peraturan dan ketentuan yang berlaku di SMA AFBS yang berada di bawah naungan LDII (Lembaga Dakwah Islam Indonesia) melalui Yayasan Dar Al Furqon Al Hakim.'),
+            'popup_persetujuan_teks' => $this->ambil('popup_persetujuan_teks', 'SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.'),
             'popup_persetujuan_gambar' => $this->ambil('popup_persetujuan_gambar', ''),
         ];
     }
