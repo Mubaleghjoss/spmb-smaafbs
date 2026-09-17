@@ -49,14 +49,18 @@
         }
         .mbn-sheet.show { transform: translateY(0); }
         .mbn-grip { width: 44px; height: 5px; border-radius: 999px; background: #cbd5e1; margin: 0 auto 12px; }
-        .mbn-sheet-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+        .mbn-sheet-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
         .mbn-sheet-item {
-            display: flex; flex-direction: column; align-items: center; gap: 6px;
-            padding: 12px 6px; border: 1px solid #e5e7eb; border-radius: 14px;
-            color: #334155; text-decoration: none; font-size: .72rem; font-weight: 600; text-align: center;
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 10px; border: 1px solid #e5e7eb; border-radius: 14px;
+            color: #334155; text-decoration: none; font-size: .78rem; font-weight: 600; text-align: left;
         }
-        .mbn-sheet-item i { font-size: 1.35rem; color: #198754; }
+        .mbn-sheet-item i { flex: 0 0 auto; font-size: 1.25rem; color: #198754; }
+        .mbn-sheet-item span { min-width: 0; line-height: 1.25; }
         .mbn-sheet-item.active { border-color: #198754; background: #f0fdf4; color: #146c43; }
+        @media (max-width: 374.98px) {
+            .mbn-sheet-grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body class="bg-light">
@@ -148,31 +152,36 @@
         </div>
         <div class="mbn-sheet-grid">
             <a href="{{ route('peserta.dashboard') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.dashboard') ? 'active' : '' }}">
-                <i class="bi bi-speedometer2"></i><span>Dashboard</span>
+                <i class="bi bi-speedometer2"></i><span>Tahap 1 — Dashboard</span>
             </a>
             @if(\Illuminate\Support\Facades\Route::has('peserta.formulir.isi'))
             <a href="{{ route('peserta.formulir.isi') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.formulir.*') ? 'active' : '' }}">
-                <i class="bi bi-file-earmark-text"></i><span>Formulir</span>
+                <i class="bi bi-file-earmark-text"></i><span>Tahap 2 — Formulir</span>
             </a>
             @endif
             @if(\Illuminate\Support\Facades\Route::has('peserta.pembayaran.formulir'))
-            <a href="{{ route('peserta.pembayaran.formulir') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.pembayaran.*') ? 'active' : '' }}">
-                <i class="bi bi-credit-card"></i><span>Pembayaran</span>
+            <a href="{{ route('peserta.pembayaran.formulir') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.pembayaran.formulir') || request()->routeIs('peserta.pembayaran.status-formulir') ? 'active' : '' }}">
+                <i class="bi bi-credit-card"></i><span>Tahap 3 — Pembayaran Formulir</span>
             </a>
             @endif
             @if(\Illuminate\Support\Facades\Route::has('ujian.index'))
-            <a href="{{ route('ujian.index') }}" class="mbn-sheet-item">
-                <i class="bi bi-laptop"></i><span>Tes Online</span>
+            <a href="{{ route('ujian.index') }}" class="mbn-sheet-item {{ request()->routeIs('ujian.*') ? 'active' : '' }}">
+                <i class="bi bi-laptop"></i><span>Tahap 4 — Tes Online</span>
             </a>
             @endif
-            @if($tes4 && \Illuminate\Support\Facades\Route::has('peserta.wawancara.info'))
+            @if(\Illuminate\Support\Facades\Route::has('peserta.wawancara.info'))
             <a href="{{ route('peserta.wawancara.info') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.wawancara.*') ? 'active' : '' }}">
-                <i class="bi bi-people"></i><span>Wawancara</span>
+                <i class="bi bi-people"></i><span>Tahap 5 — Wawancara</span>
+            </a>
+            @endif
+            @if(\Illuminate\Support\Facades\Route::has('peserta.pembayaran.pelunasan'))
+            <a href="{{ route('peserta.pembayaran.pelunasan') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.pembayaran.pelunasan') || request()->routeIs('peserta.pembayaran.status-pelunasan') ? 'active' : '' }}">
+                <i class="bi bi-cash-stack"></i><span>Tahap 6 — Pelunasan</span>
             </a>
             @endif
             @if(\Illuminate\Support\Facades\Route::has('peserta.konfirmasi-diterima'))
-            <a href="{{ route('peserta.konfirmasi-diterima') }}" class="mbn-sheet-item">
-                <i class="bi bi-mortarboard"></i><span>Kelulusan</span>
+            <a href="{{ route('peserta.konfirmasi-diterima') }}" class="mbn-sheet-item {{ request()->routeIs('peserta.konfirmasi-diterima') ? 'active' : '' }}">
+                <i class="bi bi-mortarboard"></i><span>Tahap 7 — Kelulusan</span>
             </a>
             @endif
         </div>
