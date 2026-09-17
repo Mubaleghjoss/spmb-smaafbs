@@ -39,6 +39,14 @@ class RegistrationCategoryTest extends TestCase
         parent::tearDown();
     }
 
+    public function test_beranda_menampilkan_tombol_login_peserta_langsung(): void
+    {
+        $this->get('/')
+            ->assertOk()
+            ->assertSee('Sudah punya akun? Login Peserta')
+            ->assertSee(route('peserta.login'));
+    }
+
     public function test_form_menampilkan_periode_yang_sedang_dibuka(): void
     {
         $this->get('/daftar')

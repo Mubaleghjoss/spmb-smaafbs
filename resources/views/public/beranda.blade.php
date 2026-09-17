@@ -68,6 +68,10 @@
                         {{ $beranda['hero_tombol1_teks'] ?: 'Daftar Sekarang' }}
                         <span class="tk-btn-ico"><i class="bi bi-arrow-up-right"></i></span>
                     </a>
+                    <a href="{{ route('peserta.login') }}" class="tk-btn tk-btn-ghost" aria-label="Login Peserta SPMB">
+                        Sudah punya akun? Login Peserta
+                        <span class="tk-btn-ico"><i class="bi bi-box-arrow-in-right"></i></span>
+                    </a>
                     <a href="{{ route('alur-spmb') }}" class="tk-btn tk-btn-ghost">
                         {{ $beranda['hero_tombol2_teks'] ?: 'Lihat Alur SPMB' }}
                         <span class="tk-btn-ico"><i class="bi bi-arrow-right"></i></span>
