@@ -11,6 +11,18 @@
     .step-dot { width:34px; height:6px; border-radius:6px; background:#dee2e6; transition:background .3s; }
     .step-dot.done, .step-dot.current { background: var(--primary-color); }
     .periode-btn.selected { border-color: var(--primary-color) !important; box-shadow: 0 0 0 .15rem rgba(46,139,87,.25); }
+
+    .modal-komitmen .modal-content { overflow:hidden; border:0; border-radius:1.5rem; box-shadow:0 2rem 5rem rgba(5,30,18,.38); }
+    .modal-komitmen .modal-body { padding:0; }
+    .komitmen-hero { min-height:12rem; display:flex; align-items:end; position:relative; padding:1.5rem; color:#fff; background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); background-size:cover; background-position:center; isolation:isolate; }
+    .komitmen-hero::before { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(7,38,20,.08), rgba(7,38,20,.82)); }
+    .komitmen-mark { width:3.7rem; height:3.7rem; display:inline-flex; align-items:center; justify-content:center; border-radius:1.1rem; font-size:1.75rem; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); box-shadow:0 .8rem 2rem rgba(0,0,0,.16); animation: komitmenFloat 2.8s ease-in-out infinite; }
+    .komitmen-copy { font-size:1.02rem; line-height:1.75; color:#3f5148; }
+    .komitmen-action { min-height:3.35rem; }
+    .modal.show .modal-dialog { animation: komitmenMasuk .55s cubic-bezier(.22,1,.36,1); }
+    @keyframes komitmenMasuk { from { opacity:0; transform:translateY(1.5rem) scale(.96); } to { opacity:1; transform:none; } }
+    @keyframes komitmenFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-.35rem) rotate(3deg); } }
+    @media (max-width:575px) { .modal-komitmen .modal-dialog { margin:1rem; } .komitmen-hero { min-height:10.5rem; padding:1.25rem; } }
 </style>
 @endpush
 
@@ -67,6 +79,7 @@
                                   @js((string) old('telepon_ayah', '')),
                                   @js((string) old('telepon_ibu', ''))
                               )"
+                              x-on:komitmen-disetujui.window="setuju = true"
                               @submit="onSubmit($event)">
                             @csrf
                             <input type="hidden" name="tahun_ajaran_id" x-model="tahunAjaranId">
@@ -370,6 +383,39 @@
     </div>
 </section>
 
+@if($pendaftaranDibuka && ($spmb['popup_persetujuan_aktif'] ?? false))
+@php
+    $gambarKomitmen = !empty($spmb['popup_persetujuan_gambar'])
+        ? asset('storage/' . $spmb['popup_persetujuan_gambar'])
+        : (!empty($branding['logo']) ? asset('storage/' . $branding['logo']) : null);
+@endphp
+<div class="modal fade modal-komitmen" id="modalKomitmen" tabindex="-1" aria-labelledby="modalKomitmenLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-body">
+                <div class="komitmen-hero" @if($gambarKomitmen) style="background-image:url('{{ $gambarKomitmen }}')" @endif>
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="komitmen-mark"><i class="bi bi-shield-check"></i></span>
+                        <div>
+                            <div class="small text-uppercase fw-bold" style="letter-spacing:.12em">Sebelum memulai pendaftaran</div>
+                            <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">{{ $spmb['popup_persetujuan_judul'] }}</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="p-4 p-md-5 text-center">
+                    <div class="text-success mb-3"><i class="bi bi-heart-fill fs-4"></i></div>
+                    <p class="komitmen-copy mb-4">{{ $spmb['popup_persetujuan_teks'] }}</p>
+                    <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
+                        <i class="bi bi-check2-circle me-2"></i>Saya Bersedia, Lanjutkan Pendaftaran
+                    </button>
+                    <p class="small text-muted mb-0 mt-3"><i class="bi bi-info-circle me-1"></i>Dengan melanjutkan, Anda menyatakan telah memahami komitmen di atas.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Modal Syarat & Ketentuan --}}
 <div class="modal fade" id="modalSK" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -396,6 +442,20 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalElement = document.getElementById('modalKomitmen');
+    const tombolSetuju = document.getElementById('tombolSetujuKomitmen');
+    if (!modalElement || !tombolSetuju || typeof bootstrap === 'undefined') return;
+
+    const modalKomitmen = new bootstrap.Modal(modalElement);
+    modalKomitmen.show();
+    tombolSetuju.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('komitmen-disetujui'));
+        modalKomitmen.hide();
+        document.querySelector('.wizard-step.active')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, { once: true });
+});
+
 function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama, jkLama, telS, telA, telI) {
     return {
         step: 1,

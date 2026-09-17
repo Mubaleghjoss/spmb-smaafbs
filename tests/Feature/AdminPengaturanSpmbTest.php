@@ -34,4 +34,19 @@ class AdminPengaturanSpmbTest extends TestCase
             'nilai' => 'Lengkapi formulir lalu unggah bukti pembayaran formulir untuk memperoleh urutan kuota.',
         ]);
     }
+
+    public function test_admin_dapat_mengatur_popup_persetujuan_pendaftaran(): void
+    {
+        $this->withoutMiddleware();
+
+        $this->post(route('admin.pengaturan.spmb.simpan'), [
+            'popup_persetujuan_aktif' => '1',
+            'popup_persetujuan_judul' => 'Komitmen Calon Peserta Didik',
+            'popup_persetujuan_teks' => 'Saya bersedia mengikuti peraturan sekolah.',
+        ])->assertRedirect(route('admin.pengaturan.spmb'));
+
+        $this->assertDatabaseHas('pengaturan', ['kunci' => 'popup_persetujuan_aktif', 'nilai' => '1']);
+        $this->assertDatabaseHas('pengaturan', ['kunci' => 'popup_persetujuan_judul', 'nilai' => 'Komitmen Calon Peserta Didik']);
+        $this->assertDatabaseHas('pengaturan', ['kunci' => 'popup_persetujuan_teks', 'nilai' => 'Saya bersedia mengikuti peraturan sekolah.']);
+    }
 }

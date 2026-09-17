@@ -256,6 +256,10 @@ class PengaturanService
                 'keterangan_kuota_publik',
                 'Lengkapi formulir dan unggah bukti pembayaran formulir untuk memperoleh urutan kuota. Masuk kuota bukan keputusan diterima; keputusan resmi disampaikan melalui SK Kelulusan.'
             ),
+            'popup_persetujuan_aktif' => (bool) $this->ambil('popup_persetujuan_aktif', true),
+            'popup_persetujuan_judul' => $this->ambil('popup_persetujuan_judul', 'Komitmen Calon Peserta Didik'),
+            'popup_persetujuan_teks' => $this->ambil('popup_persetujuan_teks', 'Saya bersedia mengikuti peraturan dan ketentuan yang berlaku di SMA AFBS yang berada di bawah naungan LDII (Lembaga Dakwah Islam Indonesia) melalui Yayasan Dar Al Furqon Al Hakim.'),
+            'popup_persetujuan_gambar' => $this->ambil('popup_persetujuan_gambar', ''),
         ];
     }
 
@@ -290,7 +294,9 @@ class PengaturanService
             'biaya_total_dalam_kota', 'biaya_total_luar_kota',
             'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
-            'whatsapp_spmb', 'kontak_tim_spmb', 'keterangan_kuota_publik'
+            'whatsapp_spmb', 'kontak_tim_spmb', 'keterangan_kuota_publik',
+            'popup_persetujuan_aktif', 'popup_persetujuan_judul',
+            'popup_persetujuan_teks', 'popup_persetujuan_gambar'
         ];
 
         $filtered = array_intersect_key($data, array_flip($allowedKeys));
