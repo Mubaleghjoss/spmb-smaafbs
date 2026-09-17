@@ -891,6 +891,7 @@ class VerifikasiSpmbController extends Controller
      */
     public function luluskanPeserta(Request $request, Peserta $peserta): RedirectResponse
     {
+        $this->pastikanSiapKeputusanKelulusan($peserta);
         $skGelombangId = $this->validasiSkGelombangKelulusan($request, $peserta);
         $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId);
 
@@ -912,6 +913,7 @@ class VerifikasiSpmbController extends Controller
      */
     public function tidakLuluskanPeserta(Request $request, Peserta $peserta): RedirectResponse
     {
+        $this->pastikanSiapKeputusanKelulusan($peserta);
         $this->terapkanKelulusan($peserta, 'tidak_lulus');
 
         $this->catatLog(
@@ -934,6 +936,7 @@ class VerifikasiSpmbController extends Controller
         $skGelombangId = $this->validasiSkGelombangKelulusan($request);
         $pesertaMenunggu = Peserta::whereHas('tahapanSpmb', function ($q) {
             $q->where('tahap_saat_ini', 7)
+                ->where('tahap_6_selesai', true)
                 ->where(function ($q2) {
                     $q2->whereNull('status_kelulusan')
                         ->orWhere('status_kelulusan', '')
@@ -976,9 +979,16 @@ class VerifikasiSpmbController extends Controller
 
         $count = 0;
         $namaTerpilih = [];
+        $alasanDilewati = [];
         foreach ($pesertaIds as $pesertaId) {
             $peserta = Peserta::find($pesertaId);
-            if ($peserta && $this->terapkanKelulusan($peserta, 'lulus', $skGelombangId)) {
+            $alasan = $peserta ? $this->alasanBelumSiapKeputusanKelulusan($peserta->tahapanSpmb) : 'Peserta tidak ditemukan.';
+            if ($alasan) {
+                $alasanDilewati[] = $alasan;
+                continue;
+            }
+
+            if ($this->terapkanKelulusan($peserta, 'lulus', $skGelombangId)) {
                 $count++;
                 $namaTerpilih[] = $peserta->nama;
             }
@@ -997,7 +1007,8 @@ class VerifikasiSpmbController extends Controller
         );
 
         return redirect()->route('admin.verifikasi.kelulusan')
-            ->with('success', "{$count} peserta berhasil diluluskan.");
+            ->with('success', "{$count} peserta berhasil diluluskan.")
+            ->with('warning', $this->ringkasanPesertaDilewati($alasanDilewati));
     }
 
     /**
@@ -1015,13 +1026,21 @@ class VerifikasiSpmbController extends Controller
         }
 
         $count = 0;
+        $alasanDilewati = [];
         foreach ($pesertaIds as $pesertaId) {
             $peserta = Peserta::find($pesertaId);
-            if ($peserta && $this->terapkanKelulusan($peserta, 'tidak_lulus')) $count++;
+            $alasan = $peserta ? $this->alasanBelumSiapKeputusanKelulusan($peserta->tahapanSpmb) : 'Peserta tidak ditemukan.';
+            if ($alasan) {
+                $alasanDilewati[] = $alasan;
+                continue;
+            }
+
+            if ($this->terapkanKelulusan($peserta, 'tidak_lulus')) $count++;
         }
 
         return redirect()->route('admin.verifikasi.kelulusan')
-            ->with('success', "{$count} peserta ditandai tidak lulus.");
+            ->with('success', "{$count} peserta ditandai tidak lulus.")
+            ->with('warning', $this->ringkasanPesertaDilewati($alasanDilewati));
     }
 
     /**
@@ -1585,10 +1604,50 @@ class VerifikasiSpmbController extends Controller
      * Terapkan status kelulusan pada tahapan peserta.
      * Mengembalikan true jika berhasil, false jika tahapan tidak ditemukan.
      */
+    private function alasanBelumSiapKeputusanKelulusan(?\App\Models\TahapanSpmb $tahapan): ?string
+    {
+        if (!$tahapan) {
+            return 'Tahapan peserta belum tersedia. Lengkapi tahapan peserta terlebih dahulu.';
+        }
+
+        if ((int) $tahapan->tahap_saat_ini < 7) {
+            return "Peserta masih berada di Tahap {$tahapan->tahap_saat_ini}. Selesaikan Tahap {$tahapan->tahap_saat_ini} terlebih dahulu sebelum menetapkan kelulusan.";
+        }
+
+        if (!$tahapan->tahap_6_selesai) {
+            return 'Tahap 6 (pembayaran) peserta belum lunas/terverifikasi. Selesaikan Tahap 6 terlebih dahulu sebelum menetapkan kelulusan.';
+        }
+
+        return null;
+    }
+
+    private function pastikanSiapKeputusanKelulusan(Peserta $peserta): void
+    {
+        $peserta->loadMissing('tahapanSpmb');
+        $alasan = $this->alasanBelumSiapKeputusanKelulusan($peserta->tahapanSpmb);
+
+        if ($alasan) {
+            throw \Illuminate\Validation\ValidationException::withMessages(['kelulusan' => $alasan]);
+        }
+    }
+
+    private function ringkasanPesertaDilewati(array $alasanDilewati): ?string
+    {
+        if (empty($alasanDilewati)) {
+            return null;
+        }
+
+        $ringkasan = collect($alasanDilewati)->countBy()->map(
+            fn (int $jumlah, string $alasan) => "{$jumlah} peserta: {$alasan}"
+        )->implode(' ');
+
+        return 'Peserta yang dilewati — ' . $ringkasan;
+    }
+
     private function terapkanKelulusan(Peserta $peserta, string $status, ?string $skGelombangId = null): bool
     {
         $tahapan = $peserta->tahapanSpmb;
-        if (!$tahapan) {
+        if ($this->alasanBelumSiapKeputusanKelulusan($tahapan)) {
             return false;
         }
 
