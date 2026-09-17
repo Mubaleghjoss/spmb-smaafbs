@@ -585,6 +585,18 @@ class PesertaController extends Controller
             $skGelombangId
         );
 
+        $this->catatLog(
+            'tahapan.pindahkan_massal',
+            LogAktivitas::KAT_PESERTA,
+            "Memindahkan {$count} peserta ke Tahap {$tahapBaru}",
+            data: [
+                'jumlah_peserta' => $count,
+                'peserta_ids' => $validated['peserta_ids'],
+                'tahap_baru' => $tahapBaru,
+                'luluskan_final' => $luluskanFinal,
+            ],
+        );
+
         $tahapLabels = [
             1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',
             4 => 'Tes Online', 5 => 'Wawancara', 6 => 'Pelunasan', 7 => 'Kelulusan'
@@ -809,6 +821,15 @@ class PesertaController extends Controller
         $tahapBaru = (int) $validated['tahap_baru'];
 
         $this->pesertaService->pindahkanTahap($peserta, $tahapBaru, auth('pengguna')->id());
+
+        $this->catatLog(
+            'tahapan.pindahkan_manual',
+            LogAktivitas::KAT_PESERTA,
+            "Memindahkan {$peserta->nama} ke Tahap {$tahapBaru}",
+            $peserta,
+            ['tahap_baru' => $tahapBaru],
+            $peserta->tahun_ajaran_id,
+        );
 
         $tahapLabels = [
             1 => 'Pendaftaran', 2 => 'Isi Formulir', 3 => 'Bayar Formulir',
