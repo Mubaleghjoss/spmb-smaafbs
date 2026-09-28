@@ -14,7 +14,22 @@ def main() -> None:
     while True:
         for update in _call(config, 'getUpdates', {'offset':offset, 'timeout':30}).get('result', []):
             offset = update['update_id'] + 1; message = update.get('message')
+            callback = update.get('callback_query')
+            if callback:
+                result = handler.handle_callback_query(callback)
+                if result:
+                    callback_message = callback.get('message', {})
+                    payload = {'chat_id': callback_message.get('chat', {}).get('id'), 'text': result['text'], 'parse_mode': 'Markdown'}
+                    if result.get('reply_markup'):
+                        payload['reply_markup'] = result['reply_markup']
+                    _call(config, 'sendMessage', payload)
+                    _call(config, 'answerCallbackQuery', {'callback_query_id': callback.get('id')})
+                continue
             if message:
                 response = handler.handle_message(message)
-                if response: _call(config, 'sendMessage', {'chat_id':message['chat']['id'], 'text':response, 'parse_mode':'Markdown'})
+                if response:
+                    payload = {'chat_id':message['chat']['id'], 'text':response, 'parse_mode':'Markdown'}
+                    if handler.last_reply_markup:
+                        payload['reply_markup'] = handler.last_reply_markup
+                    _call(config, 'sendMessage', payload)
 if __name__ == '__main__': main()

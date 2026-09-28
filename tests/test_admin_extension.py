@@ -1,7 +1,9 @@
 import logging
+import os
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from bot.config import Config
 from bot.formatter import format_response
@@ -43,6 +45,40 @@ class AdminExtensionTests(unittest.TestCase):
 
     def tearDown(self):
         Path(self.context_db.name).unlink(missing_ok=True)
+
+    def test_from_env_keeps_admin_extension_disabled_when_unconfigured(self):
+        base = {
+            'APP_ENV': 'staging',
+            'SPMB_ADMIN_EXTENSION_ENABLED': 'true',
+            'ALLOWED_TELEGRAM_USER_IDS': '7',
+        }
+        with patch.dict(os.environ, base, clear=True):
+            config = Config.from_env()
+        self.assertFalse(config.admin_extension_enabled)
+
+    def test_from_env_enables_only_staging_with_both_allowlists(self):
+        enabled = {
+            'APP_ENV': 'staging',
+            'SPMB_ADMIN_EXTENSION_ENABLED': 'true',
+            'ALLOWED_TELEGRAM_USER_IDS': '7',
+            'ALLOWED_ADMIN_CHAT_IDS': '77',
+        }
+        with patch.dict(os.environ, enabled, clear=True):
+            self.assertTrue(Config.from_env().admin_extension_enabled)
+        production = dict(enabled, APP_ENV='production')
+        with patch.dict(os.environ, production, clear=True):
+            self.assertFalse(Config.from_env().admin_extension_enabled)
+
+    def test_disabled_admin_returns_safe_message(self):
+        config = Config(
+            allowed_group_id='official',
+            allowed_telegram_user_ids=('7',),
+            allowed_admin_chat_ids=('77',),
+            admin_extension_enabled=False,
+            context_db_path=self.context_db.name,
+        )
+        bot = MessageHandler(config, FakeApi(), ai_parser=lambda *_: None)
+        self.assertEqual(bot.handle_message(message('/status')), 'Fitur admin staging belum diaktifkan.')
 
     def test_admin_commands_are_deterministic_and_private_authorized(self):
         status = self.bot.handle_message(message('/status'))

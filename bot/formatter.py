@@ -12,7 +12,8 @@ def _list(data) -> str:
     else:
         data, total = (data, len(data)) if isinstance(data, list) else ([], 0)
     if not data: return 'Tidak ada pendaftar yang ditemukan.'
-    shown = data[:10]
+    limit = meta.get('per_page') or meta.get('limit') or len(data)
+    shown = data[:int(limit) if isinstance(limit, (int, float)) and limit > 0 else len(data)]
     text = '*Daftar Pendaftar*\n' + '\n\n'.join(_applicant(x, i) for i, x in enumerate(shown, 1))
     page = meta.get('current_page') or meta.get('page')
     pages = meta.get('last_page') or meta.get('total_pages')

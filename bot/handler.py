@@ -7,6 +7,7 @@ import re
 from typing import Callable, Optional
 
 from .api_client import ApiClient
+from .callbacks import build_inline_keyboard, parse_callback_data
 from .config import Config
 from .context_store import ContextStore
 from .formatter import format_response
@@ -46,6 +47,7 @@ class MessageHandler:
         self.api_client = api_client or ApiClient(config)
         self.ai_parser = ai_parser
         self.context_store = context_store or ContextStore(config.context_db_path, config.context_ttl_seconds)
+        self.last_reply_markup = None
 
     @staticmethod
     def _conversation_key(message_data: dict) -> tuple[str, str]:
@@ -86,6 +88,11 @@ class MessageHandler:
         meta = self._payload_meta(payload)
         page = int(filters.get('page', meta.get('current_page') or meta.get('page') or 1))
         last_page = meta.get('last_page') or meta.get('total_pages')
+        if not last_page:
+            total = meta.get('total')
+            limit = int(filters.get('limit', 10))
+            if isinstance(total, (int, float)) and limit > 0:
+                last_page = max(1, (int(total) + limit - 1) // limit)
         self.context_store.set(*key, {
             'intent': intent,
             'filters': filters,
@@ -94,6 +101,71 @@ class MessageHandler:
             'last_action': intent['action'],
             'last_results': items,
         })
+
+    def _set_list_markup(self, key):
+        state = self._state(key) or {}
+        self.last_reply_markup = build_inline_keyboard(
+            page=int(state.get('page', 1)), last_page=state.get('last_page')
+        )
+
+    def handle_callback_query(self, callback_data: dict) -> dict | None:
+        """Handle only signed-by-context, allowlisted callback operations."""
+        query = callback_data if isinstance(callback_data, dict) else {}
+        parsed = parse_callback_data(query.get('data'))
+        callback_message = query.get('message') or {}
+        if not parsed:
+            return {'text': 'Tombol sudah tidak berlaku.'}
+        message = {
+            'chat': callback_message.get('chat', {}),
+            'from': query.get('from', {}),
+            'text': '',
+        }
+        if not should_process(message, self.config.bot_username, self.config.allowed_group_id, self.config.allowed_telegram_user_ids):
+            return {'text': 'Tombol tidak berwenang digunakan.'}
+        error = authorization_error(message, self.config)
+        if error:
+            return {'text': error}
+        key = self._conversation_key(message)
+        state = self._state(key) or {}
+        action, value = parsed
+        if action in {'prev', 'next', 'reload'}:
+            if not state.get('intent') or state.get('last_action') not in _LIST_ACTIONS:
+                return {'text': 'Belum ada daftar sebelumnya.'}
+            current = int(state.get('page', 1))
+            page = current + (-1 if action == 'prev' else 1) if action != 'reload' else current
+            last_page = state.get('last_page')
+            if action == 'prev' and page < 1:
+                return {'text': 'Sudah di halaman pertama.'}
+            if action == 'next' and last_page and page > int(last_page):
+                return {'text': 'Sudah di halaman terakhir.'}
+            intent = {'action': state['intent']['action'], 'filters': dict(state.get('filters', {}))}
+            intent['filters']['page'] = page
+            intent['filters'].setdefault('limit', 10)
+        elif action == 'list':
+            intent = {'action': 'list_applicants', 'filters': dict(state.get('filters', {}))}
+            intent['filters'].pop('page', None)
+        elif action == 'stats':
+            intent = {'action': 'get_statistics', 'filters': dict(state.get('filters', {}))}
+        elif action == 'stage':
+            intent = {'action': 'list_applicants', 'filters': dict(state.get('filters', {}), tahapan=int(value))}
+            intent['filters'].pop('page', None)
+        elif action == 'docs':
+            intent = {'action': 'list_by_document_status', 'filters': dict(state.get('filters', {}), document_status=value)}
+            intent['filters'].pop('page', None)
+        else:
+            self.last_reply_markup = build_inline_keyboard()
+            return {'text': 'Menu SPMB: pilih salah satu pilihan di bawah.', 'reply_markup': self.last_reply_markup}
+        intent = validate_intent(intent)
+        if not intent:
+            return {'text': 'Filter tombol tidak valid.'}
+        payload = self.api_client.query(intent, str(message.get('from', {}).get('id', '')))
+        items = self._payload_items(payload)
+        if payload.get('status') == 'success' and intent['action'] in _LIST_ACTIONS:
+            self._save_list_state(key, intent, payload, items)
+            self._set_list_markup(key)
+        else:
+            self.last_reply_markup = build_inline_keyboard()
+        return {'text': format_response(intent, payload), 'reply_markup': self.last_reply_markup}
 
     def _call_ai(self, text: str, state: dict) -> dict | None:
         # Keep compatibility with phase-1/2 test callbacks while allowing the
@@ -113,6 +185,7 @@ class MessageHandler:
             return None
 
     def handle_message(self, message_data: dict) -> Optional[str]:
+        self.last_reply_markup = None
         if not should_process(message_data, self.config.bot_username, self.config.allowed_group_id, self.config.allowed_telegram_user_ids):
             return None
         text = (message_data.get('text') or '').strip()
@@ -212,6 +285,7 @@ class MessageHandler:
                 return 'Sudah di halaman pertama.'
             if payload.get('status') == 'success':
                 self._save_list_state(key, intent, payload, items)
+                self._set_list_markup(key)
             return format_response(intent, payload)
 
         intent = validate_intent(parsed)
@@ -265,6 +339,7 @@ class MessageHandler:
         items = self._payload_items(payload)
         if payload.get('status') == 'success':
             self._save_list_state(key, intent, payload, items)
+            self._set_list_markup(key)
         if intent['action'] == 'list_applicants' and self._is_biodata_list_request(text) and len(items) == 1:
             return self._detail_from_item(items[0], message_data)
         return format_response(intent, payload)

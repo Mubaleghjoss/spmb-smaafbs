@@ -30,7 +30,8 @@ ACTIONS = frozenset({
 TAHAPAN_ALIASES = {
     'buat akun': 1, 'isi formulir': 2, 'bayar formulir': 3,
     'tes online': 4, 'tes daring': 4, 'online': 4,
-    'online test': 4, 'online-test': 4, 'ujian online': 4,
+    'online test': 4, 'online-test': 4, 'sedang tes online': 4,
+    'sedang tes daring': 4, 'sedang online test': 4, 'ujian online': 4,
     'wawancara': 5, 'bayar pertama': 6, 'resmi diterima': 7,
 }
 
@@ -184,7 +185,7 @@ def parse_deterministic(text: str) -> dict | None:
 
     # Deterministic conversational filters. Values intentionally match the API contract.
     filter_patterns = (
-        (r'(?:tahap(?:an)?\s*)?(?:tes\s+online|tes\s+daring|online\s+test|online-test|ujian\s+online|online)', 'tahapan', 4),
+        (r'(?:tahap(?:an)?\s*)?(?:(?:sedang\s+)?tes\s+online|(?:sedang\s+)?tes\s+daring|(?:sedang\s+)?online\s+test|online-test|ujian\s+online|online)', 'tahapan', 4),
         (r'tahap(?:an)?\s*4', 'tahapan', 4),
         (r'(?:jalur\s+)?(?:siswa\s+baru|baru)', 'jenis_pendaftaran', 'siswa_baru'),
         (r'(?:jalur\s+)?(?:siswa\s+pindahan|pindahan|transfer)', 'jenis_pendaftaran', 'pindahan'),

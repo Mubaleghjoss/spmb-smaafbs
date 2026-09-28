@@ -37,6 +37,9 @@ class Config:
             admin_extension_enabled=(
                 os.getenv('SPMB_ADMIN_EXTENSION_ENABLED', '').lower() == 'true'
                 and os.getenv('APP_ENV', '').lower() in {'staging', 'testing'}
+                # Fail closed until both sides of the allowlist are present.
+                and bool(_ids(os.getenv('ALLOWED_TELEGRAM_USER_IDS', '')))
+                and bool(_ids(os.getenv('ALLOWED_ADMIN_CHAT_IDS', '')))
             ),
             # Runtime fallback is intentionally pinned to Luna; deployment
             # configuration must not silently change the model contract.
