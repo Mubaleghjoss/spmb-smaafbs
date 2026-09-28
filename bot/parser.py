@@ -21,7 +21,31 @@ ACTIONS = frozenset({
     'list_by_verification_status',
     'list_registered_today',
     'gender_summary',
+    'get_applicant_progress',
+    'lookup_payment_proof',
+    'lookup_document_proof',
+    'get_extension_status',
 })
+
+TAHAPAN_ALIASES = {
+    'buat akun': 1, 'isi formulir': 2, 'bayar formulir': 3,
+    'tes online': 4, 'tes daring': 4, 'online': 4,
+    'online test': 4, 'online-test': 4, 'ujian online': 4,
+    'wawancara': 5, 'bayar pertama': 6, 'resmi diterima': 7,
+}
+
+
+def normalize_tahapan(value: object) -> int | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int) and 1 <= value <= 7:
+        return value
+    if isinstance(value, str):
+        raw = value.strip().lower().replace('_', ' ')
+        if raw.isdigit() and 1 <= int(raw) <= 7:
+            return int(raw)
+        return TAHAPAN_ALIASES.get(raw)
+    return None
 
 FILTERS = frozenset({
     'query',
@@ -39,6 +63,8 @@ FILTERS = frozenset({
     'status_kuota',
     'page',
     'limit',
+    'proof_type',
+    'document_type',
 })
 
 CONTROL_COMMANDS = frozenset({'/setupid', '/whoami'})
@@ -101,6 +127,11 @@ def _extract_academic_year(text: str) -> tuple[str | None, str]:
     return normalized, remaining
 
 
+def extract_academic_year(text: str) -> str | None:
+    """Return the normalized academic year embedded in free-form text."""
+    return _extract_academic_year(text)[0]
+
+
 def _clean_command(value: str) -> str:
     value = re.sub(r'[?!.,:]+', ' ', value)
     value = re.sub(r'\s+', ' ', value)
@@ -125,6 +156,23 @@ def parse_deterministic(text: str) -> dict | None:
 
     year_filters = {'tahun_ajaran': year} if year else {}
 
+    if command in {'/status', 'status', '/progress', 'progress'}:
+        return {'action': 'get_extension_status', 'filters': {}}
+
+    admin_match = re.fullmatch(r'(?:/)?(?:progress|status)\s+([^\s]+)', without_year.strip(), re.I)
+    if admin_match:
+        return {'action': 'get_applicant_progress', 'filters': {'identifier': admin_match.group(1)}}
+    proof_match = re.fullmatch(r'(?:/)?(?:bukti[_ -]?bayar|pembayaran)\s+([^\s]+)(?:\s+(formulir|pertama))?', without_year.strip(), re.I)
+    if proof_match:
+        filters = {'identifier': proof_match.group(1)}
+        if proof_match.group(2): filters['proof_type'] = proof_match.group(2)
+        return {'action': 'lookup_payment_proof', 'filters': filters}
+    doc_match = re.fullmatch(r'(?:/)?(?:bukti[_ -]?dokumen|dokumen)\s+([^\s]+)(?:\s+([a-z0-9_ -]+))?', without_year.strip(), re.I)
+    if doc_match:
+        filters = {'identifier': doc_match.group(1)}
+        if doc_match.group(2): filters['document_type'] = doc_match.group(2).strip()
+        return {'action': 'lookup_document_proof', 'filters': filters}
+
     if command in {'reset', '/reset', 'mulai lagi', 'hapus konteks'}:
         return {'action': 'reset', 'filters': {}}
     if command in {'lanjut', 'berikutnya', 'selanjutnya', 'next', 'next page', 'halaman berikutnya'}:
@@ -136,6 +184,8 @@ def parse_deterministic(text: str) -> dict | None:
 
     # Deterministic conversational filters. Values intentionally match the API contract.
     filter_patterns = (
+        (r'(?:tahap(?:an)?\s*)?(?:tes\s+online|tes\s+daring|online\s+test|online-test|ujian\s+online|online)', 'tahapan', 4),
+        (r'tahap(?:an)?\s*4', 'tahapan', 4),
         (r'(?:jalur\s+)?(?:siswa\s+baru|baru)', 'jenis_pendaftaran', 'siswa_baru'),
         (r'(?:jalur\s+)?(?:siswa\s+pindahan|pindahan|transfer)', 'jenis_pendaftaran', 'pindahan'),
         (r'(?:jenis\s+kelamin\s+)?(?:laki[ -]?laki|laki|pria|\bL\b)', 'gender', 'L'),
@@ -157,7 +207,10 @@ def parse_deterministic(text: str) -> dict | None:
     if class_match:
         extracted['kelas_tujuan'] = int(class_match.group(1))
         remaining = remaining[:class_match.start()] + ' ' + remaining[class_match.end():]
-    if extracted and (remaining.strip() in {'', 'pendaftar', 'siswa', 'data pendaftar', 'data siswa', 'jalur'}):
+    if extracted and (remaining.strip() in {
+        '', 'pendaftar', 'siswa', 'peserta', 'participant', 'participants',
+        'applicant', 'applicants', 'data pendaftar', 'data siswa', 'jalur',
+    }):
         if extracted.get('jenis_pendaftaran') == 'siswa_baru' and extracted.get('kelas_tujuan') == 11:
             return {'action': 'incompatible_filter', 'filters': extracted}
         return {'action': 'list_applicants', 'filters': extracted}
@@ -281,6 +334,22 @@ def parse_number_selection(text: str) -> int | None:
     }[raw]
 
 
+def parse_number_range(text: str) -> tuple[int, int] | None:
+    """Parse a requested applicant number range, such as ``11-18``."""
+    value = _clean_command(text)
+    match = re.search(
+        r'(?<!\d)(\d+)\s*(?:-|–|—|sampai|hingga|s\/d)\s*(\d+)(?!\d)',
+        value,
+        re.I,
+    )
+    if not match:
+        return None
+    start, end = int(match.group(1)), int(match.group(2))
+    if start < 1 or end < start:
+        return None
+    return start, end
+
+
 def is_dangerous_text(text: str) -> bool:
     return bool(DANGEROUS.search(text or ''))
 
@@ -307,6 +376,13 @@ def validate_intent(intent: object) -> dict | None:
     validated_filters: dict = {}
 
     for key, value in filters.items():
+        if key == 'tahapan':
+            normalized_stage = normalize_tahapan(value)
+            if normalized_stage is None:
+                return None
+            validated_filters[key] = normalized_stage
+            continue
+
         if key == 'tahun_ajaran':
             normalized = normalize_academic_year(value)
 

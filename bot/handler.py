@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import inspect
+import logging
 import re
 from typing import Callable, Optional
 
@@ -13,6 +14,8 @@ from .parser import (
     is_dangerous_text,
     parse_control_command,
     parse_deterministic,
+    extract_academic_year,
+    parse_number_range,
     parse_number_selection,
     parse_with_ai,
     validate_intent,
@@ -23,7 +26,9 @@ from .security import (
     BOOTSTRAP_SETUPID_MESSAGE,
     READ_ONLY_MESSAGE,
     WAITING_GROUP_MESSAGE,
+    admin_authorization_error,
     authorization_error,
+    is_admin_command,
     is_write_request,
 )
 
@@ -121,6 +126,16 @@ class MessageHandler:
         error = authorization_error(message_data, self.config)
         if error:
             return error
+        if is_admin_command(text):
+            admin_error = admin_authorization_error(message_data, self.config)
+            logging.getLogger('spmb.bot.audit').info(
+                'admin_command action=%s chat_type=%s authorized=%s',
+                text.split(maxsplit=1)[0].lower() if text else 'unknown',
+                message_data.get('chat', {}).get('type'),
+                not bool(admin_error),
+            )
+            if admin_error:
+                return admin_error
         if control == '/setupid':
             return self._setup_id_response(message_data)
         if control == '/whoami':
@@ -141,7 +156,25 @@ class MessageHandler:
                 return 'Nomor itu tidak ada pada daftar terakhir.'
             return 'Belum ada daftar sebelumnya. Coba minta daftar peserta terlebih dahulu.'
 
-        parsed = parse_deterministic(text)
+        number_range = parse_number_range(text)
+        if number_range is not None:
+            start, end = number_range
+            requested = end - start + 1
+            # The read API exposes page/limit rather than an offset.  The
+            # screenshot flow (11-18) therefore maps to page 2 of 8; keep
+            # any previously selected academic year and other list filters.
+            parsed = {
+                'action': 'list_applicants',
+                'filters': {
+                    'page': ((start - 1) // requested) + 1,
+                    'limit': requested,
+                },
+            }
+            year = extract_academic_year(text)
+            if year:
+                parsed['filters']['tahun_ajaran'] = year
+        else:
+            parsed = parse_deterministic(text)
         if parsed and parsed['action'] == 'reset':
             self.context_store.clear(*key)
             return 'Konteks pencarian sudah direset.'
@@ -187,6 +220,28 @@ class MessageHandler:
             intent = validate_intent(candidate)
         if not intent:
             return FALLBACK_MESSAGE
+
+        if intent['action'] in {'get_extension_status', 'get_applicant_progress', 'lookup_payment_proof', 'lookup_document_proof'}:
+            admin_error = admin_authorization_error(message_data, self.config)
+            if admin_error:
+                logging.getLogger('spmb.bot.audit').info(
+                    'admin_intent action=%s chat_type=%s authorized=False',
+                    intent['action'], message_data.get('chat', {}).get('type'),
+                )
+                return admin_error
+
+        if intent['action'] == 'get_extension_status':
+            payload = {'status': 'success', 'data': {
+                'stage': 'staging-only',
+                'status': 'read-only',
+                'test': 'verified by local test command',
+                'health': {
+                    'api_configured': bool(self.config.spmb_api_base_url and self.config.spmb_data_bot_token),
+                    'ai_fallback_configured': bool(self.config.ai_router_url),
+                },
+                'blocker': 'signed private document/payment delivery unavailable in current API contract',
+            }}
+            return format_response(intent, payload)
 
         if intent['action'] not in _LIST_ACTIONS:
             payload = self.api_client.query(intent, str(message_data.get('from', {}).get('id', '')))

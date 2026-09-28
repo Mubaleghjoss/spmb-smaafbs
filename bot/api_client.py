@@ -14,6 +14,14 @@ class ApiClient:
             with request.urlopen(req, timeout=15) as response: return json.load(response)
         except error.HTTPError as exc:
             messages = {401:'Unauthorized',400:'Bad Request',504:'API Timeout'}
-            return {'status':'error','message':messages.get(exc.code, 'Server Error' if exc.code >= 500 else 'API Error'),'code':exc.code}
+            try:
+                body = json.load(exc)
+            except (ValueError, OSError):
+                body = {}
+            if isinstance(body, dict) and isinstance(body.get('message'), str) and body['message'].strip():
+                message = body['message']
+            else:
+                message = messages.get(exc.code, 'Server Error' if exc.code >= 500 else 'API Error')
+            return {'status':'error','message':message,'code':exc.code}
         except (error.URLError, TimeoutError): return {'status':'error','message':'API Timeout','code':504}
         except (ValueError, OSError): return {'status':'error','message':'Server Error','code':500}

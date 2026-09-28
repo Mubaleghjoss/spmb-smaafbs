@@ -16,6 +16,8 @@ class Config:
     spmb_data_bot_token: str = ''
     allowed_group_id: str = 'WAITING'
     allowed_telegram_user_ids: tuple[str, ...] = ()
+    allowed_admin_chat_ids: tuple[str, ...] = ()
+    admin_extension_enabled: bool = False
     ai_fallback_model: str = 'cx/gpt-5.6-luna'
     ai_router_url: str = 'http://127.0.0.1:20128/v1'
     ai_router_api_key: str = ''
@@ -31,6 +33,11 @@ class Config:
             spmb_data_bot_token=os.getenv('SPMB_DATA_BOT_TOKEN', ''),
             allowed_group_id=os.getenv('ALLOWED_GROUP_ID', 'WAITING'),
             allowed_telegram_user_ids=_ids(os.getenv('ALLOWED_TELEGRAM_USER_IDS', '')),
+            allowed_admin_chat_ids=_ids(os.getenv('ALLOWED_ADMIN_CHAT_IDS', '')),
+            admin_extension_enabled=(
+                os.getenv('SPMB_ADMIN_EXTENSION_ENABLED', '').lower() == 'true'
+                and os.getenv('APP_ENV', '').lower() in {'staging', 'testing'}
+            ),
             # Runtime fallback is intentionally pinned to Luna; deployment
             # configuration must not silently change the model contract.
             ai_fallback_model=cls.ai_fallback_model,
