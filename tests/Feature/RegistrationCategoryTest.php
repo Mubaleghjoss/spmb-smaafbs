@@ -49,6 +49,18 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('Pindahan');
     }
 
+    public function test_form_menampilkan_modal_komitmen_dengan_tiga_logo_responsif(): void
+    {
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('modalKomitmen')
+            ->assertSee('Logo SMA Al-Furqon Boarding School (SMA AFBS)')
+            ->assertSee('Logo Yayasan Dar Al Furqon Al Hakim')
+            ->assertSee('https://ldiijabar.or.id/wp-content/uploads/2020/08/cropped-logo-ldii.png')
+            ->assertSee('grid-template-columns: repeat(3, minmax(0, 1fr))')
+            ->assertSee('grid-template-columns: 1fr');
+    }
+
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void
     {
         app(PengaturanService::class)->simpan('pendaftaran_buka', '0');

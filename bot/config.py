@@ -24,6 +24,9 @@ class Config:
     bot_username: str = 'SPMBAFBSBot'
     context_db_path: str = 'context.sqlite3'
     context_ttl_seconds: int = 86400
+    session_mode: str = 'staging'
+    production_dispatcher_path: str = '/home/hermesadmin/bin/smaafbs-prod-dispatch'
+    production_confirmation_token: str = ''
 
     @classmethod
     def from_env(cls) -> 'Config':
@@ -49,4 +52,7 @@ class Config:
             bot_username=os.getenv('BOT_USERNAME', cls.bot_username),
             context_db_path=os.getenv('CONTEXT_DB_PATH', cls.context_db_path),
             context_ttl_seconds=int(os.getenv('CONTEXT_TTL_SECONDS', str(cls.context_ttl_seconds))),
+            session_mode=os.getenv('SPMB_SESSION_MODE', cls.session_mode).strip().lower(),
+            production_dispatcher_path='/home/hermesadmin/bin/smaafbs-prod-dispatch',
+            production_confirmation_token=os.getenv('SPMB_PRODUCTION_CONFIRMATION_TOKEN', ''),
         )

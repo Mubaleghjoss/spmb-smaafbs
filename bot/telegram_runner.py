@@ -9,7 +9,8 @@ def _call(config: Config, method: str, payload: dict) -> dict:
     req = request.Request('https://api.telegram.org/bot%s/%s' % (config.telegram_bot_token, method), data=json.dumps(payload).encode(), headers={'Content-Type':'application/json'}, method='POST')
     with request.urlopen(req, timeout=35) as response: return json.load(response)
 def main() -> None:
-    config, handler, offset = Config.from_env(), MessageHandler(Config.from_env()), 0
+    config, offset = Config.from_env(), 0
+    handler = MessageHandler(config)
     if not config.telegram_bot_token: raise RuntimeError('TELEGRAM_BOT_TOKEN is required')
     while True:
         for update in _call(config, 'getUpdates', {'offset':offset, 'timeout':30}).get('result', []):

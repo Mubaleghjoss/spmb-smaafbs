@@ -23,6 +23,12 @@ from .parser import (
     FALLBACK_MESSAGE,
 )
 from .privacy import should_process
+from .routing import (
+    SessionRouter,
+    is_status_command,
+    parse_mode_command,
+    production_rejection,
+)
 from .security import (
     BOOTSTRAP_SETUPID_MESSAGE,
     READ_ONLY_MESSAGE,
@@ -47,6 +53,7 @@ class MessageHandler:
         self.api_client = api_client or ApiClient(config)
         self.ai_parser = ai_parser
         self.context_store = context_store or ContextStore(config.context_db_path, config.context_ttl_seconds)
+        self.session_router = SessionRouter(config.session_mode)
         self.last_reply_markup = None
 
     @staticmethod
@@ -199,6 +206,35 @@ class MessageHandler:
         error = authorization_error(message_data, self.config)
         if error:
             return error
+
+        mode_command = parse_mode_command(text)
+        if mode_command.is_command:
+            if mode_command.requested is None:
+                return 'Mode saat ini: *%s*. Gunakan /mode staging atau /mode production.' % self.session_router.mode_for(message_data.get('chat', {}).get('id')).upper()
+            if mode_command.requested not in {'staging', 'production'}:
+                return 'Mode tidak dikenal. Pilih hanya: staging atau production.'
+            self.session_router.set_mode(message_data.get('chat', {}).get('id'), mode_command.requested)
+            return 'Mode sesi diubah ke *%s*.' % mode_command.requested.upper()
+
+        chat_id = message_data.get('chat', {}).get('id')
+        current_mode = self.session_router.mode_for(chat_id)
+        if current_mode == 'production':
+            if is_status_command(text):
+                return self.session_router.status_text(chat_id)
+            if control not in {'/setupid', '/whoami'}:
+                return production_rejection(text)
+
+        if is_status_command(text):
+            if message_data.get('chat', {}).get('type') not in {'group', 'supergroup'}:
+                admin_error = admin_authorization_error(message_data, self.config)
+                if admin_error:
+                    return admin_error
+            return self.session_router.status_text(chat_id) + (
+                '\nStatus: read-only\n'
+                'Test: verified by local test command\n'
+                'Blocker: signed private document/payment delivery unavailable in current API contract'
+            )
+
         if is_admin_command(text):
             admin_error = admin_authorization_error(message_data, self.config)
             logging.getLogger('spmb.bot.audit').info(
