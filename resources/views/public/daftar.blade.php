@@ -11,6 +11,23 @@
     .step-dot { width:34px; height:6px; border-radius:6px; background:#dee2e6; transition:background .3s; }
     .step-dot.done, .step-dot.current { background: var(--primary-color); }
     .periode-btn.selected { border-color: var(--primary-color) !important; box-shadow: 0 0 0 .15rem rgba(46,139,87,.25); }
+
+    .modal-komitmen .modal-content { overflow: hidden; border: 0; border-radius: 1.5rem; box-shadow: 0 2rem 5rem rgba(5,30,18,.38); }
+    .modal-komitmen .modal-body { padding: 0; }
+    .komitmen-logos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; }
+    .komitmen-logo { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: .65rem; padding: 1rem .75rem; border: 1px solid rgba(16,36,26,.1); border-radius: 1rem; background: #fff; }
+    .komitmen-logo img { display: block; width: 100%; min-height: 7rem; height: 7rem; object-fit: contain; object-position: center; }
+    .komitmen-logo img[alt*="LDII"] { padding: .35rem; }
+    .komitmen-logo figcaption { width: 100%; color: var(--tk-ink); font-size: .78rem; line-height: 1.35; text-align: center; overflow-wrap: anywhere; }
+    .komitmen-copy { font-size: 1.02rem; line-height: 1.75; color: #3f5148; }
+    .komitmen-action { min-height: 3.35rem; }
+    @media (max-width: 575.98px) {
+        .modal-komitmen .modal-dialog { margin: 1rem; }
+        .komitmen-logos { grid-template-columns: 1fr; gap: .75rem; }
+        .komitmen-logo { flex-direction: row; justify-content: flex-start; text-align: left; padding: .75rem 1rem; }
+        .komitmen-logo img { flex: 0 0 5rem; width: 5rem; height: 5rem; }
+        .komitmen-logo figcaption { text-align: left; }
+    }
 </style>
 @endpush
 
@@ -67,6 +84,7 @@
                                   @js((string) old('telepon_ayah', '')),
                                   @js((string) old('telepon_ibu', ''))
                               )"
+                              x-on:komitmen-disetujui.window="setuju = true"
                               @submit="onSubmit($event)">
                             @csrf
                             <input type="hidden" name="tahun_ajaran_id" x-model="tahunAjaranId">
@@ -370,6 +388,40 @@
     </div>
 </section>
 
+{{-- Modal Komitmen --}}
+@if($pendaftaranDibuka)
+<div class="modal fade modal-komitmen" id="modalKomitmen" tabindex="-1" aria-labelledby="modalKomitmenLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h2 class="modal-title h5" id="modalKomitmenLabel"><i class="bi bi-shield-check me-2"></i>Komitmen Pendaftaran</h2>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
+            </div>
+            <div class="modal-body p-4 p-md-5">
+                <div class="komitmen-logos" aria-label="Logo lembaga terkait">
+                    <figure class="komitmen-logo mb-0">
+                        <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
+                        <figcaption>SMA AFBS</figcaption>
+                    </figure>
+                    <figure class="komitmen-logo mb-0">
+                        <img src="{{ asset('images/logo-commitment-yayasan-dar-al-furqon-al-hakim.png') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                        <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
+                    </figure>
+                    <figure class="komitmen-logo mb-0">
+                        <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
+                        <figcaption>LDII</figcaption>
+                    </figure>
+                </div>
+                <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
+                <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
+                    <i class="bi bi-check2-circle me-2"></i>Saya Bersedia, Lanjutkan Pendaftaran
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+@endif
+
 {{-- Modal Syarat & Ketentuan --}}
 <div class="modal fade" id="modalSK" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -396,6 +448,20 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', () => {
+    const modalElement = document.getElementById('modalKomitmen');
+    const tombolSetuju = document.getElementById('tombolSetujuKomitmen');
+    if (!modalElement || !tombolSetuju || typeof bootstrap === 'undefined') return;
+
+    const modalKomitmen = new bootstrap.Modal(modalElement);
+    modalKomitmen.show();
+    tombolSetuju.addEventListener('click', () => {
+        window.dispatchEvent(new CustomEvent('komitmen-disetujui'));
+        modalKomitmen.hide();
+        document.querySelector('.wizard-step.active')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, { once: true });
+});
+
 function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama, jkLama, telS, telA, telI) {
     return {
         step: 1,
