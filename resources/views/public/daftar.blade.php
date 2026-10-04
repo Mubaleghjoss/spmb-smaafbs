@@ -16,7 +16,8 @@
     .modal-komitmen .modal-body { padding: 0; }
     .komitmen-logos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; }
     .komitmen-logo { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: .65rem; padding: 1rem .75rem; border: 1px solid rgba(16,36,26,.1); border-radius: 1rem; background: #fff; }
-    .komitmen-logo img { display: block; width: 100%; height: 7rem; object-fit: contain; object-position: center; }
+    .komitmen-logo img { display: block; width: 100%; min-height: 7rem; height: 7rem; object-fit: contain; object-position: center; }
+    .komitmen-logo img[alt*="LDII"] { padding: .35rem; }
     .komitmen-logo figcaption { width: 100%; color: var(--tk-ink); font-size: .78rem; line-height: 1.35; text-align: center; overflow-wrap: anywhere; }
     .komitmen-copy { font-size: 1.02rem; line-height: 1.75; color: #3f5148; }
     .komitmen-action { min-height: 3.35rem; }
@@ -399,15 +400,15 @@
             <div class="modal-body p-4 p-md-5">
                 <div class="komitmen-logos" aria-label="Logo lembaga terkait">
                     <figure class="komitmen-logo mb-0">
-                        <img src="https://smaafbs.sch.id/asset/img/logo-afbs.png" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager" referrerpolicy="no-referrer">
+                        <img src="{{ asset('icons/icon-512.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
                         <figcaption>SMA AFBS</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="https://smaafbs.sch.id/upload/logosmaafbs.png" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager" referrerpolicy="no-referrer">
+                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
                         <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="https://ldiijabar.or.id/wp-content/uploads/2020/08/cropped-logo-ldii.png" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager" referrerpolicy="no-referrer">
+                        <img src="{{ asset('icons/icon-192.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
                         <figcaption>LDII</figcaption>
                     </figure>
                 </div>
