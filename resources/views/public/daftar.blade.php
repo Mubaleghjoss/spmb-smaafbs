@@ -404,7 +404,7 @@
                         <figcaption>SMA AFBS</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}?v=5beb9aedfc" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
                         <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
