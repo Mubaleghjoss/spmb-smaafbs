@@ -400,15 +400,15 @@
             <div class="modal-body p-4 p-md-5">
                 <div class="komitmen-logos" aria-label="Logo lembaga terkait">
                     <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('icons/icon-512.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
+                        <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
                         <figcaption>SMA AFBS</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}?v=5beb9aedfc" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
                         <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('icons/icon-192.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
+                        <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
                         <figcaption>LDII</figcaption>
                     </figure>
                 </div>
