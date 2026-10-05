@@ -16,13 +16,16 @@ class SpmbDataBotController extends Controller
         'gender_summary' => ['tahun_ajaran', 'tahun_ajaran_id', 'jenis_pendaftaran', 'kelas_tujuan', 'tahapan'],
         'search_applicant' => ['query', 'limit'],
         'get_applicant_detail' => ['identifier'],
-        'list_applicants' => ['tahun_ajaran', 'tahun_ajaran_id', 'jenis_pendaftaran', 'kelas_tujuan', 'gender', 'tahapan', 'nama', 'nomor_pendaftaran', 'asal_sekolah', 'city', 'district', 'school', 'verification_status', 'document_status', 'status_kuota', 'registered_today', 'registered_date', 'page', 'limit'],
+        'list_applicants' => ['query', 'tahun_ajaran', 'tahun_ajaran_id', 'jenis_pendaftaran', 'kelas_tujuan', 'gender', 'tahapan', 'nama', 'nomor_pendaftaran', 'asal_sekolah', 'city', 'district', 'school', 'verification_status', 'document_status', 'status_kuota', 'registered_today', 'registered_date', 'page', 'limit'],
         'list_by_city' => ['city', 'kota', 'tahun_ajaran', 'tahun_ajaran_id', 'limit'],
         'list_by_district' => ['district', 'kecamatan', 'tahun_ajaran', 'tahun_ajaran_id', 'limit'],
         'list_by_school' => ['school', 'asal_sekolah', 'tahun_ajaran', 'tahun_ajaran_id', 'limit'],
         'list_by_document_status' => ['status', 'tahun_ajaran', 'tahun_ajaran_id', 'limit'],
         'list_by_verification_status' => ['status', 'tahun_ajaran', 'tahun_ajaran_id', 'limit'],
         'list_registered_today' => ['tahun_ajaran', 'tahun_ajaran_id', 'limit'],
+        'get_applicant_progress' => ['identifier'],
+        'lookup_payment_proof' => ['identifier', 'proof_type'],
+        'lookup_document_proof' => ['identifier', 'document_type'],
     ];
 
     public function __invoke(Request $request, SpmbReadService $service): JsonResponse
@@ -49,6 +52,7 @@ class SpmbDataBotController extends Controller
             if ($year === null) return response()->json(['status' => 'error', 'message' => 'Tahun ajaran '.str_replace('/', '-', $normalized).' belum tersedia'], 404);
         }
         $queryFilters = $filters;
+        if (isset($queryFilters['tahapan'])) $queryFilters['tahapan'] = $this->normalizeTahapan($queryFilters['tahapan']);
         if ($year !== null) $queryFilters['tahun_ajaran_id'] = $year;
         $limit = $filters['limit'] ?? 20;
         $data = match ($action) {
@@ -58,6 +62,9 @@ class SpmbDataBotController extends Controller
             'search_applicant' => $service->searchApplicant($filters['query'], $limit),
             'get_applicant_detail' => $service->getApplicantDetail($filters['identifier']),
             'list_applicants' => $service->listApplicants($queryFilters, $limit, $filters['page'] ?? 1),
+            'get_applicant_progress' => $service->getApplicantProgress($filters['identifier']),
+            'lookup_payment_proof' => $service->lookupPaymentProof($filters['identifier'], $filters['proof_type'] ?? null),
+            'lookup_document_proof' => $service->lookupDocumentProof($filters['identifier'], $filters['document_type'] ?? null),
             'list_by_city' => $service->listByCity($filters['city'] ?? $filters['kota'], $limit, $year),
             'list_by_district' => $service->listByDistrict($filters['district'] ?? $filters['kecamatan'], $limit, $year),
             'list_by_school' => $service->listBySchool($filters['school'] ?? $filters['asal_sekolah'], $limit, $year),
@@ -70,7 +77,7 @@ class SpmbDataBotController extends Controller
 
     private function validateFilters(string $action, array $filters): ?string
     {
-        foreach (['limit', 'page', 'tahun_ajaran_id', 'kelas_tujuan', 'tahapan'] as $key) {
+        foreach (['limit', 'page', 'tahun_ajaran_id', 'kelas_tujuan'] as $key) {
             if (array_key_exists($key, $filters) && (filter_var($filters[$key], FILTER_VALIDATE_INT) === false || (int) $filters[$key] < 1)) return "Invalid {$key}";
         }
         if (isset($filters['limit']) && (int) $filters['limit'] > 100) return 'Invalid limit';
@@ -87,11 +94,16 @@ class SpmbDataBotController extends Controller
         if (isset($filters['document_status']) && ! in_array($filters['document_status'], ['complete', 'incomplete'], true)) return 'Invalid document_status';
         if (($action === 'list_by_document_status') && isset($filters['status']) && ! in_array($filters['status'], ['complete', 'incomplete'], true)) return 'Invalid status';
         if (isset($filters['status_kuota']) && ! in_array($filters['status_kuota'], ['dalam_kuota', 'waiting_list', 'belum_lengkap'], true)) return 'Invalid status_kuota';
-        if (isset($filters['tahapan']) && (int) $filters['tahapan'] > 7) return 'Invalid tahapan';
-        foreach (['query', 'identifier', 'nama', 'nomor_pendaftaran', 'asal_sekolah', 'city', 'kota', 'district', 'kecamatan', 'school', 'status', 'verification_status', 'document_status', 'status_kuota', 'registered_date'] as $key) if (array_key_exists($key, $filters) && ! is_string($filters[$key])) return "Invalid {$key}";
+        if (isset($filters['tahapan'])) {
+            $stage = $this->normalizeTahapan($filters['tahapan']);
+            if ($stage === null) return 'Invalid tahapan';
+            $filters['tahapan'] = $stage;
+        }
+        foreach (['query', 'identifier', 'nama', 'nomor_pendaftaran', 'asal_sekolah', 'city', 'kota', 'district', 'kecamatan', 'school', 'status', 'verification_status', 'document_status', 'status_kuota', 'registered_date', 'proof_type', 'document_type'] as $key) if (array_key_exists($key, $filters) && ! is_string($filters[$key])) return "Invalid {$key}";
+        if (isset($filters['proof_type']) && ! in_array($filters['proof_type'], ['formulir', 'pertama'], true)) return 'Invalid proof_type';
         if (isset($filters['registered_today']) && ! is_bool($filters['registered_today']) && ! in_array($filters['registered_today'], [0, 1, '0', '1', 'true', 'false'], true)) return 'Invalid registered_today';
         if (isset($filters['registered_date']) && ! preg_match('/^\d{4}-\d{2}-\d{2}$/', $filters['registered_date'])) return 'Invalid registered_date';
-        foreach (['search_applicant' => 'query', 'get_applicant_detail' => 'identifier', 'list_by_city' => ['city', 'kota'], 'list_by_district' => ['district', 'kecamatan'], 'list_by_school' => ['school', 'asal_sekolah'], 'list_by_document_status' => 'status', 'list_by_verification_status' => 'status'] as $requiredAction => $requiredKeys) {
+        foreach (['search_applicant' => 'query', 'get_applicant_detail' => 'identifier', 'get_applicant_progress' => 'identifier', 'lookup_payment_proof' => 'identifier', 'lookup_document_proof' => 'identifier', 'list_by_city' => ['city', 'kota'], 'list_by_district' => ['district', 'kecamatan'], 'list_by_school' => ['school', 'asal_sekolah'], 'list_by_document_status' => 'status', 'list_by_verification_status' => 'status'] as $requiredAction => $requiredKeys) {
             if ($action !== $requiredAction) continue;
             $keys = (array) $requiredKeys;
             if (! array_filter($keys, fn (string $key): bool => array_key_exists($key, $filters) && trim((string) $filters[$key]) !== '')) return 'Missing required filter';
@@ -102,5 +114,12 @@ class SpmbDataBotController extends Controller
     }
 
     private function invalid(string $message): JsonResponse { return response()->json(['status' => 'error', 'message' => $message], 422); }
+    private function normalizeTahapan(mixed $value): ?int {
+        if (is_int($value) && $value >= 1 && $value <= 7) return $value;
+        if (! is_string($value)) return null;
+        $aliases = ['buat akun' => 1, 'isi formulir' => 2, 'bayar formulir' => 3, 'tes online' => 4, 'online-test' => 4, 'online test' => 4, 'wawancara' => 5, 'bayar pertama' => 6, 'resmi diterima' => 7];
+        $raw = strtolower(trim(str_replace('_', ' ', $value)));
+        return ctype_digit($raw) && (int) $raw >= 1 && (int) $raw <= 7 ? (int) $raw : ($aliases[$raw] ?? null);
+    }
     private function hasSqlInjectionPattern(array $values): bool { foreach ($values as $value) { if (is_array($value) && $this->hasSqlInjectionPattern($value)) return true; if (is_string($value) && preg_match('/(;|--|\/\*|\*\/|\bunion\s+(all\s+)?select\b|\bdrop\s+(table|database)\b|\binsert\s+into\b|\bdelete\s+from\b)/i', $value)) return true; } return false; }
 }

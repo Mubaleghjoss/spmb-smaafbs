@@ -165,9 +165,38 @@ class DataBotTests(unittest.TestCase):
         self.assertEqual(response, 'Maaf, saya belum memahami pertanyaan itu. Coba tulis lebih spesifik.')
         self.assertFalse(api.calls)
 
+    def test_27_missing_academic_year_http_error_preserves_api_message(self):
+        import io
+        from urllib.error import HTTPError
+        from unittest.mock import patch
 
+        from bot.api_client import ApiClient
 
-    def test_27_ai_router_authorization_header(self):
+        config = Config(
+            spmb_api_base_url='http://staging.example/api/v1/bot',
+            spmb_data_bot_token='test-token',
+        )
+        error_response = HTTPError(
+            config.spmb_api_base_url + '/query',
+            404,
+            'Not Found',
+            {},
+            io.BytesIO(
+                b'{"status":"error","message":"Tahun ajaran 2027-2028 belum tersedia"}'
+            ),
+        )
+
+        with patch('bot.api_client.request.urlopen', side_effect=error_response):
+            payload = ApiClient(config).query(
+                {'action': 'get_quota', 'filters': {'tahun_ajaran': '2027/2028'}},
+                '1',
+            )
+
+        self.assertEqual(payload['status'], 'error')
+        self.assertEqual(payload['code'], 404)
+        self.assertEqual(payload['message'], 'Tahun ajaran 2027-2028 belum tersedia')
+
+    def test_28_ai_router_authorization_header(self):
         import io
         import json
         from unittest.mock import patch
@@ -232,6 +261,31 @@ class DataBotTests(unittest.TestCase):
             },
         )
 
+    def test_29_applicant_range_preserves_academic_year_context(self):
+        self.api.payload = {
+            'status': 'success',
+            'data': {
+                'data': [applicant(i) for i in range(8)],
+                'meta': {'current_page': 1, 'last_page': 3, 'total': 18},
+            },
+        }
+
+        self.bot.handle_message(msg('tampilkan pendaftar tahun ajaran 2026/2027'))
+        self.bot.handle_message(msg('peserta nomor 11-18'))
+
+        intent = self.api.calls[-1][0]
+        self.assertEqual(intent['action'], 'list_applicants')
+        self.assertEqual(intent['filters']['tahun_ajaran'], '2026/2027')
+        self.assertEqual(intent['filters']['page'], 2)
+        self.assertEqual(intent['filters']['limit'], 8)
+
+    def test_30_online_test_phrasing_normalizes_to_backend_stage_four(self):
+        for text in ('online-test participants', 'peserta online test', 'pendaftar tes daring'):
+            with self.subTest(text=text):
+                intent = parse_deterministic(text)
+                self.assertEqual(intent['action'], 'list_applicants')
+                self.assertEqual(intent['filters']['tahapan'], 4)
+                self.assertEqual(validate_intent(intent), intent)
 
 
 if __name__ == '__main__': unittest.main()

@@ -11,6 +11,7 @@ use Illuminate\Support\Carbon;
 class SpmbReadService
 {
     private const REQUIRED_DOCUMENTS = ['file_kk', 'file_akta', 'file_ijazah', 'file_bpjs', 'file_ktp_ibu', 'file_ktp_ayah'];
+    private const DOCUMENT_METADATA_FIELDS = [...self::REQUIRED_DOCUMENTS, 'file_mutasi_sekolah', 'file_mutasi_dapodik'];
     private const VERIFICATION_STATUSES = ['draft', 'menunggu', 'terverifikasi', 'ditolak', 'terkirim'];
     private const QUOTA_STATUSES = ['dalam_kuota', 'waiting_list', 'belum_lengkap'];
 
@@ -102,6 +103,52 @@ class SpmbReadService
         return $model === null ? null : $this->serialize($model, true);
     }
 
+    public function getApplicantProgress(string $identifier): ?array
+    {
+        $item = $this->findApplicant($identifier);
+        if ($item === null) return null;
+        $stage = (int) ($item->tahapanSpmb?->tahap_saat_ini ?? 1);
+        return [
+            'id' => $item->id,
+            'nomor_pendaftaran' => $item->nomor_pendaftaran,
+            'nama' => $item->nama,
+            'verification_status' => $item->formulirSpmb?->status_verifikasi,
+            'stage' => $stage,
+            'stage_label' => \App\Enums\TahapanSpmb::tryFrom($stage)?->label() ?? 'Belum ditentukan',
+            'status_kuota' => $item->status_kuota,
+            'document_status' => $item->formulirSpmb !== null && $this->formDocumentsComplete($item->formulirSpmb) ? 'complete' : 'incomplete',
+        ];
+    }
+
+    public function lookupPaymentProof(string $identifier, ?string $type = null): ?array
+    {
+        $item = $this->findApplicant($identifier);
+        if ($item === null) return null;
+        $query = $item->pembayaran();
+        if ($type !== null) $query->where('jenis', $type);
+        $payments = $query->get(['jenis', 'status', 'bukti_file']);
+        return ['kind' => 'payment', 'status' => $payments->isEmpty() ? 'not_found' : 'found', 'available' => $payments->contains(fn ($payment) => filled($payment->bukti_file)), 'items' => $payments->map(fn ($payment) => ['type' => $payment->jenis, 'status' => $payment->status, 'available' => filled($payment->bukti_file)])->values()->all()];
+    }
+
+    public function lookupDocumentProof(string $identifier, ?string $type = null): ?array
+    {
+        $item = $this->findApplicant($identifier);
+        if ($item === null) return null;
+        $fields = $type !== null ? [$type] : self::DOCUMENT_METADATA_FIELDS;
+        $allowed = array_values(array_intersect($fields, self::DOCUMENT_METADATA_FIELDS));
+        if ($type !== null && $allowed === []) return ['kind' => 'document', 'status' => 'not_found', 'available' => false, 'items' => []];
+        $items = array_map(fn (string $field) => ['type' => $field, 'available' => filled($item->formulirSpmb?->{$field})], $allowed);
+        return ['kind' => 'document', 'status' => 'found', 'available' => collect($items)->contains(fn ($entry) => $entry['available']), 'items' => $items];
+    }
+
+    private function findApplicant(string $identifier): ?Peserta
+    {
+        return $this->base()->where(function (Builder $query) use ($identifier): void {
+            if (ctype_digit($identifier)) $query->orWhere('peserta.id', (int) $identifier);
+            $query->orWhere('peserta.nomor_pendaftaran', $identifier);
+        })->first();
+    }
+
     public function listApplicants(array $filters = [], int $perPage = 20, int $page = 1): array
     {
         if (! array_key_exists('tahun_ajaran_id', $filters)) {
@@ -162,6 +209,7 @@ class SpmbReadService
         foreach ($filters as $key => $value) {
             if ($value === null || $value === '') continue;
             switch ($key) {
+                case 'query': $query->where(function (Builder $q) use ($value) { $q->where('peserta.nomor_pendaftaran', 'like', "%{$value}%")->orWhere('peserta.nama', 'like', "%{$value}%"); }); break;
                 case 'nama': $query->where('peserta.nama', 'like', "%{$value}%"); break;
                 case 'nomor_pendaftaran': $query->where('peserta.nomor_pendaftaran', 'like', "%{$value}%"); break;
                 case 'asal_sekolah': $query->where(function (Builder $q) use ($value) { $q->where('formulir_spmb.asal_sekolah', 'like', "%{$value}%")->orWhere('peserta.asal_sekolah', 'like', "%{$value}%"); }); break;

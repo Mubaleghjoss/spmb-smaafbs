@@ -22,3 +22,21 @@ def authorization_error(message: dict, config: Config) -> str | None:
 
 def is_write_request(text: str) -> bool:
     return bool(_WRITE.search(text or ''))
+
+
+def admin_authorization_error(message: dict, config: Config) -> str | None:
+    """Admin extension is disabled by default and private-chat only."""
+    if not config.admin_extension_enabled:
+        return 'Fitur admin staging belum diaktifkan.'
+    chat = message.get('chat', {})
+    if chat.get('type') != 'private':
+        return 'Perintah admin hanya dapat digunakan di chat pribadi.'
+    if str(chat.get('id')) not in {str(value) for value in config.allowed_admin_chat_ids}:
+        return UNAUTHORIZED_MESSAGE
+    if str(message.get('from', {}).get('id')) not in {str(value) for value in config.allowed_telegram_user_ids}:
+        return UNAUTHORIZED_MESSAGE
+    return None
+
+
+def is_admin_command(text: str) -> bool:
+    return bool(re.match(r'^/?(?:progress|status|bukti[_ -]?bayar|pembayaran|bukti[_ -]?dokumen|dokumen)\b', text or '', re.I))
