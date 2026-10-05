@@ -401,15 +401,15 @@
                 <div class="komitmen-logos" aria-label="Logo lembaga terkait">
                     <figure class="komitmen-logo mb-0">
                         <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
-                        <figcaption>SMA AFBS</figcaption>
+                        <figcaption>SMA Al Furqon Boarding School (SMA AFBS)</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-commitment-yayasan-dar-al-furqon-al-hakim.png') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
                         <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
                     </figure>
                     <figure class="komitmen-logo mb-0">
                         <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
-                        <figcaption>LDII</figcaption>
+                        <figcaption>Lembaga Dakwah Islam Indonesia (LDII)</figcaption>
                     </figure>
                 </div>
                 <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
