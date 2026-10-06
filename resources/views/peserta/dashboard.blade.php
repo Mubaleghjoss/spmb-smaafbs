@@ -86,24 +86,53 @@
         </div>
     @endif
 
-    {{-- Kartu Akun Saya (username & password = No HP) --}}
-    <div class="card border-0 shadow-sm mb-4">
+    {{-- Kartu Akun Saya: kredensial tidak pernah ditampilkan atau disalin. --}}
+    <div class="card border-0 shadow-sm mb-4" id="akun-saya">
         <div class="card-header bg-white d-flex align-items-center gap-2">
             <i class="bi bi-key-fill text-success"></i>
             <strong>Akun Saya</strong>
         </div>
         <div class="card-body">
+            @if($errors->any())
+                <div class="alert alert-danger" role="alert">
+                    <ul class="mb-0 ps-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
+                </div>
+            @endif
             <div class="row g-3">
-                <div class="col-sm-6 col-lg-3">
+                <div class="col-12 col-lg-5">
                     <div class="text-muted small">Username & Password</div>
-                    <div class="d-flex align-items-center gap-2">
-                        <span class="fw-bold" id="akunHp">{{ $peserta->telepon }}</span>
-                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1"
-                                onclick="salinTeks('{{ $peserta->telepon }}', this)" title="Salin">
-                            <i class="bi bi-clipboard"></i>
-                        </button>
+                    <div class="fw-bold">Username: {{ $peserta->telepon }}</div>
+                    <div class="text-muted small">Password: tidak ditampilkan demi keamanan.</div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <a class="btn btn-outline-success btn-sm" href="#ubah-username">Ubah Username</a>
+                        <a class="btn btn-outline-success btn-sm" href="#ubah-password">Ubah Password</a>
                     </div>
-                    <div class="text-muted" style="font-size:.75rem">No HP yang didaftarkan</div>
+                </div>
+                <div class="col-12 col-lg-7">
+                    <div class="border rounded-3 p-3 h-100 bg-light">
+                        <div class="fw-semibold mb-2">Ubah Username</div>
+                        <form method="POST" action="{{ route('peserta.akun.username') }}" id="ubah-username">
+                            @csrf
+                            <label class="form-label small" for="username">Username baru (nomor HP)</label>
+                            <input class="form-control mb-2" id="username" name="username" inputmode="tel" autocomplete="username" maxlength="20" required>
+                            <label class="form-label small" for="current_password_username">Password saat ini</label>
+                            <input class="form-control mb-2" id="current_password_username" name="current_password" type="password" autocomplete="current-password" required>
+                            <button class="btn btn-success btn-sm" type="submit">Simpan Username</button>
+                        </form>
+                        <hr>
+                        <div class="fw-semibold mb-2" id="ubah-password">Ubah Password</div>
+                        <form method="POST" action="{{ route('peserta.akun.password') }}">
+                            @csrf
+                            <label class="form-label small" for="current_password">Password saat ini</label>
+                            <input class="form-control mb-2" id="current_password" name="current_password" type="password" autocomplete="current-password" required>
+                            <label class="form-label small" for="password">Password baru</label>
+                            <input class="form-control mb-2" id="password" name="password" type="password" autocomplete="new-password" minlength="12" required>
+                            <div class="form-text mb-2">Minimal 12 karakter, huruf besar-kecil, angka, dan simbol.</div>
+                            <label class="form-label small" for="password_confirmation">Konfirmasi password baru</label>
+                            <input class="form-control mb-2" id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" minlength="12" required>
+                            <button class="btn btn-success btn-sm" type="submit">Simpan Password</button>
+                        </form>
+                    </div>
                 </div>
                 <div class="col-sm-6 col-lg-3">
                     <div class="text-muted small">No Pendaftaran</div>
@@ -137,7 +166,7 @@
             </div>
             <div class="alert alert-light border mt-3 mb-0 small">
                 <i class="bi bi-info-circle me-1 text-success"></i>
-                Login berikutnya cukup dengan <strong>No HP</strong> di atas (sebagai username sekaligus password).
+                Login berikutnya gunakan username dan password yang Anda tetapkan. Password tidak pernah ditampilkan di halaman ini.
                 Untuk <strong>tes online</strong>, gunakan token yang disiapkan admin.
             </div>
         </div>

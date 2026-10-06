@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Peserta;
 
 use App\Http\Controllers\Controller;
 use App\Models\Peserta;
+use App\Support\PesertaPhoneNormalizer;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -33,7 +34,14 @@ class LoginPesertaController extends Controller
             'password.required' => 'Password wajib diisi',
         ]);
 
-        $peserta = Peserta::where('telepon', $request->telepon)->first();
+        $telepon = PesertaPhoneNormalizer::normalize($request->input('telepon'));
+        if (! $telepon) {
+            return back()
+                ->withInput(['telepon' => $request->telepon])
+                ->withErrors(['telepon' => 'Format No HP tidak valid']);
+        }
+
+        $peserta = Peserta::where('telepon', $telepon)->first();
 
         if (!$peserta || !Hash::check($request->password, $peserta->password)) {
             return back()

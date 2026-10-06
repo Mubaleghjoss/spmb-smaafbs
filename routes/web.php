@@ -6,6 +6,7 @@ use App\Http\Controllers\PendaftaranController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Peserta\LoginPesertaController;
 use App\Http\Controllers\Peserta\DashboardSpmbController;
+use App\Http\Controllers\Peserta\AkunController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\InstalasiController;
 
@@ -78,6 +79,12 @@ Route::prefix('peserta')->name('peserta.')->group(function () {
 */
 Route::prefix('peserta')->name('peserta.')->middleware('cek.peserta')->group(function () {
     Route::get('/dashboard', [DashboardSpmbController::class, 'index'])->name('dashboard');
+    Route::post('/akun/username', [AkunController::class, 'ubahUsername'])
+        ->middleware('throttle:6,1')
+        ->name('akun.username');
+    Route::post('/akun/password', [AkunController::class, 'ubahPassword'])
+        ->middleware('throttle:6,1')
+        ->name('akun.password');
     Route::get('/status-tahapan', [DashboardSpmbController::class, 'ambilStatusTahapan'])->name('status-tahapan');
     
     // Pembayaran
