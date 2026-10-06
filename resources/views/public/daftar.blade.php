@@ -17,12 +17,24 @@
     .komitmen-hero { min-height:12rem; display:flex; align-items:end; position:relative; padding:1.5rem; color:#fff; background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); background-size:cover; background-position:center; isolation:isolate; }
     .komitmen-hero::before { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(7,38,20,.08), rgba(7,38,20,.82)); }
     .komitmen-mark { width:3.7rem; height:3.7rem; display:inline-flex; align-items:center; justify-content:center; border-radius:1.1rem; font-size:1.75rem; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); box-shadow:0 .8rem 2rem rgba(0,0,0,.16); animation: komitmenFloat 2.8s ease-in-out infinite; }
+    .komitmen-logos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; align-items:stretch; margin-bottom:1.5rem; }
+    .komitmen-logo { min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:.65rem; padding:1rem .75rem; border:1px solid rgba(16,36,26,.1); border-radius:1rem; background:#fff; }
+    .komitmen-logo img { display:block; width:100%; min-height:7rem; height:7rem; object-fit:contain; object-position:center; }
+    .komitmen-logo img[alt*="LDII"] { padding:.35rem; }
+    .komitmen-logo figcaption { width:100%; color:var(--tk-ink); font-size:.78rem; line-height:1.35; text-align:center; overflow-wrap:anywhere; }
     .komitmen-copy { font-size:1.02rem; line-height:1.75; color:#3f5148; }
     .komitmen-action { min-height:3.35rem; }
     .modal.show .modal-dialog { animation: komitmenMasuk .55s cubic-bezier(.22,1,.36,1); }
     @keyframes komitmenMasuk { from { opacity:0; transform:translateY(1.5rem) scale(.96); } to { opacity:1; transform:none; } }
     @keyframes komitmenFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-.35rem) rotate(3deg); } }
-    @media (max-width:575px) { .modal-komitmen .modal-dialog { margin:1rem; } .komitmen-hero { min-height:10.5rem; padding:1.25rem; } }
+    @media (max-width:575px) {
+        .modal-komitmen .modal-dialog { margin:1rem; }
+        .komitmen-hero { min-height:10.5rem; padding:1.25rem; }
+        .komitmen-logos { grid-template-columns:1fr; gap:.75rem; }
+        .komitmen-logo { flex-direction:row; justify-content:flex-start; text-align:left; padding:.75rem 1rem; }
+        .komitmen-logo img { flex:0 0 5rem; width:5rem; height:5rem; }
+        .komitmen-logo figcaption { text-align:left; }
+    }
 </style>
 @endpush
 
@@ -403,6 +415,20 @@
                     </div>
                 </div>
                 <div class="p-4 p-md-5 text-center">
+                    <div class="komitmen-logos" aria-label="Logo lembaga terkait">
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
+                            <figcaption>SMA Al Furqon Boarding School (SMA AFBS)</figcaption>
+                        </figure>
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                            <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
+                        </figure>
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
+                            <figcaption>Lembaga Dakwah Islam Indonesia (LDII)</figcaption>
+                        </figure>
+                    </div>
                     <div class="text-success mb-3"><i class="bi bi-heart-fill fs-4"></i></div>
                     <p class="komitmen-copy mb-4">{{ $spmb['popup_persetujuan_teks'] }}</p>
                     <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
