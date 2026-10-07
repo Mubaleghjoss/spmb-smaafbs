@@ -406,15 +406,13 @@
         <div class="modal-content">
             <div class="modal-body">
                 <div class="komitmen-hero" @if($gambarKomitmen) style="background-image:url('{{ $gambarKomitmen }}')" @endif>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="komitmen-mark"><i class="bi bi-shield-check"></i></span>
-                        <div>
-                            <div class="small text-uppercase fw-bold" style="letter-spacing:.12em">Sebelum memulai pendaftaran</div>
-                            <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">{{ $spmb['popup_persetujuan_judul'] }}</h2>
-                        </div>
+                    <div>
+                        <div class="small text-uppercase fw-bold" style="letter-spacing:.12em">SEBELUM MEMULAI PENDAFTARAN</div>
+                        <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">Komitmen Calon Peserta Didik</h2>
                     </div>
                 </div>
                 <div class="p-4 p-md-5 text-center">
+                    <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
                     <div class="komitmen-logos" aria-label="Logo lembaga terkait">
                         <figure class="komitmen-logo mb-0">
                             <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
@@ -430,7 +428,6 @@
                         </figure>
                     </div>
                     <div class="text-success mb-3"><i class="bi bi-heart-fill fs-4"></i></div>
-                    <p class="komitmen-copy mb-4">{{ $spmb['popup_persetujuan_teks'] }}</p>
                     <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
                         <i class="bi bi-check2-circle me-2"></i>Saya Bersedia, Lanjutkan Pendaftaran
                     </button>
