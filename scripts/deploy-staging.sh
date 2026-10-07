@@ -134,6 +134,12 @@ ln -s "$SHARED_STORAGE" "$release_dir/storage"
 ln -s "$SHARED_STORAGE/app/public" "$release_dir/public/storage"
 cd "$release_dir"
 
+STAGE_FAILED="composer"
+command -v composer >/dev/null 2>&1 || fail "composer is required."
+composer install --no-dev --optimize-autoloader --no-interaction
+COMPOSER_RESULT="SUCCESS"
+[[ -f vendor/autoload.php ]] || fail "Composer dependencies are incomplete: vendor/autoload.php is missing."
+
 STAGE_FAILED="migration_status"
 status_output="$(php artisan migrate:status --ansi 2>&1)" || fail "Read-only migration status failed."
 PENDING_MIGRATIONS="$(printf '%s\n' "$status_output" | awk '/Pending/{sub(/^[[:space:]]*/, ""); print $1}' | paste -sd, -)"
@@ -152,10 +158,6 @@ if [[ "$MIGRATION_ACTION" == "BLOCKED_MIGRATION_APPROVAL_REQUIRED" ]]; then
     fail "Migration files changed; set DEPLOY_MIGRATIONS=1 and DEPLOY_MIGRATIONS_APPROVED=STAGING_ONLY."
 fi
 
-STAGE_FAILED="composer"
-command -v composer >/dev/null 2>&1 || fail "composer is required."
-composer install --no-dev --optimize-autoloader --no-interaction
-COMPOSER_RESULT="SUCCESS"
 STAGE_FAILED="npm_build"
 if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then npm ci && npm run build; NPM_BUILD_RESULT="SUCCESS"; fi
 STAGE_FAILED="migration"
