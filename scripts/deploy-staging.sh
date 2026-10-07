@@ -18,6 +18,9 @@ STAGE_FAILED=""
 COMPOSER_RESULT="SKIPPED"
 NPM_BUILD_RESULT="SKIPPED"
 MIGRATION_RESULT="FAILED"
+MIGRATION_FILES_CHANGED=""
+PENDING_MIGRATIONS=""
+MIGRATION_ACTION=""
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
@@ -50,6 +53,9 @@ finalize_log() {
         printf 'composer_result=%s\n' "$COMPOSER_RESULT"
         printf 'npm_build_result=%s\n' "$NPM_BUILD_RESULT"
         printf 'migration_result=%s\n' "$MIGRATION_RESULT"
+        printf 'migration_files_changed=%s\n' "${MIGRATION_FILES_CHANGED//$'\n'/,}"
+        printf 'pending_migrations=%s\n' "$PENDING_MIGRATIONS"
+        printf 'migration_action=%s\n' "$MIGRATION_ACTION"
         printf 'artisan_optimize_result=%s\n' "$OPTIMIZE_RESULT"
         printf 'symlink_switch=%s\n' "$SYMLINK_RESULT"
         printf 'health_check=%s\n' "$HEALTH_RESULT"
@@ -97,17 +103,54 @@ env_value() { awk -v key="$1" '$0 ~ "^[[:space:]]*(export[[:space:]]+)?" key "[[
 [[ "$(env_value APP_ENV)" == "staging" ]] || fail "Shared .env APP_ENV must be staging."
 [[ "$(env_value APP_URL)" == "$STAGING_URL" ]] || fail "Shared .env APP_URL must be $STAGING_URL."
 [[ -e "$CURRENT_LINK" ]] && PREVIOUS_RELEASE="$(readlink -f "$CURRENT_LINK" || true)"
-[[ ! -e "$release_dir" ]] || fail "Release already exists: $TARGET_SHA"
+PREVIOUS_SHA="${PREVIOUS_RELEASE##*/}"
+[[ -z "$PREVIOUS_SHA" || "$PREVIOUS_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || fail "Current staging release is not a SHA directory."
+
+if [[ -n "$PREVIOUS_SHA" ]]; then
+    MIGRATION_FILES_CHANGED="$(git -C "$repo_root" diff --name-only "$PREVIOUS_SHA" "$TARGET_SHA" -- database/migrations/ || true)"
+else
+    MIGRATION_FILES_CHANGED="$(git -C "$repo_root" diff-tree --no-commit-id --name-only -r "$TARGET_SHA" -- database/migrations/ || true)"
+fi
+
+echo "TARGET_SHA=$TARGET_SHA"
+if [[ -n "$MIGRATION_FILES_CHANGED" ]]; then
+    echo "MIGRATION_FILES_CHANGED=$(printf '%s' "$MIGRATION_FILES_CHANGED" | tr '\n' ', ' | sed 's/, $//')"
+else
+    echo "MIGRATION_FILES_CHANGED=NONE"
+fi
 
 STAGE_FAILED="archive"
-mkdir -p "$release_dir"
-git -C "$repo_root" archive "$TARGET_SHA" | tar -x -C "$release_dir"
-ln -s "$SHARED_ENV" "$release_dir/.env"
+if [[ -e "$release_dir" ]]; then
+    [[ -d "$release_dir" ]] || fail "Release path exists but is not a directory: $TARGET_SHA"
+    echo "RELEASE_REUSE=YES"
+else
+    mkdir -p "$release_dir"
+    git -C "$repo_root" archive "$TARGET_SHA" | tar -x -C "$release_dir"
+    ln -s "$SHARED_ENV" "$release_dir/.env"
+fi
 mkdir -p "$SHARED_STORAGE/app/public" "$SHARED_STORAGE/framework/cache/data" "$SHARED_STORAGE/framework/sessions" "$SHARED_STORAGE/framework/views" "$SHARED_STORAGE/logs"
 rm -rf "$release_dir/storage" "$release_dir/public/storage"
 ln -s "$SHARED_STORAGE" "$release_dir/storage"
 ln -s "$SHARED_STORAGE/app/public" "$release_dir/public/storage"
 cd "$release_dir"
+
+STAGE_FAILED="migration_status"
+status_output="$(php artisan migrate:status --ansi 2>&1)" || fail "Read-only migration status failed."
+PENDING_MIGRATIONS="$(printf '%s\n' "$status_output" | awk '/Pending/{sub(/^[[:space:]]*/, ""); print $1}' | paste -sd, -)"
+[[ -n "$PENDING_MIGRATIONS" ]] || PENDING_MIGRATIONS="NONE"
+echo "PENDING_MIGRATIONS=$PENDING_MIGRATIONS"
+
+if [[ -z "$MIGRATION_FILES_CHANGED" ]]; then
+    MIGRATION_ACTION="SKIP_NO_MIGRATION_DIFF"
+elif [[ "${DEPLOY_MIGRATIONS:-0}" == "1" && "${DEPLOY_MIGRATIONS_APPROVED:-}" == "STAGING_ONLY" ]]; then
+    MIGRATION_ACTION="RUN"
+else
+    MIGRATION_ACTION="BLOCKED_MIGRATION_APPROVAL_REQUIRED"
+fi
+echo "MIGRATION_ACTION=$MIGRATION_ACTION"
+if [[ "$MIGRATION_ACTION" == "BLOCKED_MIGRATION_APPROVAL_REQUIRED" ]]; then
+    fail "Migration files changed; set DEPLOY_MIGRATIONS=1 and DEPLOY_MIGRATIONS_APPROVED=STAGING_ONLY."
+fi
 
 STAGE_FAILED="composer"
 command -v composer >/dev/null 2>&1 || fail "composer is required."
@@ -116,8 +159,14 @@ COMPOSER_RESULT="SUCCESS"
 STAGE_FAILED="npm_build"
 if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then npm ci && npm run build; NPM_BUILD_RESULT="SUCCESS"; fi
 STAGE_FAILED="migration"
-php artisan migrate --force --ansi
-MIGRATION_RESULT="SUCCESS"
+if [[ "$MIGRATION_ACTION" == "RUN" ]]; then
+    php artisan migrate --force --ansi
+    MIGRATION_RESULT="SUCCESS"
+else
+    echo "migration_command_executed=NO"
+    echo "migration_result=SKIPPED"
+    MIGRATION_RESULT="SKIPPED"
+fi
 STAGE_FAILED="artisan_optimize"
 php artisan optimize:clear --ansi && php artisan optimize --ansi
 OPTIMIZE_RESULT="SUCCESS"
