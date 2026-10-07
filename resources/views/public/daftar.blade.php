@@ -12,21 +12,28 @@
     .step-dot.done, .step-dot.current { background: var(--primary-color); }
     .periode-btn.selected { border-color: var(--primary-color) !important; box-shadow: 0 0 0 .15rem rgba(46,139,87,.25); }
 
-    .modal-komitmen .modal-content { overflow: hidden; border: 0; border-radius: 1.5rem; box-shadow: 0 2rem 5rem rgba(5,30,18,.38); }
-    .modal-komitmen .modal-body { padding: 0; }
-    .komitmen-logos { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; align-items: stretch; margin-bottom: 1.5rem; }
-    .komitmen-logo { min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: .65rem; padding: 1rem .75rem; border: 1px solid rgba(16,36,26,.1); border-radius: 1rem; background: #fff; }
-    .komitmen-logo img { display: block; width: 100%; min-height: 7rem; height: 7rem; object-fit: contain; object-position: center; }
-    .komitmen-logo img[alt*="LDII"] { padding: .35rem; }
-    .komitmen-logo figcaption { width: 100%; color: var(--tk-ink); font-size: .78rem; line-height: 1.35; text-align: center; overflow-wrap: anywhere; }
-    .komitmen-copy { font-size: 1.02rem; line-height: 1.75; color: #3f5148; }
-    .komitmen-action { min-height: 3.35rem; }
-    @media (max-width: 575.98px) {
-        .modal-komitmen .modal-dialog { margin: 1rem; }
-        .komitmen-logos { grid-template-columns: 1fr; gap: .75rem; }
-        .komitmen-logo { flex-direction: row; justify-content: flex-start; text-align: left; padding: .75rem 1rem; }
-        .komitmen-logo img { flex: 0 0 5rem; width: 5rem; height: 5rem; }
-        .komitmen-logo figcaption { text-align: left; }
+    .modal-komitmen .modal-content { overflow:hidden; border:0; border-radius:1.5rem; box-shadow:0 2rem 5rem rgba(5,30,18,.38); }
+    .modal-komitmen .modal-body { padding:0; }
+    .komitmen-hero { min-height:12rem; display:flex; align-items:end; position:relative; padding:1.5rem; color:#fff; background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); background-size:cover; background-position:center; isolation:isolate; }
+    .komitmen-hero::before { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(7,38,20,.08), rgba(7,38,20,.82)); }
+    .komitmen-mark { width:3.7rem; height:3.7rem; display:inline-flex; align-items:center; justify-content:center; border-radius:1.1rem; font-size:1.75rem; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); box-shadow:0 .8rem 2rem rgba(0,0,0,.16); animation: komitmenFloat 2.8s ease-in-out infinite; }
+    .komitmen-logos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; align-items:stretch; margin-bottom:1.5rem; }
+    .komitmen-logo { min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:.65rem; padding:1rem .75rem; border:1px solid rgba(16,36,26,.1); border-radius:1rem; background:#fff; }
+    .komitmen-logo img { display:block; width:100%; min-height:7rem; height:7rem; object-fit:contain; object-position:center; }
+    .komitmen-logo img[alt*="LDII"] { padding:.35rem; }
+    .komitmen-logo figcaption { width:100%; color:var(--tk-ink); font-size:.78rem; line-height:1.35; text-align:center; overflow-wrap:anywhere; }
+    .komitmen-copy { font-size:1.02rem; line-height:1.75; color:#3f5148; }
+    .komitmen-action { min-height:3.35rem; }
+    .modal.show .modal-dialog { animation: komitmenMasuk .55s cubic-bezier(.22,1,.36,1); }
+    @keyframes komitmenMasuk { from { opacity:0; transform:translateY(1.5rem) scale(.96); } to { opacity:1; transform:none; } }
+    @keyframes komitmenFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-.35rem) rotate(3deg); } }
+    @media (max-width:575px) {
+        .modal-komitmen .modal-dialog { margin:1rem; }
+        .komitmen-hero { min-height:10.5rem; padding:1.25rem; }
+        .komitmen-logos { grid-template-columns:1fr; gap:.75rem; }
+        .komitmen-logo { flex-direction:row; justify-content:flex-start; text-align:left; padding:.75rem 1rem; }
+        .komitmen-logo img { flex:0 0 5rem; width:5rem; height:5rem; }
+        .komitmen-logo figcaption { text-align:left; }
     }
 </style>
 @endpush
@@ -388,34 +395,44 @@
     </div>
 </section>
 
-{{-- Modal Komitmen --}}
-@if($pendaftaranDibuka)
+@if($pendaftaranDibuka && ($spmb['popup_persetujuan_aktif'] ?? false))
+@php
+    $gambarKomitmen = !empty($spmb['popup_persetujuan_gambar'])
+        ? asset('storage/' . $spmb['popup_persetujuan_gambar'])
+        : (!empty($branding['logo']) ? asset('storage/' . $branding['logo']) : null);
+@endphp
 <div class="modal fade modal-komitmen" id="modalKomitmen" tabindex="-1" aria-labelledby="modalKomitmenLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h2 class="modal-title h5" id="modalKomitmenLabel"><i class="bi bi-shield-check me-2"></i>Komitmen Pendaftaran</h2>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Tutup"></button>
-            </div>
-            <div class="modal-body p-4 p-md-5">
-                <div class="komitmen-logos" aria-label="Logo lembaga terkait">
-                    <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
-                        <figcaption>SMA Al Furqon Boarding School (SMA AFBS)</figcaption>
-                    </figure>
-                    <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
-                        <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
-                    </figure>
-                    <figure class="komitmen-logo mb-0">
-                        <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
-                        <figcaption>Lembaga Dakwah Islam Indonesia (LDII)</figcaption>
-                    </figure>
+            <div class="modal-body">
+                <div class="komitmen-hero" @if($gambarKomitmen) style="background-image:url('{{ $gambarKomitmen }}')" @endif>
+                    <div>
+                        <div class="small text-uppercase fw-bold" style="letter-spacing:.12em">SEBELUM MEMULAI PENDAFTARAN</div>
+                        <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">Komitmen Calon Peserta Didik</h2>
+                    </div>
                 </div>
-                <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
-                <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
-                    <i class="bi bi-check2-circle me-2"></i>Saya Bersedia, Lanjutkan Pendaftaran
-                </button>
+                <div class="p-4 p-md-5 text-center">
+                    <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
+                    <div class="komitmen-logos" aria-label="Logo lembaga terkait">
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
+                            <figcaption>SMA Al Furqon Boarding School (SMA AFBS)</figcaption>
+                        </figure>
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-yayasan-dar-al-furqon-al-hakim.jpg') }}" alt="Logo Yayasan Dar Al Furqon Al Hakim" loading="eager">
+                            <figcaption>Yayasan Dar Al Furqon Al Hakim</figcaption>
+                        </figure>
+                        <figure class="komitmen-logo mb-0">
+                            <img src="{{ asset('images/logo-commitment-ldii.png') }}" alt="Logo Lembaga Dakwah Islam Indonesia (LDII)" loading="eager">
+                            <figcaption>Lembaga Dakwah Islam Indonesia (LDII)</figcaption>
+                        </figure>
+                    </div>
+                    <div class="text-success mb-3"><i class="bi bi-heart-fill fs-4"></i></div>
+                    <button type="button" class="btn btn-success btn-lg w-100 komitmen-action" id="tombolSetujuKomitmen">
+                        <i class="bi bi-check2-circle me-2"></i>Saya Bersedia, Lanjutkan Pendaftaran
+                    </button>
+                    <p class="small text-muted mb-0 mt-3"><i class="bi bi-info-circle me-1"></i>Dengan melanjutkan, Anda menyatakan telah memahami komitmen di atas.</p>
+                </div>
             </div>
         </div>
     </div>
