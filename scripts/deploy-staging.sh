@@ -21,6 +21,8 @@ MIGRATION_RESULT="SKIPPED"
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
+POPUP_ASSET_HEALTH="SKIPPED"
+DAFTAR_STABILITY="SKIPPED"
 RETENTION_CLEANUP="PASS"
 RETENTION_WARNING_PATHS=""
 ROUTE_CACHE_REBUILT="NO"
@@ -62,6 +64,8 @@ finalize_log() {
         printf 'route_runtime_check=%s\n' "$ROUTE_RUNTIME_CHECK"
         printf 'symlink_switch=%s\n' "$SYMLINK_RESULT"
         printf 'health_check=%s\n' "$HEALTH_RESULT"
+        printf 'popup_asset_health=%s\n' "$POPUP_ASSET_HEALTH"
+        printf 'daftar_stability=%s\n' "$DAFTAR_STABILITY"
         printf 'retention_cleanup=%s\n' "$RETENTION_CLEANUP"
         [[ -n "$RETENTION_WARNING_PATHS" ]] && printf 'retention_warning_paths=%s\n' "${RETENTION_WARNING_PATHS//$'\n'/,}"
         printf 'deployment_status=%s\n' "$STATUS"
@@ -199,6 +203,20 @@ if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
     public_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_PUBLIC_URL" || true)"
     [[ "$public_code" == "200" || "$public_code" == "401" ]] || fail "Public health check failed with HTTP $public_code."
+    for asset in /images/logo-commitment-sma-afbs.png /images/logo-yayasan-dar-al-furqon-al-hakim.jpg /images/logo-commitment-ldii.png; do
+        asset_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL$asset" || true)"
+        [[ "$asset_code" == "200" ]] || fail "Popup asset health check failed for $asset with HTTP $asset_code."
+    done
+    daftar_failures=0
+    for _ in $(seq 1 20); do
+        daftar_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL/daftar" || true)"
+        [[ "$daftar_code" == "200" ]] || daftar_failures=$((daftar_failures + 1))
+    done
+    [[ "$daftar_failures" -eq 0 ]] || fail "/daftar stability probe failed: $((20 - daftar_failures))/20"
+    POPUP_ASSET_HEALTH="PASS"
+    DAFTAR_STABILITY="20/20"
+    echo 'POPUP_ASSET_HEALTH=PASS'
+    echo 'DAFTAR_STABILITY=20/20'
 fi
 HEALTH_RESULT="SUCCESS"
 STATUS="SUCCESS"

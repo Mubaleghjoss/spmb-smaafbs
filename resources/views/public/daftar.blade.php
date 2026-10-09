@@ -12,28 +12,29 @@
     .step-dot.done, .step-dot.current { background: var(--primary-color); }
     .periode-btn.selected { border-color: var(--primary-color) !important; box-shadow: 0 0 0 .15rem rgba(46,139,87,.25); }
 
-    .modal-komitmen .modal-content { overflow:hidden; border:0; border-radius:1.5rem; box-shadow:0 2rem 5rem rgba(5,30,18,.38); }
+    .modal-komitmen .modal-dialog { width:min(100% - 1.5rem, 48rem); }
+    .modal-komitmen .modal-content { overflow:hidden; border:0; border-radius:1.25rem; box-shadow:0 2rem 5rem rgba(5,30,18,.25); }
     .modal-komitmen .modal-body { padding:0; }
-    .komitmen-hero { min-height:12rem; display:flex; align-items:end; position:relative; padding:1.5rem; color:#fff; background:linear-gradient(135deg, var(--primary-color), var(--secondary-color)); background-size:cover; background-position:center; isolation:isolate; }
-    .komitmen-hero::before { content:''; position:absolute; inset:0; z-index:-1; background:linear-gradient(180deg, rgba(7,38,20,.08), rgba(7,38,20,.82)); }
-    .komitmen-mark { width:3.7rem; height:3.7rem; display:inline-flex; align-items:center; justify-content:center; border-radius:1.1rem; font-size:1.75rem; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.3); box-shadow:0 .8rem 2rem rgba(0,0,0,.16); animation: komitmenFloat 2.8s ease-in-out infinite; }
-    .komitmen-logos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:1rem; align-items:stretch; margin-bottom:1.5rem; }
-    .komitmen-logo { min-width:0; display:flex; flex-direction:column; align-items:center; justify-content:space-between; gap:.65rem; padding:1rem .75rem; border:1px solid rgba(16,36,26,.1); border-radius:1rem; background:#fff; }
-    .komitmen-logo img { display:block; width:100%; min-height:7rem; height:7rem; object-fit:contain; object-position:center; }
-    .komitmen-logo img[alt*="LDII"] { padding:.35rem; }
-    .komitmen-logo figcaption { width:100%; color:var(--tk-ink); font-size:.78rem; line-height:1.35; text-align:center; overflow-wrap:anywhere; }
-    .komitmen-copy { font-size:1.02rem; line-height:1.75; color:#3f5148; }
+    .komitmen-hero { padding:1.25rem 1.5rem 1.1rem; color:var(--tk-ink); background:#fff; border-bottom:1px solid rgba(16,36,26,.1); }
+    .komitmen-hero .eyebrow { color:var(--primary-color); letter-spacing:.1em; }
+    .komitmen-hero h2 { font-size:clamp(1.45rem, 4vw, 2rem); line-height:1.15; text-wrap:balance; }
+    .komitmen-logos { display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:.75rem; align-items:stretch; margin-bottom:1.25rem; }
+    .komitmen-logo { min-width:0; display:flex; flex-direction:row; align-items:center; gap:.75rem; padding:.75rem; border:1px solid rgba(16,36,26,.1); border-radius:.85rem; background:#fff; }
+    .komitmen-logo img { display:block; flex:0 0 4rem; width:4rem; height:4rem; object-fit:contain; object-position:center; }
+    .komitmen-logo img[alt*="LDII"] { padding:.2rem; }
+    .komitmen-logo figcaption { min-width:0; color:var(--tk-ink); font-size:.78rem; line-height:1.35; text-align:left; overflow-wrap:anywhere; }
+    .komitmen-copy { max-width:42rem; margin-inline:auto; font-size:1rem; line-height:1.65; color:#3f5148; }
     .komitmen-action { min-height:3.35rem; }
     .modal.show .modal-dialog { animation: komitmenMasuk .55s cubic-bezier(.22,1,.36,1); }
     @keyframes komitmenMasuk { from { opacity:0; transform:translateY(1.5rem) scale(.96); } to { opacity:1; transform:none; } }
     @keyframes komitmenFloat { 0%,100% { transform:translateY(0) rotate(-3deg); } 50% { transform:translateY(-.35rem) rotate(3deg); } }
     @media (max-width:575px) {
-        .modal-komitmen .modal-dialog { margin:1rem; }
-        .komitmen-hero { min-height:10.5rem; padding:1.25rem; }
+        .modal-komitmen .modal-dialog { width:auto; margin:.75rem; }
+        .komitmen-hero { padding:1rem 1.1rem .9rem; }
         .komitmen-logos { grid-template-columns:1fr; gap:.75rem; }
-        .komitmen-logo { flex-direction:row; justify-content:flex-start; text-align:left; padding:.75rem 1rem; }
-        .komitmen-logo img { flex:0 0 5rem; width:5rem; height:5rem; }
-        .komitmen-logo figcaption { text-align:left; }
+        .komitmen-logo { padding:.7rem .8rem; }
+        .komitmen-logo img { flex-basis:3.75rem; width:3.75rem; height:3.75rem; }
+        .modal-komitmen .p-4 { padding:1rem !important; }
     }
 </style>
 @endpush
@@ -396,18 +397,13 @@
 </section>
 
 @if($pendaftaranDibuka && ($spmb['popup_persetujuan_aktif'] ?? false))
-@php
-    $gambarKomitmen = !empty($spmb['popup_persetujuan_gambar'])
-        ? asset('storage/' . $spmb['popup_persetujuan_gambar'])
-        : (!empty($branding['logo']) ? asset('storage/' . $branding['logo']) : null);
-@endphp
 <div class="modal fade modal-komitmen" id="modalKomitmen" tabindex="-1" aria-labelledby="modalKomitmenLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content">
             <div class="modal-body">
-                <div class="komitmen-hero" @if($gambarKomitmen) style="background-image:url('{{ $gambarKomitmen }}')" @endif>
+                <div class="komitmen-hero">
                     <div>
-                        <div class="small text-uppercase fw-bold" style="letter-spacing:.12em">SEBELUM MEMULAI PENDAFTARAN</div>
+                        <div class="eyebrow small text-uppercase fw-bold">SEBELUM MEMULAI PENDAFTARAN</div>
                         <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">Komitmen Calon Peserta Didik</h2>
                     </div>
                 </div>

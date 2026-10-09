@@ -29,9 +29,15 @@ class RegistrationCommitmentLogosTest extends TestCase
         ]);
     }
 
-    public function test_registration_commitment_modal_contains_local_logos_and_preserves_remote_popup_contract(): void
+    public function test_registration_commitment_modal_contains_local_logos_and_text_only_header(): void
     {
         $response = $this->get(route('daftar'));
+        $html = $response->getContent();
+        $headerStart = strpos($html, '<div class="komitmen-hero"');
+        $headerEnd = $headerStart === false ? false : strpos($html, '</div>', $headerStart);
+        $header = ($headerStart !== false && $headerEnd !== false)
+            ? substr($html, $headerStart, $headerEnd - $headerStart)
+            : '';
 
         $response->assertOk()
             ->assertSee('id="modalKomitmen"', false)
@@ -54,5 +60,10 @@ class RegistrationCommitmentLogosTest extends TestCase
             ->assertSee('id="tombolSetujuKomitmen"', false)
             ->assertDontSee('https://smaafbs.sch.id/', false)
             ->assertDontSee('https://ldiijabar.or.id/', false);
+
+        $this->assertNotSame('', $header);
+        $this->assertStringNotContainsString('<img', $header);
+        $this->assertStringNotContainsString('background-image', $header);
+        $this->assertStringNotContainsString('popup_persetujuan_gambar', $header);
     }
 }
