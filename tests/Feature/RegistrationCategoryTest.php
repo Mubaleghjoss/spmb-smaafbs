@@ -24,6 +24,7 @@ class RegistrationCategoryTest extends TestCase
             'pendaftaran_buka' => '1',
             'tanggal_buka' => now()->subDay()->toDateString(),
             'tanggal_tutup' => now()->addDay()->toDateString(),
+            'popup_persetujuan_aktif' => '1',
         ]);
 
         GelombangPendaftaran::query()->update([
@@ -54,11 +55,12 @@ class RegistrationCategoryTest extends TestCase
         $this->get('/daftar')
             ->assertOk()
             ->assertSee('modalKomitmen')
-            ->assertSee('Logo SMA Al-Furqon Boarding School (SMA AFBS)')
-            ->assertSee('Logo Yayasan Dar Al Furqon Al Hakim')
-            ->assertSee('https://ldiijabar.or.id/wp-content/uploads/2020/08/cropped-logo-ldii.png')
-            ->assertSee('grid-template-columns: repeat(3, minmax(0, 1fr))')
-            ->assertSee('grid-template-columns: 1fr');
+            ->assertSee('images/logo-commitment-sma-afbs.png')
+            ->assertSee('images/logo-yayasan-dar-al-furqon-al-hakim.jpg')
+            ->assertSee('images/logo-commitment-ldii.png')
+            ->assertDontSee('https://ldiijabar.or.id/wp-content/uploads/2020/08/cropped-logo-ldii.png')
+            ->assertSee('grid-template-columns:repeat(3, minmax(0, 1fr))')
+            ->assertSee('grid-template-columns:1fr');
     }
 
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void

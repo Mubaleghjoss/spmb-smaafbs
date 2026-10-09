@@ -106,65 +106,40 @@ env_value() { awk -v key="$1" '$0 ~ "^[[:space:]]*(export[[:space:]]+)?" key "[[
 [[ -e "$CURRENT_LINK" ]] && PREVIOUS_RELEASE="$(readlink -f "$CURRENT_LINK" || true)"
 [[ ! -e "$release_dir" ]] || fail "Release already exists: $TARGET_SHA"
 
-source_route_names() {
-    python3 - "$1" <<'PY'
-import pathlib, re, sys
-root = pathlib.Path(sys.argv[1]) / "routes"
-pattern = re.compile(r"(?:->|Route::)name\s*\(\s*(['\"])([^'\"]+)\1")
-group_pattern = re.compile(r"->name\s*\(\s*(['\"])([^'\"]*)\1\s*\)(?:(?!->group\s*\().)*->group\s*\(\s*function\s*\([^)]*\)\s*\{(.*?)\}\s*\);", re.S)
-names = set()
-if root.is_dir():
-    for path in root.rglob("*.php"):
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError:
-            continue
-        grouped_spans = []
-        for group in group_pattern.finditer(text):
-            grouped_spans.append((group.start(3), group.end(3)))
-            names.update(group.group(2) + match.group(2) for match in pattern.finditer(group.group(3)))
-        for match in pattern.finditer(text):
-            if not any(start <= match.start() < end for start, end in grouped_spans):
-                names.add(match.group(2))
-for name in sorted(names):
-    print(name)
-PY
+route_names_from_json() {
+    python3 -c '
+import json, sys
+try:
+    payload = json.load(sys.stdin)
+    rows = payload if isinstance(payload, list) else payload.get("routes", [])
+    names = sorted({str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name")})
+except (ValueError, AttributeError, TypeError):
+    raise SystemExit(1)
+print("\n".join(names))
+'
 }
 
 verify_runtime_routes() {
-    local app_root="$1" runtime_output runtime_format
-    local source_names runtime_names missing explicit
-    source_names="$(source_route_names "$app_root")" || return 1
-    runtime_format="json"
-    if ! runtime_output="$(php artisan route:list --json 2>/dev/null)"; then
-        runtime_format="text"
-        runtime_output="$(php artisan route:list --ansi 2>/dev/null)" || return 1
+    local app_root="$1" expected_names="$2" runtime_output runtime_names diff_output explicit
+    runtime_output="$(cd "$app_root" && php artisan route:list --json 2>/dev/null)" || {
+        echo "Laravel route:list --json failed or is unsupported." >&2
+        return 1
+    }
+    runtime_names="$(route_names_from_json <<<"$runtime_output")" || {
+        echo "Laravel route:list --json returned invalid JSON." >&2
+        return 1
+    }
+    diff_output="$(comm -3 <(printf '%s\n' "$expected_names") <(printf '%s\n' "$runtime_names"))"
+    if [[ -n "$diff_output" ]]; then
+        echo "Route set mismatch between expected Laravel runtime sets:" >&2
+        printf '%s\n' "$diff_output" >&2
+        return 1
     fi
-    runtime_names="$(SOURCE_NAMES="$source_names" RUNTIME_FORMAT="$runtime_format" RUNTIME_OUTPUT="$runtime_output" python3 - <<'PY'
-import json, os, re
-source = set(filter(None, os.environ.get("SOURCE_NAMES", "").splitlines()))
-output = os.environ.get("RUNTIME_OUTPUT", "")
-if os.environ.get("RUNTIME_FORMAT") == "json":
-    try:
-        payload = json.loads(output)
-        rows = payload if isinstance(payload, list) else payload.get("routes", [])
-        runtime = {str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name")}
-    except (ValueError, AttributeError, TypeError):
-        raise SystemExit(1)
-else:
-    runtime = {token for line in output.splitlines() for token in line.split() if token in source}
-for name in sorted(runtime):
-    print(name)
-missing = sorted(source - runtime)
-if missing:
-    print("missing=" + ",".join(missing), file=os.sys.stderr)
-    raise SystemExit(1)
-PY
-)" || return 1
     for explicit in peserta.dashboard peserta.akun.username peserta.akun.password; do
-        if grep -Fxq "$explicit" <<<"$source_names"; then
-            grep -Fxq "$explicit" <<<"$runtime_names" || { echo "Missing required runtime route: $explicit" >&2; return 1; }
-        fi
+        grep -Fxq "$explicit" <<<"$runtime_names" || {
+            echo "Missing required runtime route: $explicit" >&2
+            return 1
+        }
     done
     return 0
 }
@@ -193,11 +168,14 @@ php artisan optimize:clear --ansi && php artisan optimize --ansi
 OPTIMIZE_RESULT="SUCCESS"
 STAGE_FAILED="route_cache"
 php artisan route:clear --ansi
+uncached_route_output="$(php artisan route:list --json 2>/dev/null)" || fail "Uncached Laravel route:list --json failed."
+uncached_route_names="$(route_names_from_json <<<"$uncached_route_output")" || fail "Uncached Laravel route:list --json returned invalid JSON."
+[[ -n "$uncached_route_names" ]] || fail "Uncached Laravel route set is empty."
 php artisan route:cache --ansi
 ROUTE_CACHE_REBUILT="YES"
 ROUTE_CACHE_RESULT="PASS"
 STAGE_FAILED="route_runtime_check"
-verify_runtime_routes "$release_dir" || fail "Pre-switch runtime route verification failed."
+verify_runtime_routes "$release_dir" "$uncached_route_names" || fail "Pre-switch runtime route verification failed."
 STAGE_FAILED="health_check"
 [[ -f public/build/manifest.json ]] || fail "Built asset manifest is missing."
 
@@ -211,7 +189,7 @@ SYMLINK_RESULT="SUCCESS"
 sudo -n /usr/bin/systemctl reload php8.2-fpm >/dev/null 2>&1 || true
 
 STAGE_FAILED="health_check"
-verify_runtime_routes "$CURRENT_LINK" || fail "Post-switch runtime route verification failed."
+verify_runtime_routes "$CURRENT_LINK" "$uncached_route_names" || fail "Post-switch runtime route verification failed."
 ROUTE_RUNTIME_CHECK="PASS"
 if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
