@@ -238,6 +238,8 @@ class PengaturanService
             'waktu_buka' => $this->ambil('waktu_buka', ''),
             'tanggal_tutup' => $this->ambil('tanggal_tutup', ''),
             'waktu_tutup' => $this->ambil('waktu_tutup', ''),
+            'popup_persetujuan_aktif' => $this->ambil('popup_persetujuan_aktif', false),
+            'popup_persetujuan_gambar' => $this->ambil('popup_persetujuan_gambar', ''),
             'biaya_formulir' => $this->ambil('biaya_formulir', 0),
             'biaya_pelunasan' => $this->ambil('biaya_pelunasan', 0),
             // Tarif lama menjadi fallback aman sampai admin menetapkan tarif per domisili.
