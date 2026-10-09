@@ -79,6 +79,7 @@ case "${*:-}" in
 import json, os, sys
 count = int(sys.argv[1])
 names = {
+    f'generated::mock-{count}',
     'admin.dashboard',
     'peserta.dashboard',
     'peserta.akun.username',
