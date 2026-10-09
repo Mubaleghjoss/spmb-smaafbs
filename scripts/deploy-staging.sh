@@ -112,7 +112,7 @@ import json, sys
 try:
     payload = json.load(sys.stdin)
     rows = payload if isinstance(payload, list) else payload.get("routes", [])
-    names = sorted({str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name")})
+    names = sorted({str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name") and not str(row.get("name")).startswith("generated::")})
 except (ValueError, AttributeError, TypeError):
     raise SystemExit(1)
 print("\n".join(names))
