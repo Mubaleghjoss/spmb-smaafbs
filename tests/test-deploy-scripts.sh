@@ -122,7 +122,7 @@ run_staging() {
 expect_pass run_staging
 success_log="$(find "$log_dir" -name 'deploy-*-SUCCESS.log' -type f | head -n 1)"
 [[ -n "$success_log" && -f "$success_log" ]] || { echo 'Missing success audit log' >&2; exit 1; }
-for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_command_executed migration_result artisan_optimize_result route_cache_rebuilt route_cache_result route_runtime_check symlink_switch health_check deployment_status duration_seconds; do
+for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_command_executed migration_result artisan_optimize_result route_cache_rebuilt route_cache_result route_runtime_check symlink_switch health_check retention_cleanup deployment_status duration_seconds; do
     grep -Eq "^${field}=" "$success_log" || { echo "Missing $field" >&2; exit 1; }
 done
 [[ "$(grep '^deployment_status=' "$success_log")" == 'deployment_status=SUCCESS' ]]
@@ -192,6 +192,32 @@ failed_log="$(find "$log_dir" -name 'deploy-*-FAILED.log' -type f | head -n 1)"
 [[ "$(grep '^stage_failed=' "$failed_log")" == 'stage_failed=composer' ]]
 ! grep -Eq 'super-secret-password|base64:do-not-log-this|DB_PASSWORD|APP_KEY' "$failed_log"
 pass=$((pass + 1))
+
+# Retention cleanup failure is a warning only and must not roll back the active release.
+retention_failure_root="$TMP/staging-retention-failure"
+retention_failure_logs="$TMP/logs-retention-failure"
+retention_failure_bin="$TMP/mock-bin-retention-failure"
+mkdir -p "$retention_failure_root/shared" "$retention_failure_root/releases" "$retention_failure_bin"
+cp "$staging_root/shared/.env" "$retention_failure_root/shared/.env"
+for n in 1 2 3 4 5; do mkdir -p "$retention_failure_root/releases/old-$n"; done
+mkdir -p "$retention_failure_root/releases/retention-failure-old"
+touch -d '2000-01-01 00:00:00' "$retention_failure_root/releases/retention-failure-old"
+cat > "$retention_failure_bin/rm" <<'MOCK'
+#!/usr/bin/env bash
+case " $* " in
+    *retention-failure-old*) exit 1 ;;
+esac
+exec /bin/rm "$@"
+MOCK
+chmod +x "$retention_failure_bin/rm"
+expect_pass env PATH="$retention_failure_bin:$mock_bin:$PATH" STAGING_ROOT="$retention_failure_root" DEPLOY_LOG_DIR="$retention_failure_logs" SKIP_NETWORK_HEALTH_CHECK=1 bash "$ROOT/scripts/deploy-staging.sh" "$sha"
+retention_failure_log="$(find "$retention_failure_logs" -maxdepth 1 -name 'deploy-*-SUCCESS.log' -type f -print -quit)"
+[[ -n "$retention_failure_log" ]] || { echo 'Missing retention-warning SUCCESS audit' >&2; exit 1; }
+[[ "$(grep '^deployment_status=' "$retention_failure_log")" == 'deployment_status=SUCCESS' ]] || { echo 'Retention warning changed deployment status' >&2; exit 1; }
+[[ "$(grep '^retention_cleanup=' "$retention_failure_log")" == 'retention_cleanup=WARNING' ]] || { echo 'Retention warning was not recorded' >&2; exit 1; }
+grep -Fq 'retention-failure-old' "$retention_failure_log" || { echo 'Retention warning path missing' >&2; exit 1; }
+[[ "$(readlink -f "$retention_failure_root/current")" == "$retention_failure_root/releases/$sha" ]] || { echo 'Retention warning rolled back current' >&2; exit 1; }
+pass=$((pass + 5))
 
 # Pre-existing audit records plus this run must be pruned to the 30 newest files.
 for n in $(seq 1 31); do printf 'old\n' > "$log_dir/deploy-20000101-0000${n}-SUCCESS.log"; done

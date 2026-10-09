@@ -21,6 +21,8 @@ MIGRATION_RESULT="SKIPPED"
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
+RETENTION_CLEANUP="PASS"
+RETENTION_WARNING_PATHS=""
 ROUTE_CACHE_REBUILT="NO"
 ROUTE_CACHE_RESULT="FAIL"
 ROUTE_RUNTIME_CHECK="FAIL"
@@ -60,6 +62,8 @@ finalize_log() {
         printf 'route_runtime_check=%s\n' "$ROUTE_RUNTIME_CHECK"
         printf 'symlink_switch=%s\n' "$SYMLINK_RESULT"
         printf 'health_check=%s\n' "$HEALTH_RESULT"
+        printf 'retention_cleanup=%s\n' "$RETENTION_CLEANUP"
+        [[ -n "$RETENTION_WARNING_PATHS" ]] && printf 'retention_warning_paths=%s\n' "${RETENTION_WARNING_PATHS//$'\n'/,}"
         printf 'deployment_status=%s\n' "$STATUS"
         printf 'duration_seconds=%s\n' "$duration"
         [[ "$STATUS" == "FAILED" ]] && printf 'stage_failed=%s\n' "${STAGE_FAILED:-unknown}"
@@ -200,10 +204,29 @@ HEALTH_RESULT="SUCCESS"
 STATUS="SUCCESS"
 STAGE_FAILED=""
 
-# Retain current and 4 prior releases (minimum 5 releases)
+# Retain current and 4 prior releases (minimum 5 releases).
+# This is housekeeping only: failures must never roll back a healthy release.
+current_target="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
 mapfile -t old_releases < <(find "$RELEASES_DIR" -mindepth 1 -maxdepth 1 -type d -printf '%T@ %p\n' 2>/dev/null | sort -nr | tail -n +6 | cut -d' ' -f2-)
 for old_release in "${old_releases[@]}"; do
-    rm -rf -- "$old_release"
+    case "$old_release" in
+        "$RELEASES_DIR"/*) ;;
+        *)
+            RETENTION_CLEANUP="WARNING"
+            RETENTION_WARNING_PATHS+="${RETENTION_WARNING_PATHS:+$'\n'}$old_release"
+            continue
+            ;;
+    esac
+    if [[ "$old_release" == "$current_target" || "$old_release" == "$release_dir" ]]; then
+        RETENTION_CLEANUP="WARNING"
+        RETENTION_WARNING_PATHS+="${RETENTION_WARNING_PATHS:+$'\n'}$old_release"
+        continue
+    fi
+    if ! rm -rf -- "$old_release"; then
+        RETENTION_CLEANUP="WARNING"
+        RETENTION_WARNING_PATHS+="${RETENTION_WARNING_PATHS:+$'\n'}$old_release"
+    fi
 done
+[[ "$RETENTION_CLEANUP" == "WARNING" ]] && echo "Retention cleanup warning; deployment remains successful." >&2
 
 echo "Staging deployed: $TARGET_SHA"
