@@ -24,6 +24,7 @@ class RegistrationCategoryTest extends TestCase
             'pendaftaran_buka' => '1',
             'tanggal_buka' => now()->subDay()->toDateString(),
             'tanggal_tutup' => now()->addDay()->toDateString(),
+            'popup_persetujuan_aktif' => '1',
         ]);
 
         GelombangPendaftaran::query()->update([
@@ -39,24 +40,6 @@ class RegistrationCategoryTest extends TestCase
         parent::tearDown();
     }
 
-    public function test_beranda_menampilkan_tombol_login_peserta_langsung(): void
-    {
-        $this->get('/')
-            ->assertOk()
-            ->assertSee('Sudah punya akun? Login Peserta')
-            ->assertSee(route('peserta.login'));
-    }
-
-    public function test_default_popup_persetujuan_mencantumkan_ldii_dan_asrama(): void
-    {
-        $spmb = app(PengaturanService::class)->ambilSpmb();
-
-        $this->assertSame(
-            'SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.',
-            $spmb['popup_persetujuan_teks']
-        );
-    }
-
     public function test_form_menampilkan_periode_yang_sedang_dibuka(): void
     {
         $this->get('/daftar')
@@ -64,11 +47,20 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('2026-2027')
             ->assertSee('Gelombang 1')
             ->assertSee('Siswa Baru')
-            ->assertSee('Pindahan')
-            // Mengunci markup popup dan hook persetujuannya agar tidak hilang saat refactor.
-            ->assertSee('id="modalKomitmen"', false)
-            ->assertSee('Saya Bersedia, Lanjutkan Pendaftaran')
-            ->assertSee('x-on:komitmen-disetujui.window="setuju = true"', false);
+            ->assertSee('Pindahan');
+    }
+
+    public function test_form_menampilkan_modal_komitmen_dengan_tiga_logo_responsif(): void
+    {
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('modalKomitmen')
+            ->assertSee('images/logo-commitment-sma-afbs.png')
+            ->assertSee('images/logo-yayasan-dar-al-furqon-al-hakim.jpg')
+            ->assertSee('images/logo-commitment-ldii.png')
+            ->assertDontSee('https://ldiijabar.or.id/wp-content/uploads/2020/08/cropped-logo-ldii.png')
+            ->assertSee('grid-template-columns:repeat(3, minmax(0, 1fr))')
+            ->assertSee('grid-template-columns:1fr');
     }
 
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void

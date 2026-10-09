@@ -70,27 +70,31 @@ case "${*:-}" in
         ;;
     *"route:list --json"*)
         [[ "${FAIL_RUNTIME_ROUTE:-0}" != 1 ]] || exit 1
-        python3 - <<'PY'
-import json, os, pathlib, re
-pattern = re.compile(r"(?:->|Route::)name\s*\(\s*(['\"])([^'\"]+)\1")
-group_pattern = re.compile(r"->name\s*\(\s*(['\"])([^'\"]*)\1\s*\)(?:(?!->group\s*\().)*->group\s*\(\s*function\s*\([^)]*\)\s*\{(.*?)\}\s*\);", re.S)
-names = set()
-for path in pathlib.Path('routes').rglob('*.php'):
-    text = path.read_text(encoding='utf-8')
-    grouped_spans = []
-    for group in group_pattern.finditer(text):
-        grouped_spans.append((group.start(3), group.end(3)))
-        names.update(group.group(2) + match.group(2) for match in pattern.finditer(group.group(3)))
-    for match in pattern.finditer(text):
-        if not any(start <= match.start() < end for start, end in grouped_spans):
-            names.add(match.group(2))
-names = sorted(names)
-omit = os.environ.get('OMIT_RUNTIME_ROUTE', '')
-if omit == '__AUTO__':
-    omit = next((name for name in names if name not in {'peserta.dashboard', 'peserta.akun.username', 'peserta.akun.password'}), '')
-if omit:
-    names = [name for name in names if name != omit]
-print(json.dumps([{"uri": "mock/" + name, "name": name, "methods": ["GET"]} for name in names]))
+        state_file="${ROUTE_LIST_STATE_FILE:-.route-list-count}"
+        count=0
+        [[ -f "$state_file" ]] && count="$(<"$state_file")"
+        count=$((count + 1))
+        printf '%s' "$count" > "$state_file"
+        python3 - "$count" <<'PY'
+import json, os, sys
+count = int(sys.argv[1])
+names = {
+    'admin.dashboard',
+    'peserta.dashboard',
+    'peserta.akun.username',
+    'peserta.akun.password',
+    'registrations.index',
+}
+if count >= 2:
+    omit = os.environ.get('OMIT_RUNTIME_ROUTE', '')
+    if omit == '__AUTO__':
+        omit = 'registrations.index'
+    if omit:
+        names.discard(omit)
+    extra = os.environ.get('EXTRA_RUNTIME_ROUTE', '')
+    if extra:
+        names.add(extra)
+print(json.dumps([{'uri': 'mock/' + name, 'name': name, 'methods': ['GET']} for name in sorted(names)]))
 PY
         ;;
     *"route:list --ansi"*)
@@ -144,7 +148,7 @@ run_isolated_failure() {
 }
 run_isolated_failure route-clear FAIL_ROUTE_CLEAR FAIL FAIL
 run_isolated_failure route-cache FAIL_ROUTE_CACHE FAIL FAIL
-run_isolated_failure runtime-route FAIL_RUNTIME_ROUTE PASS FAIL
+run_isolated_failure runtime-route FAIL_RUNTIME_ROUTE FAIL FAIL
 
 generic_root="$TMP/staging-generic-route"
 generic_logs="$TMP/logs-generic-route"
@@ -156,6 +160,26 @@ generic_log="$(find "$generic_logs" -maxdepth 1 -name 'deploy-*-FAILED.log' -typ
 [[ -n "$generic_log" && "$(grep '^route_cache_result=' "$generic_log")" == 'route_cache_result=PASS' ]] || { echo 'generic route mismatch cache result mismatch' >&2; exit 1; }
 [[ "$(grep '^route_runtime_check=' "$generic_log")" == 'route_runtime_check=FAIL' ]] || { echo 'generic route mismatch runtime result mismatch' >&2; exit 1; }
 pass=$((pass + 4))
+
+extra_root="$TMP/staging-extra-route"
+extra_logs="$TMP/logs-extra-route"
+mkdir -p "$extra_root/shared"
+cp "$staging_root/shared/.env" "$extra_root/shared/.env"
+expect_fail env EXTRA_RUNTIME_ROUTE=unexpected.extra.route PATH="$mock_bin:$PATH" STAGING_ROOT="$extra_root" DEPLOY_LOG_DIR="$extra_logs" SKIP_NETWORK_HEALTH_CHECK=1 bash "$ROOT/scripts/deploy-staging.sh" "$sha"
+[[ ! -e "$extra_root/current" ]] || { echo 'extra route mismatch switched current symlink' >&2; exit 1; }
+extra_log="$(find "$extra_logs" -maxdepth 1 -name 'deploy-*-FAILED.log' -type f -print -quit)"
+[[ -n "$extra_log" && "$(grep '^route_runtime_check=' "$extra_log")" == 'route_runtime_check=FAIL' ]] || { echo 'extra route mismatch runtime result mismatch' >&2; exit 1; }
+pass=$((pass + 1))
+
+explicit_root="$TMP/staging-explicit-route"
+explicit_logs="$TMP/logs-explicit-route"
+mkdir -p "$explicit_root/shared"
+cp "$staging_root/shared/.env" "$explicit_root/shared/.env"
+expect_fail env OMIT_RUNTIME_ROUTE=peserta.akun.password PATH="$mock_bin:$PATH" STAGING_ROOT="$explicit_root" DEPLOY_LOG_DIR="$explicit_logs" SKIP_NETWORK_HEALTH_CHECK=1 bash "$ROOT/scripts/deploy-staging.sh" "$sha"
+[[ ! -e "$explicit_root/current" ]] || { echo 'explicit route mismatch switched current symlink' >&2; exit 1; }
+explicit_log="$(find "$explicit_logs" -maxdepth 1 -name 'deploy-*-FAILED.log' -type f -print -quit)"
+[[ -n "$explicit_log" && "$(grep '^route_runtime_check=' "$explicit_log")" == 'route_runtime_check=FAIL' ]] || { echo 'explicit route mismatch runtime result mismatch' >&2; exit 1; }
+pass=$((pass + 1))
 
 # A composer error must create a finalized FAILED audit entry that names its stage.
 failed_root="$TMP/staging-failed"
