@@ -17,13 +17,13 @@ STATUS="FAILED"
 STAGE_FAILED=""
 COMPOSER_RESULT="SKIPPED"
 NPM_BUILD_RESULT="SKIPPED"
-MIGRATION_RESULT="FAILED"
-MIGRATION_FILES_CHANGED=""
-PENDING_MIGRATIONS=""
-MIGRATION_ACTION=""
+MIGRATION_RESULT="SKIPPED"
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
+ROUTE_CACHE_REBUILT="NO"
+ROUTE_CACHE_RESULT="FAIL"
+ROUTE_RUNTIME_CHECK="FAIL"
 SWITCHED=false
 PREVIOUS_RELEASE=""
 TARGET_SHA=""
@@ -52,11 +52,12 @@ finalize_log() {
         printf 'branch/source=%s\n' "$SOURCE"
         printf 'composer_result=%s\n' "$COMPOSER_RESULT"
         printf 'npm_build_result=%s\n' "$NPM_BUILD_RESULT"
+        printf 'migration_command_executed=NO\n'
         printf 'migration_result=%s\n' "$MIGRATION_RESULT"
-        printf 'migration_files_changed=%s\n' "${MIGRATION_FILES_CHANGED//$'\n'/,}"
-        printf 'pending_migrations=%s\n' "$PENDING_MIGRATIONS"
-        printf 'migration_action=%s\n' "$MIGRATION_ACTION"
         printf 'artisan_optimize_result=%s\n' "$OPTIMIZE_RESULT"
+        printf 'route_cache_rebuilt=%s\n' "$ROUTE_CACHE_REBUILT"
+        printf 'route_cache_result=%s\n' "$ROUTE_CACHE_RESULT"
+        printf 'route_runtime_check=%s\n' "$ROUTE_RUNTIME_CHECK"
         printf 'symlink_switch=%s\n' "$SYMLINK_RESULT"
         printf 'health_check=%s\n' "$HEALTH_RESULT"
         printf 'deployment_status=%s\n' "$STATUS"
@@ -103,31 +104,50 @@ env_value() { awk -v key="$1" '$0 ~ "^[[:space:]]*(export[[:space:]]+)?" key "[[
 [[ "$(env_value APP_ENV)" == "staging" ]] || fail "Shared .env APP_ENV must be staging."
 [[ "$(env_value APP_URL)" == "$STAGING_URL" ]] || fail "Shared .env APP_URL must be $STAGING_URL."
 [[ -e "$CURRENT_LINK" ]] && PREVIOUS_RELEASE="$(readlink -f "$CURRENT_LINK" || true)"
-PREVIOUS_SHA="${PREVIOUS_RELEASE##*/}"
-[[ -z "$PREVIOUS_SHA" || "$PREVIOUS_SHA" =~ ^[0-9a-fA-F]{40}$ ]] || fail "Current staging release is not a SHA directory."
+[[ ! -e "$release_dir" ]] || fail "Release already exists: $TARGET_SHA"
 
-if [[ -n "$PREVIOUS_SHA" ]]; then
-    MIGRATION_FILES_CHANGED="$(git -C "$repo_root" diff --name-only "$PREVIOUS_SHA" "$TARGET_SHA" -- database/migrations/ || true)"
-else
-    MIGRATION_FILES_CHANGED="$(git -C "$repo_root" diff-tree --no-commit-id --name-only -r "$TARGET_SHA" -- database/migrations/ || true)"
-fi
+route_names_from_json() {
+    python3 -c '
+import json, sys
+try:
+    payload = json.load(sys.stdin)
+    rows = payload if isinstance(payload, list) else payload.get("routes", [])
+    names = sorted({str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name") and not str(row.get("name")).startswith("generated::")})
+except (ValueError, AttributeError, TypeError):
+    raise SystemExit(1)
+print("\n".join(names))
+'
+}
 
-echo "TARGET_SHA=$TARGET_SHA"
-if [[ -n "$MIGRATION_FILES_CHANGED" ]]; then
-    echo "MIGRATION_FILES_CHANGED=$(printf '%s' "$MIGRATION_FILES_CHANGED" | tr '\n' ', ' | sed 's/, $//')"
-else
-    echo "MIGRATION_FILES_CHANGED=NONE"
-fi
+verify_runtime_routes() {
+    local app_root="$1" expected_names="$2" runtime_output runtime_names diff_output explicit
+    runtime_output="$(cd "$app_root" && php artisan route:list --json 2>/dev/null)" || {
+        echo "Laravel route:list --json failed or is unsupported." >&2
+        return 1
+    }
+    runtime_names="$(route_names_from_json <<<"$runtime_output")" || {
+        echo "Laravel route:list --json returned invalid JSON." >&2
+        return 1
+    }
+    diff_output="$(comm -3 <(printf '%s\n' "$expected_names") <(printf '%s\n' "$runtime_names"))"
+    if [[ -n "$diff_output" ]]; then
+        echo "Route set mismatch between expected Laravel runtime sets:" >&2
+        printf '%s\n' "$diff_output" >&2
+        return 1
+    fi
+    for explicit in peserta.dashboard peserta.akun.username peserta.akun.password; do
+        grep -Fxq "$explicit" <<<"$runtime_names" || {
+            echo "Missing required runtime route: $explicit" >&2
+            return 1
+        }
+    done
+    return 0
+}
 
 STAGE_FAILED="archive"
-if [[ -e "$release_dir" ]]; then
-    [[ -d "$release_dir" ]] || fail "Release path exists but is not a directory: $TARGET_SHA"
-    echo "RELEASE_REUSE=YES"
-else
-    mkdir -p "$release_dir"
-    git -C "$repo_root" archive "$TARGET_SHA" | tar -x -C "$release_dir"
-    ln -s "$SHARED_ENV" "$release_dir/.env"
-fi
+mkdir -p "$release_dir"
+git -C "$repo_root" archive "$TARGET_SHA" | tar -x -C "$release_dir"
+ln -s "$SHARED_ENV" "$release_dir/.env"
 mkdir -p "$SHARED_STORAGE/app/public" "$SHARED_STORAGE/framework/cache/data" "$SHARED_STORAGE/framework/sessions" "$SHARED_STORAGE/framework/views" "$SHARED_STORAGE/logs"
 rm -rf "$release_dir/storage" "$release_dir/public/storage"
 ln -s "$SHARED_STORAGE" "$release_dir/storage"
@@ -138,45 +158,26 @@ STAGE_FAILED="composer"
 command -v composer >/dev/null 2>&1 || fail "composer is required."
 composer install --no-dev --optimize-autoloader --no-interaction
 COMPOSER_RESULT="SUCCESS"
-[[ -f vendor/autoload.php ]] || fail "Composer dependencies are incomplete: vendor/autoload.php is missing."
-
-STAGE_FAILED="migration_status"
-status_output="$(php artisan migrate:status --ansi 2>&1)" || fail "Read-only migration status failed."
-PENDING_MIGRATIONS="$(printf '%s\n' "$status_output" | awk '/Pending/{sub(/^[[:space:]]*/, ""); print $1}' | paste -sd, -)"
-[[ -n "$PENDING_MIGRATIONS" ]] || PENDING_MIGRATIONS="NONE"
-echo "PENDING_MIGRATIONS=$PENDING_MIGRATIONS"
-
-if [[ -z "$MIGRATION_FILES_CHANGED" ]]; then
-    MIGRATION_ACTION="SKIP_NO_MIGRATION_DIFF"
-elif [[ "${DEPLOY_MIGRATIONS:-0}" == "1" && "${DEPLOY_MIGRATIONS_APPROVED:-}" == "STAGING_ONLY" ]]; then
-    MIGRATION_ACTION="RUN"
-else
-    MIGRATION_ACTION="BLOCKED_MIGRATION_APPROVAL_REQUIRED"
-fi
-echo "MIGRATION_ACTION=$MIGRATION_ACTION"
-if [[ "$MIGRATION_ACTION" == "BLOCKED_MIGRATION_APPROVAL_REQUIRED" ]]; then
-    fail "Migration files changed; set DEPLOY_MIGRATIONS=1 and DEPLOY_MIGRATIONS_APPROVED=STAGING_ONLY."
-fi
-
 STAGE_FAILED="npm_build"
 if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then npm ci && npm run build; NPM_BUILD_RESULT="SUCCESS"; fi
 STAGE_FAILED="migration"
-if [[ "$MIGRATION_ACTION" == "RUN" ]]; then
-    php artisan migrate --force --ansi
-    MIGRATION_RESULT="SUCCESS"
-else
-    echo "migration_command_executed=NO"
-    echo "migration_result=SKIPPED"
-    MIGRATION_RESULT="SKIPPED"
-fi
+[[ "${DEPLOY_MIGRATIONS:-0}" == "0" ]] || fail "Migrations are disabled for staging deployment."
+MIGRATION_RESULT="SKIPPED"
 STAGE_FAILED="artisan_optimize"
 php artisan optimize:clear --ansi && php artisan optimize --ansi
 OPTIMIZE_RESULT="SUCCESS"
+STAGE_FAILED="route_cache"
+php artisan route:clear --ansi
+uncached_route_output="$(php artisan route:list --json 2>/dev/null)" || fail "Uncached Laravel route:list --json failed."
+uncached_route_names="$(route_names_from_json <<<"$uncached_route_output")" || fail "Uncached Laravel route:list --json returned invalid JSON."
+[[ -n "$uncached_route_names" ]] || fail "Uncached Laravel route set is empty."
+php artisan route:cache --ansi
+ROUTE_CACHE_REBUILT="YES"
+ROUTE_CACHE_RESULT="PASS"
+STAGE_FAILED="route_runtime_check"
+verify_runtime_routes "$release_dir" "$uncached_route_names" || fail "Pre-switch runtime route verification failed."
 STAGE_FAILED="health_check"
 [[ -f public/build/manifest.json ]] || fail "Built asset manifest is missing."
-if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
-    [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
-fi
 
 STAGE_FAILED="symlink_switch"
 ln -sfn "$release_dir" "$STAGING_ROOT/current.tmp"
@@ -188,6 +189,8 @@ SYMLINK_RESULT="SUCCESS"
 sudo -n /usr/bin/systemctl reload php8.2-fpm >/dev/null 2>&1 || true
 
 STAGE_FAILED="health_check"
+verify_runtime_routes "$CURRENT_LINK" "$uncached_route_names" || fail "Post-switch runtime route verification failed."
+ROUTE_RUNTIME_CHECK="PASS"
 if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
     public_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_PUBLIC_URL" || true)"
