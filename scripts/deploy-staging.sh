@@ -17,10 +17,13 @@ STATUS="FAILED"
 STAGE_FAILED=""
 COMPOSER_RESULT="SKIPPED"
 NPM_BUILD_RESULT="SKIPPED"
-MIGRATION_RESULT="FAILED"
+MIGRATION_RESULT="SKIPPED"
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
+ROUTE_CACHE_REBUILT="NO"
+ROUTE_CACHE_RESULT="FAIL"
+ROUTE_RUNTIME_CHECK="FAIL"
 SWITCHED=false
 PREVIOUS_RELEASE=""
 TARGET_SHA=""
@@ -49,8 +52,12 @@ finalize_log() {
         printf 'branch/source=%s\n' "$SOURCE"
         printf 'composer_result=%s\n' "$COMPOSER_RESULT"
         printf 'npm_build_result=%s\n' "$NPM_BUILD_RESULT"
+        printf 'migration_command_executed=NO\n'
         printf 'migration_result=%s\n' "$MIGRATION_RESULT"
         printf 'artisan_optimize_result=%s\n' "$OPTIMIZE_RESULT"
+        printf 'route_cache_rebuilt=%s\n' "$ROUTE_CACHE_REBUILT"
+        printf 'route_cache_result=%s\n' "$ROUTE_CACHE_RESULT"
+        printf 'route_runtime_check=%s\n' "$ROUTE_RUNTIME_CHECK"
         printf 'symlink_switch=%s\n' "$SYMLINK_RESULT"
         printf 'health_check=%s\n' "$HEALTH_RESULT"
         printf 'deployment_status=%s\n' "$STATUS"
@@ -99,6 +106,69 @@ env_value() { awk -v key="$1" '$0 ~ "^[[:space:]]*(export[[:space:]]+)?" key "[[
 [[ -e "$CURRENT_LINK" ]] && PREVIOUS_RELEASE="$(readlink -f "$CURRENT_LINK" || true)"
 [[ ! -e "$release_dir" ]] || fail "Release already exists: $TARGET_SHA"
 
+source_route_names() {
+    python3 - "$1" <<'PY'
+import pathlib, re, sys
+root = pathlib.Path(sys.argv[1]) / "routes"
+pattern = re.compile(r"(?:->|Route::)name\s*\(\s*(['\"])([^'\"]+)\1")
+group_pattern = re.compile(r"->name\s*\(\s*(['\"])([^'\"]*)\1\s*\)(?:(?!->group\s*\().)*->group\s*\(\s*function\s*\([^)]*\)\s*\{(.*?)\}\s*\);", re.S)
+names = set()
+if root.is_dir():
+    for path in root.rglob("*.php"):
+        try:
+            text = path.read_text(encoding="utf-8")
+        except OSError:
+            continue
+        grouped_spans = []
+        for group in group_pattern.finditer(text):
+            grouped_spans.append((group.start(3), group.end(3)))
+            names.update(group.group(2) + match.group(2) for match in pattern.finditer(group.group(3)))
+        for match in pattern.finditer(text):
+            if not any(start <= match.start() < end for start, end in grouped_spans):
+                names.add(match.group(2))
+for name in sorted(names):
+    print(name)
+PY
+}
+
+verify_runtime_routes() {
+    local app_root="$1" runtime_output runtime_format
+    local source_names runtime_names missing explicit
+    source_names="$(source_route_names "$app_root")" || return 1
+    runtime_format="json"
+    if ! runtime_output="$(php artisan route:list --json 2>/dev/null)"; then
+        runtime_format="text"
+        runtime_output="$(php artisan route:list --ansi 2>/dev/null)" || return 1
+    fi
+    runtime_names="$(SOURCE_NAMES="$source_names" RUNTIME_FORMAT="$runtime_format" RUNTIME_OUTPUT="$runtime_output" python3 - <<'PY'
+import json, os, re
+source = set(filter(None, os.environ.get("SOURCE_NAMES", "").splitlines()))
+output = os.environ.get("RUNTIME_OUTPUT", "")
+if os.environ.get("RUNTIME_FORMAT") == "json":
+    try:
+        payload = json.loads(output)
+        rows = payload if isinstance(payload, list) else payload.get("routes", [])
+        runtime = {str(row.get("name")) for row in rows if isinstance(row, dict) and row.get("name")}
+    except (ValueError, AttributeError, TypeError):
+        raise SystemExit(1)
+else:
+    runtime = {token for line in output.splitlines() for token in line.split() if token in source}
+for name in sorted(runtime):
+    print(name)
+missing = sorted(source - runtime)
+if missing:
+    print("missing=" + ",".join(missing), file=os.sys.stderr)
+    raise SystemExit(1)
+PY
+)" || return 1
+    for explicit in peserta.dashboard peserta.akun.username peserta.akun.password; do
+        if grep -Fxq "$explicit" <<<"$source_names"; then
+            grep -Fxq "$explicit" <<<"$runtime_names" || { echo "Missing required runtime route: $explicit" >&2; return 1; }
+        fi
+    done
+    return 0
+}
+
 STAGE_FAILED="archive"
 mkdir -p "$release_dir"
 git -C "$repo_root" archive "$TARGET_SHA" | tar -x -C "$release_dir"
@@ -116,16 +186,20 @@ COMPOSER_RESULT="SUCCESS"
 STAGE_FAILED="npm_build"
 if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then npm ci && npm run build; NPM_BUILD_RESULT="SUCCESS"; fi
 STAGE_FAILED="migration"
-php artisan migrate --force --ansi
-MIGRATION_RESULT="SUCCESS"
+[[ "${DEPLOY_MIGRATIONS:-0}" == "0" ]] || fail "Migrations are disabled for staging deployment."
+MIGRATION_RESULT="SKIPPED"
 STAGE_FAILED="artisan_optimize"
 php artisan optimize:clear --ansi && php artisan optimize --ansi
 OPTIMIZE_RESULT="SUCCESS"
+STAGE_FAILED="route_cache"
+php artisan route:clear --ansi
+php artisan route:cache --ansi
+ROUTE_CACHE_REBUILT="YES"
+ROUTE_CACHE_RESULT="PASS"
+STAGE_FAILED="route_runtime_check"
+verify_runtime_routes "$release_dir" || fail "Pre-switch runtime route verification failed."
 STAGE_FAILED="health_check"
 [[ -f public/build/manifest.json ]] || fail "Built asset manifest is missing."
-if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
-    [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
-fi
 
 STAGE_FAILED="symlink_switch"
 ln -sfn "$release_dir" "$STAGING_ROOT/current.tmp"
@@ -137,6 +211,8 @@ SYMLINK_RESULT="SUCCESS"
 sudo -n /usr/bin/systemctl reload php8.2-fpm >/dev/null 2>&1 || true
 
 STAGE_FAILED="health_check"
+verify_runtime_routes "$CURRENT_LINK" || fail "Post-switch runtime route verification failed."
+ROUTE_RUNTIME_CHECK="PASS"
 if [[ "${SKIP_NETWORK_HEALTH_CHECK:-0}" != "1" ]]; then
     [[ "$(curl -s -f -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_LOCAL_URL")" == "200" ]] || fail "Local health check failed."
     public_code="$(curl -sS -o /dev/null -w '%{http_code}' "$HEALTH_CHECK_PUBLIC_URL" || true)"

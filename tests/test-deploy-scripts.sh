@@ -55,9 +55,48 @@ exit 0
 MOCK
 cat > "$mock_bin/php" <<'MOCK'
 #!/usr/bin/env bash
+set -euo pipefail
 mkdir -p public/build
 printf '{}' > public/build/manifest.json
-[[ "${FAIL_PHP:-0}" != 1 ]]
+case "${*:-}" in
+    *"route:clear"*)
+        [[ "${FAIL_ROUTE_CLEAR:-0}" != 1 ]]
+        ;;
+    *"optimize:clear"|*" optimize" )
+        [[ "${FAIL_PHP:-0}" != 1 ]]
+        ;;
+    *"route:cache"*)
+        [[ "${FAIL_ROUTE_CACHE:-0}" != 1 ]]
+        ;;
+    *"route:list --json"*)
+        [[ "${FAIL_RUNTIME_ROUTE:-0}" != 1 ]] || exit 1
+        python3 - <<'PY'
+import json, os, pathlib, re
+pattern = re.compile(r"(?:->|Route::)name\s*\(\s*(['\"])([^'\"]+)\1")
+group_pattern = re.compile(r"->name\s*\(\s*(['\"])([^'\"]*)\1\s*\)(?:(?!->group\s*\().)*->group\s*\(\s*function\s*\([^)]*\)\s*\{(.*?)\}\s*\);", re.S)
+names = set()
+for path in pathlib.Path('routes').rglob('*.php'):
+    text = path.read_text(encoding='utf-8')
+    grouped_spans = []
+    for group in group_pattern.finditer(text):
+        grouped_spans.append((group.start(3), group.end(3)))
+        names.update(group.group(2) + match.group(2) for match in pattern.finditer(group.group(3)))
+    for match in pattern.finditer(text):
+        if not any(start <= match.start() < end for start, end in grouped_spans):
+            names.add(match.group(2))
+names = sorted(names)
+omit = os.environ.get('OMIT_RUNTIME_ROUTE', '')
+if omit == '__AUTO__':
+    omit = next((name for name in names if name not in {'peserta.dashboard', 'peserta.akun.username', 'peserta.akun.password'}), '')
+if omit:
+    names = [name for name in names if name != omit]
+print(json.dumps([{"uri": "mock/" + name, "name": name, "methods": ["GET"]} for name in names]))
+PY
+        ;;
+    *"route:list --ansi"*)
+        [[ "${FAIL_RUNTIME_ROUTE:-0}" != 1 ]] || exit 1
+        ;;
+esac
 MOCK
 chmod +x "$mock_bin/composer" "$mock_bin/npm" "$mock_bin/php"
 
@@ -78,12 +117,45 @@ run_staging() {
 expect_pass run_staging
 success_log="$(find "$log_dir" -name 'deploy-*-SUCCESS.log' -type f | head -n 1)"
 [[ -n "$success_log" && -f "$success_log" ]] || { echo 'Missing success audit log' >&2; exit 1; }
-for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_result artisan_optimize_result symlink_switch health_check deployment_status duration_seconds; do
+for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_command_executed migration_result artisan_optimize_result route_cache_rebuilt route_cache_result route_runtime_check symlink_switch health_check deployment_status duration_seconds; do
     grep -Eq "^${field}=" "$success_log" || { echo "Missing $field" >&2; exit 1; }
 done
 [[ "$(grep '^deployment_status=' "$success_log")" == 'deployment_status=SUCCESS' ]]
+[[ "$(grep '^route_cache_rebuilt=' "$success_log")" == 'route_cache_rebuilt=YES' ]]
+[[ "$(grep '^route_cache_result=' "$success_log")" == 'route_cache_result=PASS' ]]
+[[ "$(grep '^route_runtime_check=' "$success_log")" == 'route_runtime_check=PASS' ]]
+[[ "$(grep '^migration_command_executed=' "$success_log")" == 'migration_command_executed=NO' ]]
 ! grep -Eq 'super-secret-password|base64:do-not-log-this|DB_PASSWORD|APP_KEY' "$success_log"
 pass=$((pass + 1))
+
+run_isolated_failure() {
+    local case_name="$1" variable="$2" expected_route_result="$3" expected_runtime_result="$4"
+    local failure_root="$TMP/staging-$case_name" failure_logs="$TMP/logs-$case_name"
+    mkdir -p "$failure_root/shared"
+    cp "$staging_root/shared/.env" "$failure_root/shared/.env"
+    expect_fail env "$variable"=1 PATH="$mock_bin:$PATH" STAGING_ROOT="$failure_root" DEPLOY_LOG_DIR="$failure_logs" SKIP_NETWORK_HEALTH_CHECK=1 bash "$ROOT/scripts/deploy-staging.sh" "$sha"
+    [[ ! -e "$failure_root/current" ]] || { echo "$case_name switched current symlink" >&2; exit 1; }
+    [[ -z "$(find "$failure_logs" -maxdepth 1 -name 'deploy-*-SUCCESS.log' -type f -print -quit)" ]] || { echo "$case_name wrote SUCCESS audit" >&2; exit 1; }
+    local failure_log
+    failure_log="$(find "$failure_logs" -maxdepth 1 -name 'deploy-*-FAILED.log' -type f -print -quit)"
+    [[ -n "$failure_log" && -f "$failure_log" ]] || { echo "Missing $case_name FAILED audit" >&2; exit 1; }
+    [[ "$(grep '^route_cache_result=' "$failure_log")" == "route_cache_result=$expected_route_result" ]] || { echo "$case_name route cache result mismatch" >&2; exit 1; }
+    [[ "$(grep '^route_runtime_check=' "$failure_log")" == "route_runtime_check=$expected_runtime_result" ]] || { echo "$case_name runtime route result mismatch" >&2; exit 1; }
+}
+run_isolated_failure route-clear FAIL_ROUTE_CLEAR FAIL FAIL
+run_isolated_failure route-cache FAIL_ROUTE_CACHE FAIL FAIL
+run_isolated_failure runtime-route FAIL_RUNTIME_ROUTE PASS FAIL
+
+generic_root="$TMP/staging-generic-route"
+generic_logs="$TMP/logs-generic-route"
+mkdir -p "$generic_root/shared"
+cp "$staging_root/shared/.env" "$generic_root/shared/.env"
+expect_fail env OMIT_RUNTIME_ROUTE=__AUTO__ PATH="$mock_bin:$PATH" STAGING_ROOT="$generic_root" DEPLOY_LOG_DIR="$generic_logs" SKIP_NETWORK_HEALTH_CHECK=1 bash "$ROOT/scripts/deploy-staging.sh" "$sha"
+[[ ! -e "$generic_root/current" ]] || { echo 'generic route mismatch switched current symlink' >&2; exit 1; }
+generic_log="$(find "$generic_logs" -maxdepth 1 -name 'deploy-*-FAILED.log' -type f -print -quit)"
+[[ -n "$generic_log" && "$(grep '^route_cache_result=' "$generic_log")" == 'route_cache_result=PASS' ]] || { echo 'generic route mismatch cache result mismatch' >&2; exit 1; }
+[[ "$(grep '^route_runtime_check=' "$generic_log")" == 'route_runtime_check=FAIL' ]] || { echo 'generic route mismatch runtime result mismatch' >&2; exit 1; }
+pass=$((pass + 4))
 
 # A composer error must create a finalized FAILED audit entry that names its stage.
 failed_root="$TMP/staging-failed"
