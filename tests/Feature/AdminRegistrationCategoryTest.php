@@ -151,6 +151,38 @@ class AdminRegistrationCategoryTest extends TestCase
             ->assertDontSee('PESERTA FILTER LAIN');
     }
 
+    public function test_admin_melihat_pagination_peserta_tanpa_duplikasi_dan_mempertahankan_filter(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        Peserta::factory()
+            ->count(16)
+            ->sequence(fn ($sequence) => [
+                'nomor_pendaftaran' => 'SPMB-PAG-' . str_pad((string) ($sequence->index + 1), 3, '0', STR_PAD_LEFT),
+                'email' => 'pagination-' . ($sequence->index + 1) . '@example.test',
+            ])
+            ->create([
+                'nama' => 'PESERTA PAGINATION TARGET',
+                ...$kategori,
+            ]);
+
+        $halamanSatu = $this->get('/admin/peserta?cari=Pagination&page=1');
+        $halamanSatu->assertOk()
+            ->assertSee('Menampilkan 1 - 15 dari 16 data')
+            ->assertSee('peserta-pagination')
+            ->assertSee('Selanjutnya &raquo;', false);
+        self::assertSame(1, substr_count($halamanSatu->getContent(), 'peserta-pagination'));
+        self::assertStringContainsString('cari=Pagination', $halamanSatu->getContent());
+
+        $halamanDua = $this->get('/admin/peserta?cari=Pagination&page=2');
+        $halamanDua->assertOk()
+            ->assertSee('Menampilkan 16 - 16 dari 16 data')
+            ->assertSee('Sebelumnya')
+            ->assertSee('Selanjutnya &raquo;', false);
+        self::assertSame(1, substr_count($halamanDua->getContent(), 'peserta-pagination'));
+        self::assertStringContainsString('cari=Pagination', $halamanDua->getContent());
+    }
+
     public function test_admin_melihat_rekap_data_formulir_peserta(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
