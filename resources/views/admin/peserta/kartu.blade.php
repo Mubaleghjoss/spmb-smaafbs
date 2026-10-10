@@ -170,6 +170,87 @@
             color: #1a5f2a;
         }
         
+        @media (max-width: 575.98px) {
+            body {
+                padding: 12px;
+            }
+
+            .card-container,
+            .print-btn {
+                width: 100%;
+                max-width: 350px;
+            }
+
+            .card-header {
+                padding: 14px 16px;
+            }
+
+            .card-header h1 {
+                font-size: 14px;
+                line-height: 1.3;
+            }
+
+            .card-header p {
+                font-size: 11px;
+            }
+
+            .card-body {
+                padding: 14px 16px;
+            }
+
+            .photo-section {
+                margin-bottom: 10px;
+            }
+
+            .photo {
+                width: 78px;
+                height: 94px;
+            }
+
+            .nomor-pendaftaran {
+                margin-bottom: 10px;
+            }
+
+            .nomor-pendaftaran .value {
+                font-size: 16px;
+                overflow-wrap: anywhere;
+            }
+
+            .info-table {
+                font-size: 11px;
+            }
+
+            .info-table tr td {
+                padding: 4px 0;
+                vertical-align: top;
+            }
+
+            .info-table .label {
+                width: 31%;
+                padding-right: 8px;
+            }
+
+            .info-table .value {
+                overflow-wrap: anywhere;
+                word-break: break-word;
+            }
+
+            .card-footer {
+                padding: 10px 16px;
+            }
+
+            .qr-placeholder {
+                width: 64px;
+                height: 64px;
+                margin-bottom: 6px;
+            }
+
+            .print-btn {
+                margin: 12px auto;
+                padding: 10px 12px;
+            }
+        }
+
         @media print {
             body {
                 background: white;
