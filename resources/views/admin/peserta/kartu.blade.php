@@ -170,7 +170,7 @@
             color: #1a5f2a;
         }
         
-        @media (max-width: 575.98px) {
+        @media screen and (max-width: 575.98px) {
             body {
                 padding: 12px;
             }
