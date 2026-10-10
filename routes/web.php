@@ -9,6 +9,7 @@ use App\Http\Controllers\Peserta\DashboardSpmbController;
 use App\Http\Controllers\Peserta\AkunController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\InstalasiController;
+use App\Http\Controllers\PwaAssetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -31,6 +32,8 @@ Route::prefix('instalasi')->name('instalasi.')->group(function () {
 | Halaman Publik
 |--------------------------------------------------------------------------
 */
+Route::get('/sw.js', [PwaAssetController::class, 'serviceWorker'])->name('pwa.service-worker');
+Route::get('/manifest.webmanifest', [PwaAssetController::class, 'manifest'])->name('pwa.manifest');
 Route::get('/', [PublicController::class, 'beranda'])->name('beranda');
 Route::get('/alur-spmb', [PublicController::class, 'alurSpmb'])->name('alur-spmb');
 Route::get('/jadwal', [PublicController::class, 'jadwal'])->name('jadwal');

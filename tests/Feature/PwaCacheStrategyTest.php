@@ -8,7 +8,7 @@ class PwaCacheStrategyTest extends TestCase
 {
     public function test_service_worker_is_release_scoped_and_error_safe(): void
     {
-        $worker = file_get_contents(\public_path('sw.js'));
+        $worker = file_get_contents(resource_path('pwa/sw.js'));
 
         $this->assertIsString($worker);
         $this->assertStringContainsString("__SPMB_RELEASE_SHA__", $worker);
@@ -33,5 +33,22 @@ class PwaCacheStrategyTest extends TestCase
         $this->assertStringContainsString('Cache-Control "no-cache, must-revalidate"', $htaccess);
         $this->assertStringContainsString("updateViaCache: 'none'", $scripts);
         $this->assertStringContainsString('return registration.update()', $scripts);
+    }
+
+    public function test_pwa_routes_return_fresh_release_aware_responses(): void
+    {
+        $sw = $this->get('/sw.js');
+        $sw->assertOk()
+            ->assertHeader('Content-Type', 'application/javascript')
+            ->assertSee("const RELEASE_ID = 'dev';", false);
+        $this->assertStringContainsString('no-cache', (string) $sw->headers->get('Cache-Control'));
+        $this->assertStringContainsString('must-revalidate', (string) $sw->headers->get('Cache-Control'));
+
+        $manifest = $this->get('/manifest.webmanifest');
+        $manifest->assertOk()
+            ->assertHeader('Content-Type', 'application/manifest+json')
+            ->assertSee('SPMB SMA Al Furqon Boarding School', false);
+        $this->assertStringContainsString('no-cache', (string) $manifest->headers->get('Cache-Control'));
+        $this->assertStringContainsString('must-revalidate', (string) $manifest->headers->get('Cache-Control'));
     }
 }
