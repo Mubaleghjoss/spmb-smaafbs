@@ -56,6 +56,9 @@ MOCK
 cat > "$mock_bin/php" <<'MOCK'
 #!/usr/bin/env bash
 set -euo pipefail
+if [[ "${1:-}" == "-r" ]]; then
+    exec /usr/bin/php "$@"
+fi
 mkdir -p public/build
 printf '{}' > public/build/manifest.json
 case "${*:-}" in
@@ -122,7 +125,7 @@ run_staging() {
 expect_pass run_staging
 success_log="$(find "$log_dir" -name 'deploy-*-SUCCESS.log' -type f | head -n 1)"
 [[ -n "$success_log" && -f "$success_log" ]] || { echo 'Missing success audit log' >&2; exit 1; }
-for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_command_executed migration_result artisan_optimize_result route_cache_rebuilt route_cache_result route_runtime_check symlink_switch health_check retention_cleanup deployment_status duration_seconds; do
+for field in timestamp_start timestamp_end target_sha previous_sha branch/source composer_result npm_build_result migration_command_executed migration_result artisan_optimize_result route_cache_rebuilt route_cache_result route_runtime_check symlink_switch health_check popup_asset_health pwa_cache_version pwa_sw_stamped pwa_update_headers daftar_stability retention_cleanup deployment_status duration_seconds; do
     grep -Eq "^${field}=" "$success_log" || { echo "Missing $field" >&2; exit 1; }
 done
 [[ "$(grep '^deployment_status=' "$success_log")" == 'deployment_status=SUCCESS' ]]

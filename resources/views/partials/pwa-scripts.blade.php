@@ -2,9 +2,13 @@
 <script>
 if ('serviceWorker' in navigator) {
     window.addEventListener('load', function () {
-        navigator.serviceWorker.register('{{ asset('sw.js') }}').catch(function (e) {
-            console.warn('SW gagal:', e);
-        });
+        navigator.serviceWorker.register('{{ asset('sw.js') }}', { updateViaCache: 'none' })
+            .then(function (registration) {
+                return registration.update();
+            })
+            .catch(function (e) {
+                console.warn('SW gagal:', e);
+            });
     });
 }
 

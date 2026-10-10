@@ -25,6 +25,12 @@
     RewriteRule ^ index.php [L]
 </IfModule>
 
+# Service worker and manifest must be revalidated on every release.
+<FilesMatch "^(sw\.js|manifest\.webmanifest)$">
+    Header always set Cache-Control "no-cache, must-revalidate"
+    Header always set Expires "0"
+</FilesMatch>
+
 # Security Headers
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"

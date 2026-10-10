@@ -1,28 +1,33 @@
-/* Service Worker SPMB — cache aset statis, network-first utk navigasi.
- * Versi cache dinaikkan setiap ada perubahan agar klien memperbarui.
- */
-const CACHE_VERSION = 'spmb-v1';
+/* Service Worker SPMB — release-scoped caches and fresh-first delivery. */
+const RELEASE_ID = '__SPMB_RELEASE_SHA__';
+const CACHE_VERSION = `spmb-cache-v${RELEASE_ID}`;
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const OFFLINE_URL = '/offline.html';
-
 const PRECACHE = [
     OFFLINE_URL,
     '/icons/icon-192.png',
     '/icons/icon-512.png',
-    '/manifest.webmanifest',
 ];
+const BYPASS_PREFIXES = ['/admin', '/peserta', '/ujian', '/login', '/logout', '/daftar', '/cek-status'];
+const ERROR_STATUSES = new Set([403, 404, 500]);
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
-        caches.open(STATIC_CACHE).then((cache) => cache.addAll(PRECACHE)).then(() => self.skipWaiting())
+        caches.open(STATIC_CACHE)
+            .then((cache) => cache.addAll(PRECACHE))
+            .then(() => self.skipWaiting())
     );
 });
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) =>
-            Promise.all(keys.filter((k) => !k.startsWith(CACHE_VERSION)).map((k) => caches.delete(k)))
-        ).then(() => self.clients.claim())
+        caches.keys()
+            .then((keys) => Promise.all(
+                keys
+                    .filter((key) => key.startsWith('spmb-cache-') && key !== STATIC_CACHE)
+                    .map((key) => caches.delete(key))
+            ))
+            .then(() => self.clients.claim())
     );
 });
 
@@ -32,42 +37,53 @@ function isStaticAsset(url) {
         url.pathname.startsWith('/icons/');
 }
 
+function isPopupLogo(url) {
+    return url.pathname.startsWith('/images/logo-commitment-') ||
+        url.pathname === '/images/logo-yayasan-dar-al-furqon-al-hakim.jpg';
+}
+
+function isCacheableResponse(response, url) {
+    if (!response || !response.ok || ERROR_STATUSES.has(response.status)) return false;
+    if (isPopupLogo(url)) {
+        const type = (response.headers.get('content-type') || '').toLowerCase();
+        return type === 'image/png' || type === 'image/jpeg';
+    }
+    return true;
+}
+
+function isBypassed(url) {
+    return BYPASS_PREFIXES.some((prefix) => url.pathname === prefix || url.pathname.startsWith(`${prefix}/`));
+}
+
 self.addEventListener('fetch', (event) => {
     const req = event.request;
-
-    // Hanya tangani GET. POST/PUT (login, submit form) selalu ke jaringan langsung.
     if (req.method !== 'GET') return;
 
     const url = new URL(req.url);
+    if (url.origin !== self.location.origin || isBypassed(url)) return;
 
-    // Jangan cache lintas-origin
-    if (url.origin !== self.location.origin) return;
-
-    // Jangan cache area sensitif/dinamis (dashboard, ujian, admin, storage privat)
-    const bypass = ['/admin', '/peserta', '/ujian', '/login', '/logout', '/daftar', '/cek-status'];
-    if (bypass.some((p) => url.pathname === p || url.pathname.startsWith(p + '/'))) {
-        return; // biarkan default (network) — data selalu segar
+    if (url.pathname === '/manifest.webmanifest' || req.mode === 'navigate') {
+        event.respondWith(
+            fetch(req)
+                .then((response) => response)
+                .catch(() => (req.mode === 'navigate' ? caches.match(OFFLINE_URL) : Response.error()))
+        );
+        return;
     }
 
-    // Aset statis: cache-first
     if (isStaticAsset(url)) {
         event.respondWith(
-            caches.match(req).then((cached) =>
-                cached || fetch(req).then((res) => {
-                    const copy = res.clone();
-                    caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
-                    return res;
-                }).catch(() => cached)
-            )
+            fetch(req)
+                .then((response) => {
+                    if (isCacheableResponse(response, url)) {
+                        return caches.open(STATIC_CACHE).then((cache) => {
+                            cache.put(req, response.clone());
+                            return response;
+                        });
+                    }
+                    return response;
+                })
+                .catch(() => caches.match(req))
         );
-        return;
-    }
-
-    // Navigasi halaman publik: network-first, fallback offline
-    if (req.mode === 'navigate') {
-        event.respondWith(
-            fetch(req).catch(() => caches.match(OFFLINE_URL))
-        );
-        return;
     }
 });
