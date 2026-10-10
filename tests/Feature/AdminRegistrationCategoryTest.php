@@ -117,6 +117,40 @@ class AdminRegistrationCategoryTest extends TestCase
             ->assertDontSee('PESERTA REKAP LAIN');
     }
 
+    public function test_admin_dapat_mencari_peserta_berdasarkan_sekolah_kota_dan_status_verifikasi(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        $target = Peserta::factory()->create([
+            'nama' => 'PESERTA FILTER TARGET',
+            ...$kategori,
+        ]);
+        FormulirSpmb::query()->create([
+            'peserta_id' => $target->id,
+            'nama_lengkap' => $target->nama,
+            'asal_sekolah' => 'SMP NUSANTARA UTAMA',
+            'alamat_kota' => 'Tangerang',
+            'status_verifikasi' => 'terverifikasi',
+        ]);
+
+        $lain = Peserta::factory()->create([
+            'nama' => 'PESERTA FILTER LAIN',
+            ...$kategori,
+        ]);
+        FormulirSpmb::query()->create([
+            'peserta_id' => $lain->id,
+            'nama_lengkap' => $lain->nama,
+            'asal_sekolah' => 'SMP NUSANTARA UTAMA',
+            'alamat_kota' => 'Jakarta',
+            'status_verifikasi' => 'menunggu',
+        ]);
+
+        $this->get('/admin/peserta?asal_sekolah_smp=NUSANTARA&kota=Tangerang&status_verifikasi=terverifikasi')
+            ->assertOk()
+            ->assertSee('PESERTA FILTER TARGET')
+            ->assertDontSee('PESERTA FILTER LAIN');
+    }
+
     public function test_admin_melihat_rekap_data_formulir_peserta(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
