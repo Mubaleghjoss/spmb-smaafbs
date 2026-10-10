@@ -88,6 +88,22 @@ class PesertaService
             }
         }
 
+        if (!empty($filter['kota'])) {
+            $kota = $filter['kota'];
+            if ($this->filterKosong($kota)) {
+                $query->whereDoesntHave('formulirSpmb', function ($sub) {
+                    $sub->whereNotNull('alamat_kota')
+                        ->where('alamat_kota', '<>', '');
+                });
+            } else {
+                $query->whereHas('formulirSpmb', fn($sub) => $sub->where('alamat_kota', 'like', "%{$kota}%"));
+            }
+        }
+
+        if (!empty($filter['status_verifikasi'])) {
+            $query->whereHas('formulirSpmb', fn($sub) => $sub->where('status_verifikasi', $filter['status_verifikasi']));
+        }
+
         foreach (['kelompok', 'desa', 'daerah'] as $field) {
             if (!empty($filter[$field])) {
                 $value = $filter[$field];

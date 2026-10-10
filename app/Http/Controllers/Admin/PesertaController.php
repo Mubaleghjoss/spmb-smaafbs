@@ -59,6 +59,8 @@ class PesertaController extends Controller
             'kelas_tujuan' => $request->get('kelas_tujuan'),
             'status_kuota' => $request->get('status_kuota'),
             'asal_sekolah_smp' => $request->get('asal_sekolah_smp'),
+            'kota' => $request->get('kota'),
+            'status_verifikasi' => $request->get('status_verifikasi'),
             'kelompok' => $request->get('kelompok'),
             'desa' => $request->get('desa'),
             'daerah' => $request->get('daerah'),

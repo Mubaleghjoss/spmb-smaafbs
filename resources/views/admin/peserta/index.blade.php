@@ -178,6 +178,20 @@
                     <input type="text" name="asal_sekolah_smp" class="form-control" placeholder="Contoh: SMP AFBS" value="{{ $filter['asal_sekolah_smp'] }}">
                 </div>
                 <div class="col-md-3">
+                    <label class="form-label">Kota</label>
+                    <input type="text" name="kota" class="form-control" placeholder="Contoh: Tangerang" value="{{ $filter['kota'] }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status Verifikasi</label>
+                    <select name="status_verifikasi" class="form-select">
+                        <option value="">Semua Status</option>
+                        <option value="draft" {{ $filter['status_verifikasi'] === 'draft' ? 'selected' : '' }}>Draft</option>
+                        <option value="menunggu" {{ $filter['status_verifikasi'] === 'menunggu' ? 'selected' : '' }}>Menunggu Verifikasi</option>
+                        <option value="terverifikasi" {{ $filter['status_verifikasi'] === 'terverifikasi' ? 'selected' : '' }}>Terverifikasi</option>
+                        <option value="ditolak" {{ $filter['status_verifikasi'] === 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
                     <label class="form-label">Nama Kelompok</label>
                     <input type="text" name="kelompok" class="form-control" placeholder="Nama kelompok" value="{{ $filter['kelompok'] }}">
                 </div>
