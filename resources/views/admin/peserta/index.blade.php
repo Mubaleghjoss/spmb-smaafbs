@@ -543,7 +543,54 @@
                 </table>
             </div>
 
-            {{ $peserta->withQueryString()->links() }}
+            @php($pesertaPaginasi = $peserta->withQueryString())
+            <div class="peserta-pagination d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2 mt-3">
+                <small class="text-muted">
+                    @if($pesertaPaginasi->total() > 0)
+                        Menampilkan {{ $pesertaPaginasi->firstItem() }} - {{ $pesertaPaginasi->lastItem() }} dari {{ $pesertaPaginasi->total() }} data
+                    @else
+                        Tidak ada data peserta
+                    @endif
+                </small>
+
+                @if($pesertaPaginasi->hasPages())
+                    <nav aria-label="Navigasi halaman peserta">
+                        <ul class="pagination pagination-sm mb-0 flex-wrap">
+                            @if($pesertaPaginasi->onFirstPage())
+                                <li class="page-item disabled" aria-disabled="true">
+                                    <span class="page-link">&laquo; Sebelumnya</span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $pesertaPaginasi->previousPageUrl() }}" rel="prev">&laquo; Sebelumnya</a>
+                                </li>
+                            @endif
+
+                            @for($halaman = 1; $halaman <= $pesertaPaginasi->lastPage(); $halaman++)
+                                @if($halaman === $pesertaPaginasi->currentPage())
+                                    <li class="page-item active" aria-current="page">
+                                        <span class="page-link">{{ $halaman }}</span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $pesertaPaginasi->url($halaman) }}">{{ $halaman }}</a>
+                                    </li>
+                                @endif
+                            @endfor
+
+                            @if($pesertaPaginasi->hasMorePages())
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $pesertaPaginasi->nextPageUrl() }}" rel="next">Selanjutnya &raquo;</a>
+                                </li>
+                            @else
+                                <li class="page-item disabled" aria-disabled="true">
+                                    <span class="page-link">Selanjutnya &raquo;</span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
+                @endif
+            </div>
         </div>
     </div>
     
