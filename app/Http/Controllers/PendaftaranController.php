@@ -265,14 +265,15 @@ class PendaftaranController extends Controller
                 'id' => (string) $tahun->id,
                 'nama' => $tahun->nama,
                 'default' => (bool) $tahun->default,
+                'tampilkan_kuota' => (bool) ($tahun->tampilkan_kuota ?? true),
                 'kuota' => $ringkasan,
-                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan) {
+                'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan, $tahun) {
                     $status = $gelombang->statusPendaftaran();
                     $jadwalDibuka = $gelombang->sedangDibuka();
-                    $statusLabel = $jadwalDibuka && $ringkasan['penuh']
+                    $statusLabel = $jadwalDibuka && $tahun->tampilkan_kuota && $ringkasan['penuh']
                         ? 'Kuota Penuh - Waiting List'
                         : $status['label'];
-                    $statusClass = $jadwalDibuka && $ringkasan['penuh']
+                    $statusClass = $jadwalDibuka && $tahun->tampilkan_kuota && $ringkasan['penuh']
                         ? 'warning text-dark'
                         : $status['class'];
 

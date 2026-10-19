@@ -123,7 +123,7 @@
                                                           x-text="tahunAjaranId===tahun.id?'Dipilih':'Pilih'"></span>
                                                 </div>
                                                 <div class="small text-muted mt-1" x-text="ringkasanGelombangTahun(tahun)"></div>
-                                                <div class="small mt-1" x-show="jenisPendaftaran !== 'pindahan'">
+                                                <div class="small mt-1" x-show="jenisPendaftaran !== 'pindahan' && tahun.tampilkan_kuota" x-cloak>
                                                     <span class="badge"
                                                           :class="tahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success-subtle text-success border border-success-subtle'">
                                                         <template x-if="tahun.kuota.penuh"><span>Kuota penuh — Waiting List</span></template>
@@ -145,7 +145,7 @@
                                         {{-- Rincian kuota HANYA untuk jalur siswa baru.
                                              Jalur pindahan tidak dibatasi kuota (kebijakan sekolah),
                                              jadi seluruh panel kuota disembunyikan. --}}
-                                        <div class="border rounded-3 p-3 mb-3 bg-light" x-show="jenisPendaftaran !== 'pindahan'">
+                                        <div class="border rounded-3 p-3 mb-3 bg-light" x-show="jenisPendaftaran !== 'pindahan' && selectedTahun.tampilkan_kuota" x-cloak>
                                             <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                                 <span class="small fw-semibold"><i class="bi bi-clipboard-data me-1"></i>Informasi Kuota</span>
                                                 <span class="badge" :class="selectedTahun.kuota.penuh ? 'bg-warning text-dark' : 'bg-success'">

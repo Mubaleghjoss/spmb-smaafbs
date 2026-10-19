@@ -63,6 +63,18 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('grid-template-columns:1fr');
     }
 
+    public function test_form_menyembunyikan_informasi_kuota_publik_ketika_toggle_dimatikan(): void
+    {
+        TahunAjaran::query()->where('default', true)->update(['tampilkan_kuota' => false]);
+        $this->assertFalse(TahunAjaran::query()->where('default', true)->value('tampilkan_kuota'));
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee("x-show=\"jenisPendaftaran !== 'pindahan' && tahun.tampilkan_kuota\" x-cloak", false)
+            ->assertSee("x-show=\"jenisPendaftaran !== 'pindahan' && selectedTahun.tampilkan_kuota\" x-cloak", false)
+            ->assertSee('Pindahan');
+    }
+
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void
     {
         app(PengaturanService::class)->simpan('pendaftaran_buka', '0');
