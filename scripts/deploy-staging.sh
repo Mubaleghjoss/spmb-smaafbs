@@ -18,6 +18,7 @@ STAGE_FAILED=""
 COMPOSER_RESULT="SKIPPED"
 NPM_BUILD_RESULT="SKIPPED"
 MIGRATION_RESULT="SKIPPED"
+MIGRATION_COMMAND_EXECUTED="NO"
 OPTIMIZE_RESULT="FAILED"
 SYMLINK_RESULT="FAILED"
 HEALTH_RESULT="FAILED"
@@ -59,7 +60,7 @@ finalize_log() {
         printf 'branch/source=%s\n' "$SOURCE"
         printf 'composer_result=%s\n' "$COMPOSER_RESULT"
         printf 'npm_build_result=%s\n' "$NPM_BUILD_RESULT"
-        printf 'migration_command_executed=NO\n'
+        printf 'migration_command_executed=%s\n' "$MIGRATION_COMMAND_EXECUTED"
         printf 'migration_result=%s\n' "$MIGRATION_RESULT"
         printf 'artisan_optimize_result=%s\n' "$OPTIMIZE_RESULT"
         printf 'route_cache_rebuilt=%s\n' "$ROUTE_CACHE_REBUILT"
@@ -181,8 +182,14 @@ COMPOSER_RESULT="SUCCESS"
 STAGE_FAILED="npm_build"
 if command -v npm >/dev/null 2>&1 && [[ -f package.json ]]; then npm ci && npm run build; NPM_BUILD_RESULT="SUCCESS"; fi
 STAGE_FAILED="migration"
-[[ "${DEPLOY_MIGRATIONS:-0}" == "0" ]] || fail "Migrations are disabled for staging deployment."
-MIGRATION_RESULT="SKIPPED"
+if [[ "${DEPLOY_MIGRATIONS:-0}" == "1" ]]; then
+    [[ "${APPROVE_MIGRATION:-0}" == "1" ]] || fail "Migration approval flag is required."
+    php artisan migrate --force --no-interaction --ansi
+    MIGRATION_COMMAND_EXECUTED="YES"
+    MIGRATION_RESULT="SUCCESS"
+else
+    MIGRATION_RESULT="SKIPPED"
+fi
 STAGE_FAILED="artisan_optimize"
 php artisan optimize:clear --ansi && php artisan optimize --ansi
 OPTIMIZE_RESULT="SUCCESS"
