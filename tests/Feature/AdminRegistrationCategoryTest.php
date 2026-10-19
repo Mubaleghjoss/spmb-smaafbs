@@ -25,6 +25,15 @@ class AdminRegistrationCategoryTest extends TestCase
         app(JalurContextService::class)->set(JalurContextService::SISWA_BARU);
     }
 
+    public function test_halaman_pengaturan_menampilkan_tombol_simpan_gelombang(): void
+    {
+        $this->get(route('admin.pengaturan.spmb.periode'))
+            ->assertOk()
+            ->assertSee('Simpan gelombang')
+            ->assertSee('Simpan')
+            ->assertSee('Hapus');
+    }
+
     public function test_admin_dapat_menyembunyikan_gelombang_dari_jalur_siswa_baru(): void
     {
         $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();

@@ -257,14 +257,14 @@
                                             <div class="col-lg-1 col-md-4">
                                                 <span class="badge bg-light text-dark">{{ $gelombang->peserta_count }}</span>
                                             </div>
-                                            <div class="col-lg-1 col-md-4 text-md-end">
+                                            <div class="col-12 d-flex justify-content-end gap-2 mt-2 pt-2 border-top">
                                                 <button class="btn btn-sm btn-outline-primary" type="submit" title="Simpan gelombang">
-                                                    <i class="bi bi-check-lg"></i>
+                                                    <i class="bi bi-check-lg me-1"></i>Simpan
                                                 </button>
                                                 <button class="btn btn-sm btn-outline-danger" type="button"
                                                         onclick="if (confirm('Hapus gelombang ini?')) document.getElementById('hapusGelombang{{ $gelombang->id }}').submit()"
                                                         title="Hapus gelombang">
-                                                    <i class="bi bi-trash"></i>
+                                                    <i class="bi bi-trash me-1"></i>Hapus
                                                 </button>
                                             </div>
                                         </form>
