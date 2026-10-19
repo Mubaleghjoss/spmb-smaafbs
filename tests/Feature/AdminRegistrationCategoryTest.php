@@ -183,6 +183,30 @@ class AdminRegistrationCategoryTest extends TestCase
         self::assertStringContainsString('cari=Pagination', $halamanDua->getContent());
     }
 
+    public function test_admin_dapat_memilih_jumlah_peserta_per_halaman(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        Peserta::factory()
+            ->count(16)
+            ->sequence(fn ($sequence) => [
+                'nomor_pendaftaran' => 'SPMB-PER-' . str_pad((string) ($sequence->index + 1), 3, '0', STR_PAD_LEFT),
+                'email' => 'per-page-' . ($sequence->index + 1) . '@example.test',
+            ])
+            ->create([
+                'nama' => 'PESERTA PER PAGE TARGET',
+                ...$kategori,
+            ]);
+
+        $response = $this->get('/admin/peserta?per_page=50');
+
+        $response->assertOk()
+            ->assertSee('Menampilkan 1 - 16 dari 16 data')
+            ->assertSee('name="per_page"', false)
+            ->assertSee('value="50" selected', false);
+        self::assertStringContainsString('per_page=50', $response->getContent());
+    }
+
     public function test_admin_melihat_rekap_data_formulir_peserta(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();

@@ -66,7 +66,12 @@ class PesertaController extends Controller
             'daerah' => $request->get('daerah'),
         ];
 
-        $peserta = $this->pesertaService->ambilDenganFilter($filter, 15);
+        $perHalaman = $request->integer('per_page', 15);
+        if (!in_array($perHalaman, [15, 25, 50, 100], true)) {
+            $perHalaman = 15;
+        }
+
+        $peserta = $this->pesertaService->ambilDenganFilter($filter, $perHalaman);
         $rekapFormulir = $this->pesertaService->rekapFormulir($filter);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();

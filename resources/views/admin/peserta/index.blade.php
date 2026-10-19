@@ -208,6 +208,14 @@
                     <input type="text" name="cari" class="form-control" placeholder="Nama/No/Email/Sekolah/Kelompok" value="{{ $filter['cari'] }}">
                 </div>
                 <div class="col-md-2">
+                    <label class="form-label">Data per halaman</label>
+                    <select name="per_page" class="form-select">
+                        @foreach([15, 25, 50, 100] as $jumlah)
+                            <option value="{{ $jumlah }}" {{ $peserta->perPage() === $jumlah ? 'selected' : '' }}>{{ $jumlah }} data</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label">&nbsp;</label>
                     <div class="form-check">
                         <input type="checkbox" name="dengan_dihapus" value="1" class="form-check-input" 
