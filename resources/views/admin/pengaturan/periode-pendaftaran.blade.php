@@ -80,6 +80,13 @@
                     </div>
                 </div>
                 <div class="col-lg-1 col-md-2">
+                    <input type="hidden" name="tampilkan_pindahan" value="0">
+                    <div class="form-check form-switch mb-2">
+                        <input class="form-check-input" type="checkbox" name="tampilkan_pindahan" value="1" id="tampilkanPindahanBaru" checked>
+                        <label class="form-check-label" for="tampilkanPindahanBaru">Tampil Pindahan</label>
+                    </div>
+                </div>
+                <div class="col-lg-1 col-md-2">
                     <button class="btn btn-primary w-100" type="submit">
                         <i class="bi bi-plus-lg"></i>
                     </button>
@@ -158,6 +165,17 @@
                             <label class="form-check-label" for="tampilkanKuota{{ $tahun->id }}"
                                    title="Tampilkan atau sembunyikan ringkasan kuota pada dashboard saat periode ini dipilih">
                                 <i class="bi bi-eye"></i> Tampilkan Kuota
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <input type="hidden" name="tampilkan_pindahan" value="0">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="tampilkan_pindahan" value="1"
+                                   id="tampilkanPindahan{{ $tahun->id }}" {{ ($tahun->tampilkan_pindahan ?? true) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="tampilkanPindahan{{ $tahun->id }}"
+                                   title="Tampilkan atau sembunyikan periode ini untuk jalur pindahan">
+                                <i class="bi bi-arrow-left-right"></i> Tampil Pindahan
                             </label>
                         </div>
                     </div>

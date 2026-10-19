@@ -108,6 +108,13 @@ class PeriodePendaftaranService
             $errors['tahun_ajaran_id'] = 'Tahun ajaran yang dipilih sedang tidak aktif.';
         }
 
+        if ($wajibSedangDibuka
+            && $jenis === 'pindahan'
+            && $tahun
+            && ! ($tahun->tampilkan_pindahan ?? true)) {
+            $errors['tahun_ajaran_id'] = 'Periode ini tidak dibuka untuk jalur pindahan.';
+        }
+
         if ($wajibSedangDibuka && $gelombang && !$gelombang->sedangDibuka()) {
             $errors['gelombang_pendaftaran_id'] = 'Gelombang pendaftaran yang dipilih sedang tidak dibuka.';
         }

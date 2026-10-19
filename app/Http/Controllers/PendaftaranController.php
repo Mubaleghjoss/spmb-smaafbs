@@ -266,6 +266,7 @@ class PendaftaranController extends Controller
                 'nama' => $tahun->nama,
                 'default' => (bool) $tahun->default,
                 'tampilkan_kuota' => (bool) ($tahun->tampilkan_kuota ?? true),
+                'tampilkan_pindahan' => (bool) ($tahun->tampilkan_pindahan ?? true),
                 'kuota' => $ringkasan,
                 'gelombang' => $tahun->gelombangPendaftaran->map(function (GelombangPendaftaran $gelombang) use ($ringkasan, $tahun) {
                     $status = $gelombang->statusPendaftaran();

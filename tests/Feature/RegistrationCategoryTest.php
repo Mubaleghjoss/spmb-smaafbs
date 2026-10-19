@@ -125,6 +125,42 @@ class RegistrationCategoryTest extends TestCase
         ]);
     }
 
+    public function test_pindahan_menolak_periode_yang_disembunyikan(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $tahun->update(['tampilkan_pindahan' => false]);
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+
+        $this->from('/daftar')->post('/daftar', [
+            'nama' => 'Pindahan Periode Tersembunyi',
+            'telepon' => '081234567880',
+            'asal_sekolah' => 'SMA Contoh',
+            'nama_kontak_sekolah' => 'Operator Contoh',
+            'telepon_kontak_sekolah' => '081234567881',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'pindahan',
+            'kelas_tujuan' => 11,
+            'jenis_kelamin' => 'L',
+            'setuju' => '1',
+        ])
+            ->assertRedirect('/daftar')
+            ->assertSessionHasErrors('tahun_ajaran_id');
+
+        $this->assertDatabaseMissing('peserta', ['telepon' => '081234567880']);
+    }
+
+    public function test_form_menandai_visibilitas_periode_pindahan(): void
+    {
+        TahunAjaran::query()->where('default', true)->update(['tampilkan_pindahan' => false]);
+
+        $this->get('/daftar')
+            ->assertOk()
+            ->assertSee('tampilkan_pindahan', false)
+            ->assertSee('periodeUntukJenis', false)
+            ->assertSee("this.jenisPendaftaran === 'pindahan'", false);
+    }
+
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void
     {
         app(PengaturanService::class)->simpan('pendaftaran_buka', '0');

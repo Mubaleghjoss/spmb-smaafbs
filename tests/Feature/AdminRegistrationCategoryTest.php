@@ -52,6 +52,28 @@ class AdminRegistrationCategoryTest extends TestCase
         $this->assertFalse((bool) $gelombang->fresh()->tampilkan_siswa_baru);
     }
 
+    public function test_admin_dapat_menyembunyikan_periode_dari_jalur_pindahan(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+
+        $this->put(route('admin.pengaturan.spmb.periode.tahun.update', $tahun), [
+            'nama' => $tahun->nama,
+            'kuota_peserta' => $tahun->kuota_peserta,
+            'kuota_laki_laki' => $tahun->kuota_laki_laki,
+            'kuota_perempuan' => $tahun->kuota_perempuan,
+            'aktif' => '1',
+            'default' => '1',
+            'kunci_kuota' => '0',
+            'tampilkan_kuota' => '1',
+            'tampilkan_pindahan' => '0',
+        ])->assertRedirect();
+
+        $this->assertFalse((bool) $tahun->fresh()->tampilkan_pindahan);
+        $this->get(route('admin.pengaturan.spmb.periode'))
+            ->assertOk()
+            ->assertSee('Tampil Pindahan');
+    }
+
     public function test_admin_dapat_memfilter_peserta_berdasarkan_tahun_ajaran(): void
     {
         $default = app(PeriodePendaftaranService::class)->kategoriDefault();

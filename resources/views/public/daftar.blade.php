@@ -492,10 +492,17 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
         loading: false,
         get selectedTahun() { return this.periode.find(t => t.id === this.tahunAjaranId) ?? null; },
         get periodeTerbuka() {
-            const t = this.periode.filter(x => this.tahunTerbuka(x));
-            return t.length ? t : this.periode;
+            const terlihat = this.periode.filter(x => this.periodeUntukJenis(x));
+            const t = terlihat.filter(x => this.tahunTerbuka(x));
+            return t.length ? t : terlihat;
+        },
+        periodeUntukJenis(t) {
+            if (this.jenisPendaftaran === 'pindahan' && t?.tampilkan_pindahan === false) return null;
+            return t;
         },
         gelombangUntukJenis(t) {
+            t = this.periodeUntukJenis(t);
+            if (!t) return [];
             const gelombang = t?.gelombang ?? [];
             return this.jenisPendaftaran === 'pindahan'
                 ? gelombang
@@ -509,7 +516,7 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
             this.pilihTahun(true);
             this.ubahJenis();
         },
-        tahunTerbuka(t){ return this.gelombangUntukJenis(t).some(g => g.dibuka); },
+        tahunTerbuka(t){ return !!this.periodeUntukJenis(t) && this.gelombangUntukJenis(t).some(g => g.dibuka); },
         ringkasanGelombangTahun(t){
             const n = this.gelombangUntukJenis(t).filter(g => g.dibuka).length;
             return n === 0 ? 'Belum ada gelombang terbuka' : (n===1 ? '1 gelombang terbuka' : n+' gelombang terbuka');
