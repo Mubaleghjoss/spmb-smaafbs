@@ -366,6 +366,17 @@
 
             .admin-main .content-area {
                 padding: 12px;
+                min-width: 0;
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            .container-fluid,
+            .card,
+            .card-body,
+            .table-responsive {
+                min-width: 0;
+                max-width: 100%;
             }
 
             .container-fluid {
@@ -375,6 +386,7 @@
 
             .table-responsive {
                 font-size: 0.8rem;
+                overflow-x: auto;
             }
         }
 
