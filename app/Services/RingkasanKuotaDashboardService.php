@@ -32,6 +32,7 @@ class RingkasanKuotaDashboardService
         return [
             'periode' => $tahun,
             'periode_label' => $tahun?->nama ?? 'Semua Periode',
+            'tampilkan_kuota' => $tahun?->tampilkan_kuota ?? true,
             'kuota' => $kuotaSvc->ringkasanTahun($tahun),
             'rekap' => $this->rekap($tahun?->id),
 

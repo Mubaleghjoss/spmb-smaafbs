@@ -207,6 +207,45 @@ class AdminRegistrationCategoryTest extends TestCase
         self::assertStringContainsString('per_page=50', $response->getContent());
     }
 
+    public function test_admin_dapat_mematikan_informasi_kuota_untuk_tahun_ajaran_lama(): void
+    {
+        $tahun = TahunAjaran::query()->create([
+            'nama' => '2024-2025',
+            'aktif' => true,
+            'default' => false,
+            'tampilkan_kuota' => false,
+        ]);
+
+        $this->withSession(['periode_aktif_tahun_ajaran_id' => $tahun->id])
+            ->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Informasi kuota untuk periode ini dinonaktifkan.')
+            ->assertDontSee('Kuota Penerimaan SPMB');
+
+        $this->get('/admin/pengaturan/spmb/periode')
+            ->assertOk()
+            ->assertSee('Tampilkan Kuota')
+            ->assertSee('name="tampilkan_kuota"', false);
+
+        $this->from('/admin/pengaturan/spmb/periode')
+            ->put('/admin/pengaturan/spmb/periode/tahun/' . $tahun->id, [
+                'nama' => $tahun->nama,
+                'kuota_peserta' => 20,
+                'kuota_laki_laki' => 10,
+                'kuota_perempuan' => 10,
+                'aktif' => 1,
+                'default' => 0,
+                'kunci_kuota' => 0,
+                'tampilkan_kuota' => 1,
+            ])
+            ->assertRedirect('/admin/pengaturan/spmb/periode');
+
+        $this->withSession(['periode_aktif_tahun_ajaran_id' => $tahun->id])
+            ->get('/admin/dashboard')
+            ->assertOk()
+            ->assertSee('Kuota Penerimaan SPMB');
+    }
+
     public function test_admin_melihat_rekap_data_formulir_peserta(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();

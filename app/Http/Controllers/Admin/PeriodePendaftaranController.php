@@ -50,6 +50,7 @@ class PeriodePendaftaranController extends Controller
             'kuota_perempuan' => ['nullable', 'integer', 'min:0'],
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
+            'tampilkan_kuota' => ['nullable', 'boolean'],
         ]);
         $nama = $this->periodeService->normalisasiNamaTahun($validated['nama']);
 
@@ -65,6 +66,7 @@ class PeriodePendaftaranController extends Controller
                 'kuota_peserta' => $this->normalisasiKuota($request->input('kuota_peserta')),
                 'kuota_laki_laki' => $this->normalisasiKuota($request->input('kuota_laki_laki')),
                 'kuota_perempuan' => $this->normalisasiKuota($request->input('kuota_perempuan')),
+                'tampilkan_kuota' => $request->has('tampilkan_kuota') ? $request->boolean('tampilkan_kuota') : true,
             ]);
 
             if ($request->boolean('default') || TahunAjaran::query()->count() === 1) {
@@ -87,6 +89,7 @@ class PeriodePendaftaranController extends Controller
             'aktif' => ['nullable', 'boolean'],
             'default' => ['nullable', 'boolean'],
             'kunci_kuota' => ['nullable', 'boolean'],
+            'tampilkan_kuota' => ['nullable', 'boolean'],
         ]);
         $nama = $this->periodeService->normalisasiNamaTahun($validated['nama']);
 
@@ -109,6 +112,7 @@ class PeriodePendaftaranController extends Controller
                 'kuota_laki_laki' => $this->normalisasiKuota($request->input('kuota_laki_laki')),
                 'kuota_perempuan' => $this->normalisasiKuota($request->input('kuota_perempuan')),
                 'kunci_kuota' => $request->boolean('kunci_kuota'),
+                'tampilkan_kuota' => $request->boolean('tampilkan_kuota'),
             ]);
 
             if ($request->boolean('default')) {

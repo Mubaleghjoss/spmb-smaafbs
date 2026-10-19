@@ -73,6 +73,13 @@
                     </div>
                 </div>
                 <div class="col-lg-1 col-md-2">
+                    <div class="form-check form-switch mb-2">
+                        <input type="hidden" name="tampilkan_kuota" value="0">
+                        <input class="form-check-input" type="checkbox" name="tampilkan_kuota" value="1" id="tampilkanKuotaBaru" checked>
+                        <label class="form-check-label" for="tampilkanKuotaBaru">Tampilkan kuota</label>
+                    </div>
+                </div>
+                <div class="col-lg-1 col-md-2">
                     <button class="btn btn-primary w-100" type="submit">
                         <i class="bi bi-plus-lg"></i>
                     </button>
@@ -140,6 +147,17 @@
                             <label class="form-check-label" for="kunciKuota{{ $tahun->id }}"
                                    title="Status kuota peserta periode ini tidak dihitung ulang — dipakai untuk periode lama yang sudah berjalan">
                                 <i class="bi bi-lock"></i> Kunci Kuota
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <input type="hidden" name="tampilkan_kuota" value="0">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="tampilkan_kuota" value="1"
+                                   id="tampilkanKuota{{ $tahun->id }}" {{ ($tahun->tampilkan_kuota ?? true) ? 'checked' : '' }}>
+                            <label class="form-check-label" for="tampilkanKuota{{ $tahun->id }}"
+                                   title="Tampilkan atau sembunyikan ringkasan kuota pada dashboard saat periode ini dipilih">
+                                <i class="bi bi-eye"></i> Tampilkan Kuota
                             </label>
                         </div>
                     </div>

@@ -152,6 +152,7 @@
     </div>
 
     {{-- ================= KUOTA PENERIMAAN SPMB ================= --}}
+    @if(($semuaPeriode ?? false) || ($ringkasanKuota['tampilkan_kuota'] ?? true))
     @php $k = $ringkasanKuota['kuota'] ?? null; @endphp
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
@@ -388,6 +389,12 @@
             @endif
         </div>
     </div>
+    @else
+        <div class="alert alert-secondary border-0 shadow-sm mb-4">
+            <i class="bi bi-eye-slash me-1"></i>
+            Informasi kuota untuk periode ini dinonaktifkan.
+        </div>
+    @endif
 </div>
 
 @include('partials.modal-penjelasan-kuota')

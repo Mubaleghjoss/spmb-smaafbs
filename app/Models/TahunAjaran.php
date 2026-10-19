@@ -21,6 +21,7 @@ class TahunAjaran extends Model
         'kuota_laki_laki',
         'kuota_perempuan',
         'kunci_kuota',
+        'tampilkan_kuota',
     ];
 
     protected function casts(): array
@@ -32,6 +33,7 @@ class TahunAjaran extends Model
             'kuota_laki_laki' => 'integer',
             'kuota_perempuan' => 'integer',
             'kunci_kuota' => 'boolean',
+            'tampilkan_kuota' => 'boolean',
         ];
     }
 
