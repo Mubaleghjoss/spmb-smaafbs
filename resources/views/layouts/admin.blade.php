@@ -284,6 +284,10 @@
             .admin-topbar {
                 height: auto;
                 min-height: var(--topbar-height);
+                min-width: 0;
+                max-width: 100vw;
+                box-sizing: border-box;
+                overflow-x: hidden;
                 flex-wrap: wrap;
                 align-items: flex-start;
                 padding: 8px 12px;
