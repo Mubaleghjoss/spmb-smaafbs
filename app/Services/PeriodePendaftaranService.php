@@ -54,12 +54,14 @@ class PeriodePendaftaranService
         $tahun = $this->tahunDefault();
         $gelombang = $tahun?->gelombangPendaftaran()
             ->tersedia()
+            ->where('tampilkan_siswa_baru', true)
             ->orderBy('tanggal_buka')
             ->orderBy('id')
             ->first();
 
         $gelombang ??= $tahun?->gelombangPendaftaran()
             ->where('aktif', true)
+            ->where('tampilkan_siswa_baru', true)
             ->orderByDesc('tanggal_buka')
             ->orderBy('id')
             ->first();
@@ -108,6 +110,13 @@ class PeriodePendaftaranService
 
         if ($wajibSedangDibuka && $gelombang && !$gelombang->sedangDibuka()) {
             $errors['gelombang_pendaftaran_id'] = 'Gelombang pendaftaran yang dipilih sedang tidak dibuka.';
+        }
+
+        if ($wajibSedangDibuka
+            && $jenis === 'siswa_baru'
+            && $gelombang
+            && ! $gelombang->tampilkan_siswa_baru) {
+            $errors['gelombang_pendaftaran_id'] = 'Gelombang ini tidak dibuka untuk jalur siswa baru.';
         }
 
         if (!in_array($jenis, ['siswa_baru', 'pindahan'], true)) {

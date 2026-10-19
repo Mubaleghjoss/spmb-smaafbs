@@ -289,6 +289,7 @@ class PendaftaranController extends Controller
                         // tidak boleh dipakai untuk jalur tersebut.
                         'status_label_tanpa_kuota' => $status['label'],
                         'status_class_tanpa_kuota' => $status['class'],
+                        'tampilkan_siswa_baru' => (bool) ($gelombang->tampilkan_siswa_baru ?? true),
                     ];
                 })->values(),
             ];

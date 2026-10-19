@@ -75,6 +75,56 @@ class RegistrationCategoryTest extends TestCase
             ->assertSee('Pindahan');
     }
 
+    public function test_siswa_baru_menolak_gelombang_yang_disembunyikan(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+        $gelombang->update(['tampilkan_siswa_baru' => false]);
+
+        $this->from('/daftar')->post('/daftar', [
+            'nama' => 'Gelombang Tersembunyi',
+            'telepon' => '081234567887',
+            'asal_sekolah' => 'SMP Contoh',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'siswa_baru',
+            'kelas_tujuan' => 10,
+            'jenis_kelamin' => 'L',
+            'setuju' => '1',
+        ])
+            ->assertRedirect('/daftar')
+            ->assertSessionHasErrors('gelombang_pendaftaran_id');
+
+        $this->assertDatabaseMissing('peserta', ['telepon' => '081234567887']);
+    }
+
+    public function test_pindahan_tetap_dapat_memilih_gelombang_yang_disembunyikan_untuk_siswa_baru(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+        $gelombang->update(['tampilkan_siswa_baru' => false]);
+
+        $this->post('/daftar', [
+            'nama' => 'Pindahan Gelombang Lama',
+            'telepon' => '081234567886',
+            'asal_sekolah' => 'SMA Contoh',
+            'nama_kontak_sekolah' => 'Operator Contoh',
+            'telepon_kontak_sekolah' => '081234567885',
+            'tahun_ajaran_id' => $tahun->id,
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'pindahan',
+            'kelas_tujuan' => 11,
+            'jenis_kelamin' => 'L',
+            'setuju' => '1',
+        ])->assertRedirect(route('peserta.dashboard'));
+
+        $this->assertDatabaseHas('peserta', [
+            'telepon' => '081234567886',
+            'gelombang_pendaftaran_id' => $gelombang->id,
+            'jenis_pendaftaran' => 'pindahan',
+        ]);
+    }
+
     public function test_form_tetap_dibuka_oleh_periode_meski_toggle_lama_ditutup(): void
     {
         app(PengaturanService::class)->simpan('pendaftaran_buka', '0');

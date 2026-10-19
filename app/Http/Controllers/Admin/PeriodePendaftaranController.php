@@ -151,6 +151,9 @@ class PeriodePendaftaranController extends Controller
         $tahunAjaran->gelombangPendaftaran()->create([
             ...$validated,
             'aktif' => $request->boolean('aktif'),
+            'tampilkan_siswa_baru' => $request->has('tampilkan_siswa_baru')
+                ? $request->boolean('tampilkan_siswa_baru')
+                : true,
         ]);
 
         return back()->with('success', 'Gelombang pendaftaran berhasil ditambahkan.');
@@ -167,6 +170,7 @@ class PeriodePendaftaranController extends Controller
         $gelombang->update([
             ...$validated,
             'aktif' => $request->boolean('aktif'),
+            'tampilkan_siswa_baru' => $request->boolean('tampilkan_siswa_baru'),
         ]);
 
         return back()->with('success', 'Gelombang pendaftaran berhasil diperbarui.');
@@ -206,6 +210,7 @@ class PeriodePendaftaranController extends Controller
             'tanggal_tutup' => ['nullable', 'date', 'after_or_equal:tanggal_buka'],
             'waktu_tutup' => ['nullable', 'date_format:H:i'],
             'aktif' => ['nullable', 'boolean'],
+            'tampilkan_siswa_baru' => ['nullable', 'boolean'],
         ]);
 
         $errors = [];

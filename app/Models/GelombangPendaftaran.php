@@ -23,6 +23,7 @@ class GelombangPendaftaran extends Model
         'tanggal_tutup',
         'waktu_tutup',
         'aktif',
+        'tampilkan_siswa_baru',
     ];
 
     protected function casts(): array
@@ -31,6 +32,7 @@ class GelombangPendaftaran extends Model
             'tanggal_buka' => 'date',
             'tanggal_tutup' => 'date',
             'aktif' => 'boolean',
+            'tampilkan_siswa_baru' => 'boolean',
         ];
     }
 

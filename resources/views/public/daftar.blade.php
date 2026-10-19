@@ -495,7 +495,13 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
             const t = this.periode.filter(x => this.tahunTerbuka(x));
             return t.length ? t : this.periode;
         },
-        get gelombangTersedia() { return this.selectedTahun?.gelombang ?? []; },
+        gelombangUntukJenis(t) {
+            const gelombang = t?.gelombang ?? [];
+            return this.jenisPendaftaran === 'pindahan'
+                ? gelombang
+                : gelombang.filter(g => g.tampilkan_siswa_baru !== false);
+        },
+        get gelombangTersedia() { return this.gelombangUntukJenis(this.selectedTahun); },
         get gelombangTerbuka() { return this.gelombangTersedia.filter(g => g.dibuka); },
         init() {
             const daftar = this.periodeTerbuka;
@@ -503,9 +509,9 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
             this.pilihTahun(true);
             this.ubahJenis();
         },
-        tahunTerbuka(t){ return (t.gelombang ?? []).some(g => g.dibuka); },
+        tahunTerbuka(t){ return this.gelombangUntukJenis(t).some(g => g.dibuka); },
         ringkasanGelombangTahun(t){
-            const n = (t.gelombang ?? []).filter(g => g.dibuka).length;
+            const n = this.gelombangUntukJenis(t).filter(g => g.dibuka).length;
             return n === 0 ? 'Belum ada gelombang terbuka' : (n===1 ? '1 gelombang terbuka' : n+' gelombang terbuka');
         },
         // Persen terisi untuk progress bar kuota per jenis kelamin.
@@ -522,7 +528,11 @@ function wizardDaftar(periode, tahunDefault, gelombangLama, jenisLama, kelasLama
             if(!keep || !valid) this.gelombangId = t.length===1 ? t[0].id : '';
         },
         selectGelombang(g){ if(g.dibuka) this.gelombangId = g.id; },
-        ubahJenis(){ if(this.jenisPendaftaran==='siswa_baru') this.kelasTujuan='10'; else if(!['10','11'].includes(this.kelasTujuan)) this.kelasTujuan='10'; },
+        ubahJenis(){
+            if(this.jenisPendaftaran==='siswa_baru') this.kelasTujuan='10';
+            else if(!['10','11'].includes(this.kelasTujuan)) this.kelasTujuan='10';
+            this.pilihTahun();
+        },
         normHp(v){
             let n = (v||'').replace(/[^0-9+]/g,'');
             if(!n) return '';

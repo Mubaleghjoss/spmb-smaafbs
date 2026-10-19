@@ -247,6 +247,14 @@
                                                 </div>
                                             </div>
                                             <div class="col-lg-1 col-md-4">
+                                                <input type="hidden" name="tampilkan_siswa_baru" value="0">
+                                                <div class="form-check form-switch">
+                                                    <input class="form-check-input" type="checkbox" name="tampilkan_siswa_baru" value="1"
+                                                           title="Tampilkan untuk jalur siswa baru" {{ ($gelombang->tampilkan_siswa_baru ?? true) ? 'checked' : '' }}>
+                                                    <label class="form-check-label small">Siswa Baru</label>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-1 col-md-4">
                                                 <span class="badge bg-light text-dark">{{ $gelombang->peserta_count }}</span>
                                             </div>
                                             <div class="col-lg-1 col-md-4 text-md-end">
@@ -308,6 +316,14 @@
                             <input class="form-check-input" type="checkbox" name="aktif" value="1"
                                    id="gelombangAktif{{ $tahun->id }}" checked>
                             <label class="form-check-label small" for="gelombangAktif{{ $tahun->id }}">Aktif</label>
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-4">
+                        <input type="hidden" name="tampilkan_siswa_baru" value="0">
+                        <div class="form-check form-switch mb-1">
+                            <input class="form-check-input" type="checkbox" name="tampilkan_siswa_baru" value="1"
+                                   id="gelombangSiswaBaru{{ $tahun->id }}" checked>
+                            <label class="form-check-label small" for="gelombangSiswaBaru{{ $tahun->id }}">Tampil Siswa Baru</label>
                         </div>
                     </div>
                     <div class="col-lg-2 col-md-4">

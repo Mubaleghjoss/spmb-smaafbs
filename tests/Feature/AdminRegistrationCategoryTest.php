@@ -25,6 +25,24 @@ class AdminRegistrationCategoryTest extends TestCase
         app(JalurContextService::class)->set(JalurContextService::SISWA_BARU);
     }
 
+    public function test_admin_dapat_menyembunyikan_gelombang_dari_jalur_siswa_baru(): void
+    {
+        $tahun = TahunAjaran::query()->where('default', true)->firstOrFail();
+        $gelombang = $tahun->gelombangPendaftaran()->firstOrFail();
+
+        $this->put(route('admin.pengaturan.spmb.periode.gelombang.update', [$tahun, $gelombang]), [
+            'nama' => $gelombang->nama,
+            'tanggal_buka' => optional($gelombang->tanggal_buka)->format('Y-m-d'),
+            'waktu_buka' => $gelombang->waktu_buka ? substr((string) $gelombang->waktu_buka, 0, 5) : null,
+            'tanggal_tutup' => optional($gelombang->tanggal_tutup)->format('Y-m-d'),
+            'waktu_tutup' => $gelombang->waktu_tutup ? substr((string) $gelombang->waktu_tutup, 0, 5) : null,
+            'aktif' => '1',
+            'tampilkan_siswa_baru' => '0',
+        ])->assertRedirect();
+
+        $this->assertFalse((bool) $gelombang->fresh()->tampilkan_siswa_baru);
+    }
+
     public function test_admin_dapat_memfilter_peserta_berdasarkan_tahun_ajaran(): void
     {
         $default = app(PeriodePendaftaranService::class)->kategoriDefault();
