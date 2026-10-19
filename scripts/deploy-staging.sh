@@ -175,6 +175,9 @@ ln -s "$SHARED_STORAGE" "$release_dir/storage"
 ln -s "$SHARED_STORAGE/app/public" "$release_dir/public/storage"
 cd "$release_dir"
 
+# Never let caller/test environment override the shared staging .env.
+unset APP_ENV APP_URL DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD
+
 STAGE_FAILED="composer"
 command -v composer >/dev/null 2>&1 || fail "composer is required."
 composer install --no-dev --optimize-autoloader --no-interaction
