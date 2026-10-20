@@ -6,7 +6,25 @@
 @php
     $waNumber = \App\Services\PengaturanService::nomorWhatsAppInternasional((string) ($peserta->telepon ?? ''));
     $waUrl = preg_match('/^62[0-9]{7,14}$/', $waNumber) ? 'https://wa.me/' . $waNumber : null;
-    $waMessage = "Assalamu'alaikum, kami dari Tim SPMB SMA AFBS. Kami ingin menyampaikan progres tes ananda {$peserta->nama} (No. Pendaftaran: " . ($peserta->nomor_pendaftaran ?? '-') . "). Tes yang sudah dikerjakan: " . ($tesSudahDikerjakan->isNotEmpty() ? $tesSudahDikerjakan->implode(', ') : 'belum ada') . ". Tes yang belum dikerjakan: " . ($tesBelumDikerjakan->isNotEmpty() ? $tesBelumDikerjakan->implode(', ') : 'tidak ada'). ". Mohon dapat dilanjutkan. Jika ada kendala, silakan kabari kami. Terima kasih.";
+    $waMessage = implode("\n", [
+        "Assalamu'alaikum,",
+        '',
+        '*Update Progres Tes SPMB*',
+        "Nama: {$peserta->nama}",
+        'No. Pendaftaran: ' . ($peserta->nomor_pendaftaran ?? '-'),
+        '',
+        '*Tes yang sudah dikerjakan:*',
+        $tesSudahDikerjakan->isNotEmpty() ? '- ' . $tesSudahDikerjakan->implode("\n- ") : '- Belum ada',
+        '',
+        '*Tes yang belum dikerjakan:*',
+        $tesBelumDikerjakan->isNotEmpty() ? '- ' . $tesBelumDikerjakan->implode("\n- ") : '- Tidak ada',
+        '',
+        'Mohon dapat dilanjutkan.',
+        'Jika ada kendala, silakan kabari kami.',
+        '',
+        'Terima kasih.',
+        'Tim SPMB SMA AFBS',
+    ]);
 @endphp
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">

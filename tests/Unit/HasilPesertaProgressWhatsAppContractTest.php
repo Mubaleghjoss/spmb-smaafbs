@@ -19,5 +19,10 @@ class HasilPesertaProgressWhatsAppContractTest extends TestCase
         self::assertStringContainsString('Tes yang sudah dikerjakan', $view);
         self::assertStringContainsString('Tes yang belum dikerjakan', $view);
         self::assertStringContainsString('Jika ada kendala, silakan kabari kami', $view);
+        self::assertStringContainsString('implode("\\n", [', $view);
+        self::assertStringContainsString('*Update Progres Tes SPMB*', $view);
+        self::assertStringContainsString('*Tes yang sudah dikerjakan:*', $view);
+        self::assertStringContainsString('*Tes yang belum dikerjakan:*', $view);
+        self::assertStringContainsString('Mohon dapat dilanjutkan', $view);
     }
 }
