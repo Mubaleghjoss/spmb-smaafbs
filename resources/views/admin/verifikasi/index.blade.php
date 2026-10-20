@@ -179,19 +179,24 @@
                             $tahapSaatIni = $p->tahapanSpmb?->tahap_saat_ini ?? 1;
                             $deskripsiTahap = [
                                 1 => 'Pendaftaran',
-                                2 => 'Verifikasi Formulir',
+                                2 => 'Belum Isi Formulir',
                                 3 => 'Pembayaran Formulir',
                                 4 => 'Tes Online',
                                 5 => 'Wawancara',
                                 6 => 'Pelunasan',
                                 7 => 'Kelulusan',
                             ];
-                            $waPesan = sprintf(
-                                'Assalamualaikum kami dari tim spmb sma afbs, kami melihat dari sistem spmb ananda %s sudah melalui beberapa tahap, sekarang berada di tahap %d (%s), apakah masih ada kendala, barangkali bisa kami bantu?',
-                                $p->nama,
-                                $tahapSaatIni,
-                                $deskripsiTahap[$tahapSaatIni] ?? 'Proses SPMB'
-                            );
+                            $waPesan = $tahapSaatIni === 2
+                                ? sprintf(
+                                    'Assalamualaikum kami dari tim spmb sma afbs, mohon segera melengkapi formulir biodata ananda %s agar proses SPMB dapat dilanjutkan. Jika ada kendala, barangkali bisa kami bantu?',
+                                    $p->nama
+                                )
+                                : sprintf(
+                                    'Assalamualaikum kami dari tim spmb sma afbs, kami melihat dari sistem spmb ananda %s sudah melalui beberapa tahap, sekarang berada di tahap %d (%s), apakah masih ada kendala, barangkali bisa kami bantu?',
+                                    $p->nama,
+                                    $tahapSaatIni,
+                                    $deskripsiTahap[$tahapSaatIni] ?? 'Proses SPMB'
+                                );
                             $waKontak = [
                                 ['label' => 'WA Siswa', 'nomor' => $p->telepon],
                                 ['label' => 'WA Ayah', 'nomor' => $p->formulirSpmb?->telepon_ayah],
@@ -268,11 +273,11 @@
                                     
                                     @switch($tahapSaatIni)
                                         @case(2)
-                                            {{-- Tahap 2: Verifikasi Formulir --}}
+                                            {{-- Tahap 2: Peserta belum mengisi formulir --}}
                                             @if($p->formulirSpmb)
                                                 <a href="{{ route('admin.verifikasi.formulir.detail', $p->formulirSpmb) }}" 
                                                    class="btn btn-sm btn-{{ $p->formulirSpmb->status_verifikasi === 'menunggu' ? 'warning' : 'outline-success' }}">
-                                                    <i class="bi bi-file-earmark-check me-1"></i>Verifikasi Formulir
+                                                    <i class="bi bi-file-earmark-check me-1"></i>Belum Isi Formulir
                                                 </a>
                                             @else
                                                 <span class="btn btn-sm btn-outline-secondary">

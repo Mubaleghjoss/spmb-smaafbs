@@ -64,15 +64,18 @@ class FormulirSeragamDanKontakContractTest extends TestCase
         $this->assertStringContainsString('PengaturanService::nomorWhatsAppInternasional', $view);
         $this->assertStringContainsString('https://wa.me/', $view);
         $this->assertStringContainsString('Assalamualaikum kami dari tim spmb sma afbs', $view);
-        $this->assertStringContainsString('Tahap {{ $tahapSaatIni }}', $view);
-        $this->assertStringContainsString('target="_blank"', $view);
+        self::assertStringContainsString('Tahap {{ $tahapSaatIni }}', $view);
+        self::assertStringContainsString('target="_blank"', $view);
+        self::assertStringContainsString('$tahapSaatIni === 2', $view);
+        self::assertStringContainsString('Belum Isi Formulir', $view);
+        self::assertStringContainsString('mohon segera melengkapi formulir biodata', $view);
     }
 
     public function test_deskripsi_tahap_verifikasi_memiliki_tujuh_tahap(): void
     {
         $view = file_get_contents(dirname(__DIR__, 2).'/resources/views/admin/verifikasi/index.blade.php');
 
-        foreach (['Pendaftaran', 'Verifikasi Formulir', 'Pembayaran Formulir', 'Tes Online', 'Wawancara', 'Pelunasan', 'Kelulusan'] as $label) {
+        foreach (['Pendaftaran', 'Belum Isi Formulir', 'Pembayaran Formulir', 'Tes Online', 'Wawancara', 'Pelunasan', 'Kelulusan'] as $label) {
             $this->assertStringContainsString($label, $view);
         }
     }
