@@ -75,7 +75,7 @@ class VerifikasiSpmbController extends Controller
 
         // Ambil daftar peserta dengan filter
         $filter = $request->only(['tahap', 'status', 'cari']);
-        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes', 'wawancara'])
+        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes.tes', 'wawancara'])
             ->when(!empty($filter['tahap']), function ($q) use ($filter) {
                 $q->whereHas('tahapanSpmb', fn($t) => $t->where('tahap_saat_ini', $filter['tahap']));
             })

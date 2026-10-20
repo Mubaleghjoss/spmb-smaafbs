@@ -250,7 +250,19 @@
                                     @php
                                         $bayarFormulir = $p->pembayaran->where('jenis', 'formulir')->first();
                                         $pelunasan = $p->pembayaran->where('jenis', 'pertama')->first();
-                                        $sesiTes = $p->sesiTes->whereIn('status', ['selesai', 'timeout'])->first();
+                                        $sesiTesSelesai = $p->sesiTes
+                                            ->whereIn('status', ['selesai', 'timeout'])
+                                            ->sortByDesc(fn ($s) => $s->waktu_selesai ?? $s->updated_at)
+                                            ->first();
+                                        $sesiTes = $p->sesiTes
+                                            ->filter(function ($s) {
+                                                return in_array($s->status, ['selesai', 'timeout'], true)
+                                                    && in_array($s->status_verifikasi_tes, ['menunggu', null], true)
+                                                    && $s->tes
+                                                    && $s->nilai < $s->tes->nilai_lulus;
+                                            })
+                                            ->sortByDesc(fn ($s) => $s->waktu_selesai ?? $s->updated_at)
+                                            ->first();
                                         $wawancara = $p->wawancara ?? null;
                                     @endphp
                                     
@@ -284,11 +296,11 @@
                                             @break
                                         
                                         @case(4)
-                                            {{-- Tahap 4: Verifikasi Hasil Tes --}}
-                                            @if($sesiTes)
-                                                <a href="{{ route('admin.verifikasi.hasil-tes') }}" 
-                                                   class="btn btn-sm btn-{{ $sesiTes->nilai >= 60 ? 'outline-success' : 'warning' }}">
-                                                    <i class="bi bi-journal-check me-1"></i>Verifikasi Tes ({{ number_format($sesiTes->nilai, 0) }})
+                                            {{-- Tahap 4: Hasil Tes Peserta --}}
+                                            @if($sesiTes || $sesiTesSelesai)
+                                                <a href="{{ route('admin.hasil.detail-peserta-rekap', $p->id) }}"
+                                                   class="btn btn-sm btn-{{ $sesiTes ? 'warning' : 'outline-success' }}">
+                                                    <i class="bi bi-journal-check me-1"></i>{{ $sesiTes ? 'Verifikasi Tes' : 'Lihat Hasil Tes' }} ({{ number_format(($sesiTes ?? $sesiTesSelesai)->nilai, 0) }})
                                                 </a>
                                             @else
                                                 <span class="btn btn-sm btn-outline-secondary">
