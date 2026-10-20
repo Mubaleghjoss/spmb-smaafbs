@@ -52,6 +52,8 @@ class DeploymentController extends Controller
         }
 
         $filesToAdd = [];
+        $sqlFileName = 'spmb-database-' . date('Y-m-d-His') . '.sql';
+        $sqlFilePath = $this->generateSqlBackupFilePath($sqlFileName);
 
         try {
             $iterator = new \RecursiveIteratorIterator(
@@ -103,6 +105,31 @@ class DeploymentController extends Controller
             }
         }
 
+        $publicRootPath = $this->resolvePublicRootPath();
+        if ($publicRootPath !== null) {
+            $publicIterator = new \RecursiveIteratorIterator(
+                new \RecursiveDirectoryIterator($publicRootPath, \RecursiveDirectoryIterator::SKIP_DOTS),
+                \RecursiveIteratorIterator::SELF_FIRST
+            );
+
+            foreach ($publicIterator as $file) {
+                $relativePath = substr($file->getRealPath(), strlen($publicRootPath) + 1);
+                $zipRelativePath = 'public-root/' . str_replace('\\', '/', $relativePath);
+
+                if ($file->isDir()) {
+                    $zip->addEmptyDir($zipRelativePath);
+                    continue;
+                }
+
+                $content = @file_get_contents($file->getRealPath());
+                if ($content !== false) {
+                    $zip->addFromString($zipRelativePath, $content);
+                }
+            }
+        }
+
+        $zip->addFile($sqlFilePath, 'database/' . $sqlFileName);
+
         // Sertakan .env.production (versi sanitized dari .env)
         $envPath = $projectPath . DIRECTORY_SEPARATOR . '.env';
         if (file_exists($envPath)) {
@@ -117,28 +144,38 @@ class DeploymentController extends Controller
             $zip->addFromString('.env.production', $envContent);
         }
 
-        // README deployment
-        $readmeContent  = "# Petunjuk Deployment SPMB Al Furqon\n\n";
-        $readmeContent .= "## File ini sudah termasuk folder vendor!\n";
-        $readmeContent .= "Tidak perlu menjalankan `composer install` di hosting.\n\n";
-        $readmeContent .= "## Langkah-langkah Deployment:\n\n";
-        $readmeContent .= "### 1. Upload ke Hosting\n";
-        $readmeContent .= "- Extract semua file ke folder public_html atau htdocs\n\n";
-        $readmeContent .= "### 2. Setup Database\n";
-        $readmeContent .= "- Buat database baru di cPanel (MySQL Databases)\n";
-        $readmeContent .= "- Import file SQL database via phpMyAdmin\n\n";
-        $readmeContent .= "### 3. Konfigurasi .env\n";
-        $readmeContent .= "- Rename `.env.production` menjadi `.env` dan sesuaikan konfigurasi.\n\n";
-        $readmeContent .= "### 4. Set Permission Folder\n";
-        $readmeContent .= "- storage/ dan bootstrap/cache/ harus writable (chmod 755 atau 775).\n\n";
-        $readmeContent .= "### 5. Storage Link\n";
-        $readmeContent .= "- Jika ada akses SSH: `php artisan storage:link`\n\n";
-        $readmeContent .= "## Catatan Penting:\n";
+        // README deployment dan instalasi lokal
+        $readmeContent  = "# Paket Backup & Instalasi Lokal SPMB\n\n";
+        $readmeContent .= "Paket ini dibuat otomatis dari aplikasi production saat tombol Download Project ditekan.\n";
+        $readmeContent .= "Berisi source project, vendor, database SQL terbaru, dan public root aktual.\n\n";
+        $readmeContent .= "## Struktur Paket\n\n";
+        $readmeContent .= "- `database/` - dump SQL database saat paket dibuat\n";
+        $readmeContent .= "- `public-root/` - isi public root web aktual, terpisah dari folder source `public/`\n";
+        $readmeContent .= "- `vendor/` - dependency Composer yang sudah terpasang\n";
+        $readmeContent .= "- `.env.production` - template konfigurasi yang sudah disanitasi\n\n";
+        $readmeContent .= "## Instalasi Lokal\n\n";
+        $readmeContent .= "1. Extract ZIP ke folder kerja lokal.\n";
+        $readmeContent .= "2. Salin `.env.production` menjadi `.env`; jangan gunakan kredensial production.\n";
+        $readmeContent .= "3. Buat database MySQL lokal, lalu import file SQL di folder `database/`.\n";
+        $readmeContent .= "4. Sesuaikan DB_HOST, DB_PORT, DB_DATABASE, DB_USERNAME, dan DB_PASSWORD di `.env`.\n";
+        $readmeContent .= "5. Jalankan `php artisan key:generate`.\n";
+        $readmeContent .= "6. Jalankan `php artisan storage:link`.\n";
+        $readmeContent .= "7. Jalankan `php artisan optimize:clear`.\n";
+        $readmeContent .= "8. Jika dependency/vendor tidak dipakai, jalankan `composer install`.\n";
+        $readmeContent .= "9. Jalankan `npm install` lalu `npm run build` jika asset frontend perlu dibangun ulang.\n";
+        $readmeContent .= "10. Jalankan `php artisan serve` dan buka URL lokal yang ditampilkan.\n\n";
+        $readmeContent .= "## Menempatkan Public Root\n\n";
+        $readmeContent .= "Untuk web server lokal, arahkan document root ke folder `public-root/` jika ingin meniru struktur public root production.\n";
+        $readmeContent .= "Jika memakai Laravel standar, gunakan folder source `public/` dan salin asset yang diperlukan dari `public-root/`.\n\n";
+        $readmeContent .= "## Catatan Keamanan\n\n";
+        $readmeContent .= "- File SQL dapat berisi data peserta production. Simpan dan distribusikan secara terbatas.\n";
+        $readmeContent .= "- Jangan mengunggah SQL atau `.env` hasil konfigurasi lokal ke repository publik.\n";
         $readmeContent .= "- Generated: " . now()->format('d/m/Y H:i:s') . "\n";
         $readmeContent .= "- PHP minimum: 8.1 | MySQL minimum: 5.7\n";
         $zip->addFromString('README-DEPLOYMENT.md', $readmeContent);
 
         $zip->close();
+        @unlink($sqlFilePath);
 
         return response()->download($zipFilePath, $zipFileName)->deleteFileAfterSend(true);
     }
@@ -156,7 +193,7 @@ class DeploymentController extends Controller
         try {
             // Cek apakah fungsi shell tersedia
             if (!function_exists('escapeshellarg') || !function_exists('exec')) {
-                return $this->generateSqlBackup($sqlFileName);
+                return response()->download($this->generateSqlBackupFilePath($sqlFileName), $sqlFileName)->deleteFileAfterSend(true);
             }
 
             $dbName = config('database.connections.mysql.database');
@@ -197,13 +234,13 @@ class DeploymentController extends Controller
             \exec($command, $output, $returnVar);
 
             if ($returnVar !== 0 || !file_exists($sqlFilePath) || filesize($sqlFilePath) === 0) {
-                return $this->generateSqlBackup($sqlFileName);
+                return response()->download($this->generateSqlBackupFilePath($sqlFileName), $sqlFileName)->deleteFileAfterSend(true);
             }
 
             return response()->download($sqlFilePath, $sqlFileName)->deleteFileAfterSend(true);
         } catch (\Throwable $e) {
             // Fallback ke PHP-based backup jika mysqldump atau shell functions gagal
-            return $this->generateSqlBackup($sqlFileName);
+            return response()->download($this->generateSqlBackupFilePath($sqlFileName), $sqlFileName)->deleteFileAfterSend(true);
         }
     }
 
@@ -343,7 +380,7 @@ class DeploymentController extends Controller
     /**
      * Generate SQL backup menggunakan PHP (fallback jika mysqldump tidak tersedia)
      */
-    private function generateSqlBackup(string $sqlFileName)
+    private function generateSqlBackupFilePath(string $sqlFileName): string
     {
         $tempDir     = sys_get_temp_dir();
         $sqlFilePath = $tempDir . DIRECTORY_SEPARATOR . $sqlFileName;
@@ -387,7 +424,26 @@ class DeploymentController extends Controller
 
         file_put_contents($sqlFilePath, $sql);
 
-        return response()->download($sqlFilePath, $sqlFileName)->deleteFileAfterSend(true);
+        return $sqlFilePath;
+    }
+
+    private function resolvePublicRootPath(): ?string
+    {
+        $configuredPath = env('SPMB_PUBLIC_ROOT');
+        $candidates = array_filter([
+            $configuredPath,
+            dirname(base_path()) . '/public_html/web/www.seleksi',
+            base_path('public'),
+        ]);
+
+        foreach ($candidates as $candidate) {
+            $realPath = realpath($candidate);
+            if ($realPath !== false && is_dir($realPath)) {
+                return $realPath;
+            }
+        }
+
+        return null;
     }
 
     /**
