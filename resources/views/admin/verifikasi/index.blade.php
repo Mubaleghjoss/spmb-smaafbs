@@ -186,29 +186,86 @@
                                 6 => 'Pelunasan',
                                 7 => 'Kelulusan',
                             ];
-                            $waPesan = $tahapSaatIni === 2
-                                ? sprintf(
-                                    'Assalamualaikum kami dari tim spmb sma afbs, mohon segera melengkapi formulir biodata ananda %s agar proses SPMB dapat dilanjutkan. Jika ada kendala, barangkali bisa kami bantu?',
-                                    $p->nama
-                                )
-                                : sprintf(
-                                    'Assalamualaikum kami dari tim spmb sma afbs, kami melihat dari sistem spmb ananda %s sudah melalui beberapa tahap, sekarang berada di tahap %d (%s), apakah masih ada kendala, barangkali bisa kami bantu?',
+                            $wawancara = $p->wawancara ?? null;
+                            $suratOrtu = is_array($wawancara?->surat_pernyataan_ortu)
+                                ? $wawancara->surat_pernyataan_ortu
+                                : [];
+                            $namaKi = trim((string) ($suratOrtu['nama_ki'] ?? ''));
+                            $nomorKi = trim((string) ($suratOrtu['no_hp_ki'] ?? ''));
+                            $kelompokKi = trim((string) ($wawancara?->kelompok ?: $p->formulirSpmb?->kelompok ?: ''));
+                            $waPesan = $tahapSaatIni === 5 && $namaKi !== '' && $kelompokKi !== ''
+                                ? implode("\n", [
+                                    "Assalamu'alaikum warahmatullahi wabarakatuh.",
+                                    '',
+                                    "Apakah benar ini dengan Bapak {$namaKi}",
+                                    "dari kelompok {$kelompokKi}?",
+                                    '',
+                                    'Perkenalkan, kami dari Tim SPMB',
+                                    'SMA Al Furqon Boarding School.',
+                                    '',
+                                    'Kami ingin melakukan tabayun dan meminta referensi',
+                                    'terkait calon peserta didik berikut:',
+                                    '',
+                                    'Nama peserta didik:',
                                     $p->nama,
-                                    $tahapSaatIni,
-                                    $deskripsiTahap[$tahapSaatIni] ?? 'Proses SPMB'
-                                );
+                                    '',
+                                    'Mohon bantuan informasinya:',
+                                    '',
+                                    '1. Apakah Bapak/Ibu mengenal peserta didik tersebut',
+                                    '   dan keluarganya dengan baik?',
+                                    '',
+                                    '2. Menurut pengetahuan Bapak/Ibu, apakah peserta didik',
+                                    '   tersebut memiliki akhlak dan perilaku yang baik?',
+                                    '',
+                                    '3. Apakah peserta didik tersebut dikategorikan lancar',
+                                    '   dalam sambung jamaahnya?',
+                                    '',
+                                    '4. Apakah keluarga peserta didik tersebut dikenal baik',
+                                    '   di lingkungan jamaah?',
+                                    '',
+                                    '5. Jika berkenan, bagaimana gambaran umum kondisi',
+                                    '   ekonomi/maisyah keluarganya?',
+                                    '',
+                                    'Informasi ini hanya digunakan sebagai bahan pertimbangan',
+                                    'proses SPMB dan mohon dijaga kerahasiaannya.',
+                                    '',
+                                    "Terima kasih, Alhamdulillah jazakaullohu khoiro atas bantuan Bapak.",
+                                    '',
+                                    "Wassalamu'alaikum warahmatullahi wabarakatuh.",
+                                    '',
+                                    'Tim SPMB',
+                                    'SMA Al Furqon Boarding School',
+                                ])
+                                : ($tahapSaatIni === 2
+                                    ? sprintf(
+                                        'Assalamualaikum kami dari tim spmb sma afbs, mohon segera melengkapi formulir biodata ananda %s agar proses SPMB dapat dilanjutkan. Jika ada kendala, barangkali bisa kami bantu?',
+                                        $p->nama
+                                    )
+                                    : sprintf(
+                                        'Assalamualaikum kami dari tim spmb sma afbs, kami melihat dari sistem spmb ananda %s sudah melalui beberapa tahap, sekarang berada di tahap %d (%s), apakah masih ada kendala, barangkali bisa kami bantu?',
+                                        $p->nama,
+                                        $tahapSaatIni,
+                                        $deskripsiTahap[$tahapSaatIni] ?? 'Proses SPMB'
+                                    ));
                             $waKontak = [
                                 ['label' => 'WA Siswa', 'nomor' => $p->telepon],
                                 ['label' => 'WA Ayah', 'nomor' => $p->formulirSpmb?->telepon_ayah],
                                 ['label' => 'WA Ibu', 'nomor' => $p->formulirSpmb?->telepon_ibu],
+                                ['label' => 'WA Ki Kelompok', 'nomor' => $nomorKi, 'khusus_tahap' => 5],
                             ];
-                            $waKontak = collect($waKontak)->map(function (array $kontak) use ($waPesan) {
+                            $waKontak = collect($waKontak)->map(function (array $kontak) use ($waPesan, $tahapSaatIni) {
+                                if (($kontak['khusus_tahap'] ?? null) !== null && $kontak['khusus_tahap'] !== $tahapSaatIni) {
+                                    $kontak['url'] = null;
+                                    return $kontak;
+                                }
                                 $nomor = \App\Services\PengaturanService::nomorWhatsAppInternasional((string) ($kontak['nomor'] ?? ''));
                                 $kontak['url'] = preg_match('/^62[0-9]{7,14}$/', $nomor)
                                     ? 'https://wa.me/'.$nomor.'?text='.rawurlencode($waPesan)
                                     : null;
                                 return $kontak;
-                            })->filter(fn (array $kontak) => $kontak['url'] !== null)->values();
+                            });
+                            $kiKontakTersedia = $waKontak->contains(fn (array $kontak) => $kontak['label'] === 'WA Ki Kelompok' && $kontak['url'] !== null);
+                            $waKontak = $waKontak->filter(fn (array $kontak) => $kontak['url'] !== null)->values();
                         @endphp
                         <tr>
                             <td><code>{{ $p->nomor_pendaftaran }}</code></td>
@@ -329,6 +386,9 @@
                                                 <span class="btn btn-sm btn-outline-warning">
                                                     <i class="bi bi-hourglass me-1"></i>{{ $statusWawancara === 'menunggu' ? 'Menunggu Review' : 'Belum Wawancara' }}
                                                 </span>
+                                            @endif
+                                            @if(!$kiKontakTersedia)
+                                                <span class="badge bg-secondary align-self-center">Belum Isi No. Ki Kelompok</span>
                                             @endif
                                             <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" 
                                                class="btn btn-sm {{ $statusWawancara === 'menunggu' && $wawancara?->diisi_peserta_pada ? 'btn-warning' : 'btn-primary' }}">

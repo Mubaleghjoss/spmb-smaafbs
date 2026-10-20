@@ -104,4 +104,22 @@ class FormulirSeragamDanKontakContractTest extends TestCase
         $this->assertStringContainsString("'sp_ortu.nama_ki' => 'required|string|max:100'", $controller);
         $this->assertStringContainsString("'sp_ortu.no_hp_ki' => 'required|string|max:20'", $controller);
     }
+
+    public function test_panel_verifikasi_menyiapkan_wa_ki_kelompok_dengan_pesan_tabayun(): void
+    {
+        $view = file_get_contents(dirname(__DIR__, 2).'/resources/views/admin/verifikasi/index.blade.php');
+
+        foreach ([
+            "'label' => 'WA Ki Kelompok'",
+            "'no_hp_ki'",
+            "'nama_ki'",
+            'Belum Isi No. Ki Kelompok',
+            'sambung jamaahnya?',
+            'ekonomi/maisyah keluarganya?',
+            'Alhamdulillah jazakaullohu khoiro',
+            'rawurlencode($waPesan)',
+        ] as $contract) {
+            $this->assertStringContainsString($contract, $view);
+        }
+    }
 }
