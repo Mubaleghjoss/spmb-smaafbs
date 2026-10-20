@@ -3,6 +3,11 @@
 @section('title', 'Detail Hasil - ' . $peserta->nama)
 
 @section('content')
+@php
+    $waNumber = \App\Services\PengaturanService::nomorWhatsAppInternasional((string) ($peserta->telepon ?? ''));
+    $waUrl = preg_match('/^62[0-9]{7,14}$/', $waNumber) ? 'https://wa.me/' . $waNumber : null;
+    $waMessage = "Assalamu'alaikum, kami dari Tim SPMB SMA AFBS. Kami ingin menyampaikan progres tes ananda {$peserta->nama} (No. Pendaftaran: " . ($peserta->nomor_pendaftaran ?? '-') . "). Tes yang sudah dikerjakan: " . ($tesSudahDikerjakan->isNotEmpty() ? $tesSudahDikerjakan->implode(', ') : 'belum ada') . ". Tes yang belum dikerjakan: " . ($tesBelumDikerjakan->isNotEmpty() ? $tesBelumDikerjakan->implode(', ') : 'tidak ada'). ". Mohon dapat dilanjutkan. Jika ada kendala, silakan kabari kami. Terima kasih.";
+@endphp
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -58,6 +63,57 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- Ringkasan progres tes --}}
+    <div class="card mb-4">
+        <div class="card-header bg-light">
+            <h5 class="mb-0"><i class="bi bi-clipboard-check me-2"></i>Progres Tes Peserta</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <div class="border rounded h-100 p-3">
+                        <h6 class="text-success"><i class="bi bi-check-circle me-1"></i>Tes yang sudah dikerjakan</h6>
+                        @if($tesSudahDikerjakan->isNotEmpty())
+                            <ul class="mb-0">
+                                @foreach($tesSudahDikerjakan as $namaTes)
+                                    <li>{{ $namaTes }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <span class="text-muted">Belum ada tes yang selesai.</span>
+                        @endif
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="border rounded h-100 p-3">
+                        <h6 class="text-warning"><i class="bi bi-hourglass-split me-1"></i>Tes yang belum dikerjakan</h6>
+                        @if($tesBelumDikerjakan->isNotEmpty())
+                            <ul class="mb-0">
+                                @foreach($tesBelumDikerjakan as $namaTes)
+                                    <li>{{ $namaTes }}</li>
+                                @endforeach
+                            </ul>
+                        @else
+                            <span class="text-muted">Tidak ada tes yang tertunda.</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @if($waUrl)
+                <div class="mt-3 d-flex flex-wrap align-items-center gap-2">
+                    <a href="{{ $waUrl }}?text={{ rawurlencode($waMessage) }}" class="btn btn-success" target="_blank" rel="noopener">
+                        <i class="bi bi-whatsapp me-1"></i>Kabari via WhatsApp
+                    </a>
+                    <small class="text-muted">Pesan sudah disiapkan dan tetap perlu dikirim manual.</small>
+                </div>
+            @else
+                <div class="alert alert-warning mt-3 mb-0 py-2">
+                    Nomor WhatsApp peserta belum tersedia atau belum valid.
+                </div>
+            @endif
         </div>
     </div>
 

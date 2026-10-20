@@ -178,7 +178,7 @@ class HasilController extends Controller
      */
     public function detailPesertaRekap(Request $request, $pesertaId)
     {
-        $peserta = \App\Models\Peserta::findOrFail($pesertaId);
+        $peserta = \App\Models\Peserta::with('formulirSpmb')->findOrFail($pesertaId);
 
         $sesiList = SesiTes::where('peserta_id', $pesertaId)
             ->whereIn('status', ['selesai', 'timeout'])
@@ -186,7 +186,26 @@ class HasilController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.hasil.detail-peserta-rekap', compact('peserta', 'sesiList'));
+        $tesSudahDikerjakan = $sesiList
+            ->pluck('tes.nama')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $tesTersedia = app(\App\Services\TesService::class)
+            ->ambilTesTersediaUntukPeserta($peserta);
+        $tesBelumDikerjakan = $tesTersedia
+            ->whereNotIn('id', $sesiList->pluck('tes_id')->unique())
+            ->pluck('nama')
+            ->filter()
+            ->values();
+
+        return view('admin.hasil.detail-peserta-rekap', compact(
+            'peserta',
+            'sesiList',
+            'tesSudahDikerjakan',
+            'tesBelumDikerjakan'
+        ));
     }
 
     /**
