@@ -34,7 +34,7 @@ class PesertaController extends Controller
             });
         }
 
-        $peserta = $query->orderBy('created_at', 'desc')->paginate(20);
+        $peserta = $query->orderBy('created_at', 'desc')->paginate($this->perPage(request(), 20));
         $grup = Grup::all();
 
         return view('tim-spmb.peserta.index', compact('peserta', 'grup'));

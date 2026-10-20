@@ -311,7 +311,7 @@ class TesController extends Controller
             $query->where('status', 'selesai');
         }
         
-        $sesiList = $query->orderBy('created_at', 'desc')->paginate(20);
+        $sesiList = $query->orderBy('created_at', 'desc')->paginate($this->perPage(request(), 20));
         
         return view('admin.tes.sesi', [
             'tes' => $tes,

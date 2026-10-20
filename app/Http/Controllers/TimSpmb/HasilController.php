@@ -16,7 +16,7 @@ class HasilController extends Controller
             $q->where('status', 'selesai');
         }]);
 
-        $tes = $query->orderBy('created_at', 'desc')->paginate(20);
+        $tes = $query->orderBy('created_at', 'desc')->paginate($this->perPage(request(), 20));
 
         return view('tim-spmb.hasil.index', compact('tes'));
     }
@@ -35,7 +35,7 @@ class HasilController extends Controller
             });
         }
 
-        $sesi = $query->orderBy('nilai', 'desc')->paginate(20);
+        $sesi = $query->orderBy('nilai', 'desc')->paginate($this->perPage(request(), 20));
 
         $statistik = [
             'total_peserta' => SesiTes::where('tes_id', $tes->id)->where('status', 'selesai')->count(),

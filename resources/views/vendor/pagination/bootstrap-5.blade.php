@@ -1,5 +1,22 @@
+@php
+    $paginator->appends(request()->except('page'));
+@endphp
+
 @if ($paginator->hasPages())
-    <nav class="d-flex justify-items-center justify-content-between">
+    <nav class="d-flex flex-column gap-2">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <p class="small text-muted mb-0">Menampilkan data {{ $paginator->firstItem() ?? 0 }} - {{ $paginator->lastItem() ?? 0 }} dari {{ $paginator->total() }}</p>
+            <label class="d-flex align-items-center gap-2 small text-muted mb-0">
+                Tampilkan
+                <select class="form-select form-select-sm" style="width: auto;" onchange="window.location.href = this.value">
+                    @foreach([15, 20, 25, 50, 100] as $size)
+                        @php $url = request()->fullUrlWithQuery(['per_page' => $size, 'page' => 1]); @endphp
+                        <option value="{{ $url }}" @selected($paginator->perPage() === $size)>{{ $size }} data</option>
+                    @endforeach
+                </select>
+                per halaman
+            </label>
+        </div>
         <div class="d-flex justify-content-between flex-fill d-sm-none">
             <ul class="pagination">
                 {{-- Previous Page Link --}}

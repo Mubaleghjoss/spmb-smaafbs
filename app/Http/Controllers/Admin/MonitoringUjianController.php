@@ -65,7 +65,7 @@ class MonitoringUjianController extends Controller
             }
         }
 
-        $pesertaList = $query->orderBy('nama')->paginate(20)->withQueryString();
+        $pesertaList = $query->orderBy('nama')->paginate($this->perPage(request(), 20))->withQueryString();
 
         // Get sesi tes for displayed peserta
         $pesertaIds = $pesertaList->pluck('id');

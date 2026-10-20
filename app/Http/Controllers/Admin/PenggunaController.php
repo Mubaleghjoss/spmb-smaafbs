@@ -26,7 +26,7 @@ class PenggunaController extends Controller
             $query->where('peran', $request->peran);
         }
 
-        $pengguna = $query->orderBy('created_at', 'desc')->paginate(20);
+        $pengguna = $query->orderBy('created_at', 'desc')->paginate($this->perPage(request(), 20));
 
         return view('admin.pengguna.index', compact('pengguna'));
     }

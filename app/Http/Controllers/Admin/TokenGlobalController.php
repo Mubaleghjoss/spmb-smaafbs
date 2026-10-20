@@ -118,7 +118,7 @@ class TokenGlobalController extends Controller
         $logs = $tokenGlobal->logs()
             ->with('peserta')
             ->orderBy('created_at', 'desc')
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         return view('admin.tes.token-global-logs', compact('tokenGlobal', 'logs'));
     }

@@ -37,7 +37,7 @@ class VerifikasiController extends Controller
             ->where('jenis', 'formulir')
             ->where('status', 'menunggu')
             ->orderBy('created_at', 'asc')
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         return view('tim-spmb.verifikasi.pembayaran-formulir', compact('pembayaran'));
     }
@@ -73,7 +73,7 @@ class VerifikasiController extends Controller
         $formulir = FormulirSpmb::with('peserta')
             ->where('status', 'diajukan')
             ->orderBy('created_at', 'asc')
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         return view('tim-spmb.verifikasi.formulir', compact('formulir'));
     }
@@ -119,7 +119,7 @@ class VerifikasiController extends Controller
             ->where('status', 'selesai')
             ->whereHas('peserta.tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', 4))
             ->orderBy('selesai_pada', 'asc')
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         return view('tim-spmb.verifikasi.hasil-tes', compact('sesi'));
     }
@@ -138,7 +138,7 @@ class VerifikasiController extends Controller
             ->where('jenis', 'pertama')
             ->where('status', 'menunggu')
             ->orderBy('created_at', 'asc')
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         return view('tim-spmb.verifikasi.pelunasan', compact('pembayaran'));
     }

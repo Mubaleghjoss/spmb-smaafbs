@@ -86,7 +86,7 @@ class VerifikasiSpmbController extends Controller
                 });
             })
             ->latest()
-            ->paginate(15)
+            ->paginate($this->perPage(request(), 15))
             ->withQueryString();
 
         return view('admin.verifikasi.index', compact('statistik', 'peserta', 'filter'));
@@ -123,16 +123,16 @@ class VerifikasiSpmbController extends Controller
     public function daftarPeserta(Request $request): View
     {
         $filter = $request->only(['tahap', 'status', 'cari']);
-        $peserta = $this->verifikasiService->ambilDaftarVerifikasi($filter);
+        $peserta = $this->verifikasiService->ambilDaftarVerifikasi($filter, $this->perPage($request, 15));
         return view('admin.verifikasi.daftar-peserta', compact('peserta', 'filter'));
     }
 
     /**
      * Daftar pembayaran formulir menunggu verifikasi
      */
-    public function pembayaranFormulir(): View
+    public function pembayaranFormulir(Request $request): View
     {
-        $pembayaran = $this->verifikasiService->ambilPembayaranMenunggu('formulir');
+        $pembayaran = $this->verifikasiService->ambilPembayaranMenunggu('formulir', $this->perPage($request, 15));
 
         // Ambil peserta yang belum upload bukti pembayaran formulir (tahap 3)
         $pesertaBelumUpload = Peserta::with('tahapanSpmb')
@@ -251,7 +251,7 @@ class VerifikasiSpmbController extends Controller
             $formulir = FormulirSpmb::with('peserta')
                 ->whereIn('status_verifikasi', ['menunggu', 'terverifikasi', 'ditolak'])
                 ->latest()
-                ->paginate(15);
+                ->paginate($this->perPage(request(), 15));
         } elseif ($filter === 'belum_lengkap') {
             $formulir = FormulirSpmb::with('peserta')
                 ->where(function($q) {
@@ -263,9 +263,9 @@ class VerifikasiSpmbController extends Controller
                       ->orWhereNull('file_ktp_ayah');
                 })
                 ->latest()
-                ->paginate(15);
+                ->paginate($this->perPage(request(), 15));
         } else {
-            $formulir = $this->verifikasiService->ambilFormulirMenunggu();
+            $formulir = $this->verifikasiService->ambilFormulirMenunggu($this->perPage($request, 15));
         }
 
         // Statistik — WAJIB lewat whereHas('peserta') agar ikut ter-scope
@@ -412,9 +412,9 @@ class VerifikasiSpmbController extends Controller
     /**
      * Daftar pelunasan menunggu verifikasi
      */
-    public function pelunasan(): View
+    public function pelunasan(Request $request): View
     {
-        $pembayaran = $this->verifikasiService->ambilPembayaranMenunggu('pertama');
+        $pembayaran = $this->verifikasiService->ambilPembayaranMenunggu('pertama', $this->perPage($request, 15));
 
         // Ambil peserta yang belum upload bukti pelunasan (tahap 6)
         $pesertaBelumUpload = Peserta::with('tahapanSpmb')
@@ -547,7 +547,7 @@ class VerifikasiSpmbController extends Controller
                 $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
             })
             ->latest()
-            ->paginate(15);
+            ->paginate($this->perPage(request(), 15));
 
         $permohonanTimeout = SesiTes::with(['peserta', 'tes'])
             ->where('status', 'timeout')
@@ -555,7 +555,7 @@ class VerifikasiSpmbController extends Controller
             ->whereHas('peserta')
             ->whereHas('tes')
             ->latest('permohonan_ulang_pada')
-            ->paginate(10, ['*'], 'permohonan_page');
+            ->paginate($this->perPage(request(), 10), ['*'], 'permohonan_page');
 
         return view('admin.verifikasi.hasil-tes', compact('sesiMenunggu', 'jumlahLulusOtomatis', 'permohonanTimeout'));
     }
@@ -1197,7 +1197,7 @@ class VerifikasiSpmbController extends Controller
         $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'wawancara'])
             ->whereHas('tahapanSpmb', fn($q) => $q->where('tahap_saat_ini', 5))
             ->latest()
-            ->paginate(20);
+            ->paginate($this->perPage(request(), 20));
 
         // Statistik — Wawancara disaring lewat whereHas('peserta') agar ikut
         // ter-scope periode & jalur pendaftaran aktif.

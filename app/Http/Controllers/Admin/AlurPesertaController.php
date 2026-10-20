@@ -92,7 +92,7 @@ class AlurPesertaController extends Controller
             });
         }
 
-        $peserta = $query->paginate(20)->withQueryString();
+        $peserta = $query->paginate($this->perPage(request(), 20))->withQueryString();
 
         return view('admin.alur-peserta.index', [
             'perTahap' => $perTahap,

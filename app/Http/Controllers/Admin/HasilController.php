@@ -217,7 +217,7 @@ class HasilController extends Controller
             }
         }
 
-        $sesiList = $query->paginate(20)->withQueryString();
+        $sesiList = $query->paginate($this->perPage(request(), 20))->withQueryString();
         $peringkat = $this->penilaianService->ambilPeringkat($tes);
 
         return view('admin.hasil.show', compact('tes', 'statistik', 'sesiList', 'peringkat'));
