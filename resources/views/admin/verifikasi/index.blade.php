@@ -177,6 +177,33 @@
                         @forelse($peserta as $p)
                         @php
                             $tahapSaatIni = $p->tahapanSpmb?->tahap_saat_ini ?? 1;
+                            $deskripsiTahap = [
+                                1 => 'Pendaftaran',
+                                2 => 'Verifikasi Formulir',
+                                3 => 'Pembayaran Formulir',
+                                4 => 'Tes Online',
+                                5 => 'Wawancara',
+                                6 => 'Pelunasan',
+                                7 => 'Kelulusan',
+                            ];
+                            $waPesan = sprintf(
+                                'Assalamualaikum kami dari tim spmb sma afbs, kami melihat dari sistem spmb ananda %s sudah melalui beberapa tahap, sekarang berada di tahap %d (%s), apakah masih ada kendala, barangkali bisa kami bantu?',
+                                $p->nama,
+                                $tahapSaatIni,
+                                $deskripsiTahap[$tahapSaatIni] ?? 'Proses SPMB'
+                            );
+                            $waKontak = [
+                                ['label' => 'WA Siswa', 'nomor' => $p->telepon],
+                                ['label' => 'WA Ayah', 'nomor' => $p->formulirSpmb?->telepon_ayah],
+                                ['label' => 'WA Ibu', 'nomor' => $p->formulirSpmb?->telepon_ibu],
+                            ];
+                            $waKontak = collect($waKontak)->map(function (array $kontak) use ($waPesan) {
+                                $nomor = \App\Services\PengaturanService::nomorWhatsAppInternasional((string) ($kontak['nomor'] ?? ''));
+                                $kontak['url'] = preg_match('/^62[0-9]{7,14}$/', $nomor)
+                                    ? 'https://wa.me/'.$nomor.'?text='.rawurlencode($waPesan)
+                                    : null;
+                                return $kontak;
+                            })->filter(fn (array $kontak) => $kontak['url'] !== null)->values();
                         @endphp
                         <tr>
                             <td><code>{{ $p->nomor_pendaftaran }}</code></td>
@@ -208,6 +235,16 @@
                                        class="btn btn-sm btn-dark" title="Lihat semua data peserta">
                                         <i class="bi bi-clock-history me-1"></i>History
                                     </a>
+
+                                    @foreach($waKontak as $kontak)
+                                        <a href="{{ $kontak['url'] }}"
+                                           class="btn btn-sm btn-success"
+                                           target="_blank"
+                                           rel="noopener"
+                                           title="Buka WhatsApp {{ $kontak['label'] }} dengan pesan tahap {{ $tahapSaatIni }}">
+                                            <i class="bi bi-whatsapp me-1"></i>{{ $kontak['label'] }}
+                                        </a>
+                                    @endforeach
                                     
                                     {{-- Tombol Verifikasi sesuai tahap yang sedang dilakukan --}}
                                     @php

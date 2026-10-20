@@ -54,6 +54,29 @@ class FormulirSeragamDanKontakContractTest extends TestCase
         $this->assertStringContainsString('@endphp', $view);
     }
 
+    public function test_panel_verifikasi_menyiapkan_tiga_kontak_whatsapp_dengan_pesan_tahap(): void
+    {
+        $view = file_get_contents(dirname(__DIR__, 2).'/resources/views/admin/verifikasi/index.blade.php');
+
+        foreach (['telepon', 'telepon_ayah', 'telepon_ibu'] as $field) {
+            $this->assertStringContainsString($field, $view);
+        }
+        $this->assertStringContainsString('PengaturanService::nomorWhatsAppInternasional', $view);
+        $this->assertStringContainsString('https://wa.me/', $view);
+        $this->assertStringContainsString('Assalamualaikum kami dari tim spmb sma afbs', $view);
+        $this->assertStringContainsString('Tahap {{ $tahapSaatIni }}', $view);
+        $this->assertStringContainsString('target="_blank"', $view);
+    }
+
+    public function test_deskripsi_tahap_verifikasi_memiliki_tujuh_tahap(): void
+    {
+        $view = file_get_contents(dirname(__DIR__, 2).'/resources/views/admin/verifikasi/index.blade.php');
+
+        foreach (['Pendaftaran', 'Verifikasi Formulir', 'Pembayaran Formulir', 'Tes Online', 'Wawancara', 'Pelunasan', 'Kelulusan'] as $label) {
+            $this->assertStringContainsString($label, $view);
+        }
+    }
+
     public function test_ekspor_biodata_adalah_workbook_excel_dengan_data_seragam_dan_ki(): void
     {
         $controller = file_get_contents(dirname(__DIR__, 2).'/app/Http/Controllers/Admin/PesertaController.php');
