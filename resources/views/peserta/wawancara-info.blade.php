@@ -15,6 +15,15 @@
         </div>
     </div>
 
+    @if($wawancara)
+        <div class="alert alert-primary border-0 shadow-sm small">
+            <i class="bi bi-pencil-square me-1"></i>
+            <strong>Data yang sudah dikirim tetap bisa diperbarui.</strong>
+            Anda dapat mengubah jawaban, surat pernyataan, file Tes Pegon, dan rekaman bacaan Al-Qur'an kapan saja melalui langkah di bawah ini.
+            Setelah diperbarui, tekan tombol simpan/kirim pada langkah yang bersangkutan.
+        </div>
+    @endif
+
     @if(($peserta->tahapanSpmb?->status_kelulusan === 'lulus') && ($peserta->tahapanSpmb?->tahap_7_selesai ?? false) && (($kelengkapanWawancara['count'] ?? 0) > 0))
         <div class="alert alert-warning border-0 shadow-sm">
             <div class="d-flex gap-3">
@@ -611,7 +620,7 @@
                         <li>Klik tombol <strong>"Mulai Merekam"</strong> untuk merekam suara Anda</li>
                         <li>Baca surat tersebut dengan tartil dan jelas</li>
                         <li>Klik <strong>"Selesai"</strong> untuk menghentikan rekaman</li>
-                        <li>Dengarkan ulang rekaman, lalu klik <strong>"Kirim Rekaman"</strong></li>
+                        <li>Dengarkan ulang rekaman, lalu klik <strong>{{ $wawancara?->file_voice_quran ? 'Simpan Perubahan Rekaman' : 'Kirim Rekaman' }}</strong></li>
                     </ol>
                 </div>
 
@@ -639,7 +648,7 @@
                         <audio id="audioPlayback" controls class="mb-2" style="width:100%;max-width:400px"></audio>
                         <div>
                             <button type="button" class="btn btn-outline-danger btn-sm" onclick="resetRecording()">
-                                <i class="bi bi-arrow-counterclockwise me-1"></i>Rekam Ulang
+                                <i class="bi bi-arrow-counterclockwise me-1"></i>Ganti Rekaman
                             </button>
                         </div>
                     </div>
@@ -651,13 +660,13 @@
                         <input type="hidden" name="surat_quran_random" value="{{ $suratTerpilih }}">
                         <input type="file" name="file_voice_quran" id="voiceFileInput" style="display:none" accept="audio/*">
                         <button type="submit" id="btnSubmitVoice" class="btn btn-success btn-lg" style="display:none">
-                            <i class="bi bi-send me-1"></i>Kirim Rekaman
+                            <i class="bi bi-send me-1"></i>{{ $wawancara?->file_voice_quran ? 'Simpan Perubahan Rekaman' : 'Kirim Rekaman' }}
                         </button>
                     </form>
 
                     @if($wawancara?->file_voice_quran)
                     <div class="mt-3 p-3 bg-success bg-opacity-10 rounded">
-                        <small class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>Rekaman sudah dikirim</small>
+                        <small class="text-success fw-bold"><i class="bi bi-check-circle me-1"></i>Rekaman sudah dikirim — Anda dapat menggantinya kapan saja</small>
                         <div class="mt-2">
                             <audio controls class="w-100" style="max-width:400px">
                                 <source src="{{ asset('storage/' . $wawancara->file_voice_quran) }}">
