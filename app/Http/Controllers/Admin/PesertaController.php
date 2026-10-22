@@ -12,6 +12,7 @@ use App\Services\PesertaService;
 use App\Services\GrupService;
 use App\Services\ImporEksporPesertaService;
 use App\Services\PeriodePendaftaranService;
+use App\Services\PesertaExportService;
 use App\Models\TahunAjaran;
 use App\Models\GelombangPendaftaran;
 use Illuminate\Http\JsonResponse;
@@ -923,5 +924,22 @@ class PesertaController extends Controller
             new BiodataPesertaExport,
             'biodata_peserta_spmb_' . now()->format('Y-m-d_His') . '.xlsx'
         );
+    }
+
+    /**
+     * Download workbook Excel biodata peserta lengkap dan terstruktur.
+     */
+    public function downloadBiodataXlsx(): BinaryFileResponse
+    {
+        $peserta = Peserta::with([
+            'formulirSpmb', 'tahapanSpmb', 'tahunAjaran', 'gelombangPendaftaran',
+            'pembayaran', 'sesiTes.tes', 'wawancara',
+        ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $filename = 'biodata_peserta_spmb_' . date('Y-m-d_His') . '.xlsx';
+
+        return app(PesertaExportService::class)->download($peserta, $filename);
     }
 }

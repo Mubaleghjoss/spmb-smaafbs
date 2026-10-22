@@ -12,6 +12,7 @@ use App\Services\LogAktivitasService;
 use App\Services\MonitoringUjianService;
 use App\Services\VerifikasiSpmbService;
 use App\Services\PembayaranService;
+use App\Services\PesertaExportService;
 use App\Enums\StatusPembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
@@ -1057,6 +1058,35 @@ class VerifikasiSpmbController extends Controller
         ]);
 
         return view('admin.verifikasi.history-peserta', compact('peserta'));
+    }
+
+    /**
+     * Export data peserta lengkap ke workbook Excel berformat.
+     */
+    public function eksporPesertaXlsx(Request $request)
+    {
+        $filter = $request->only(['tahap', 'cari']);
+
+        $peserta = Peserta::with([
+            'tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes.tes', 'wawancara',
+            'tahunAjaran', 'gelombangPendaftaran',
+        ])
+            ->when(!empty($filter['tahap']), function ($q) use ($filter) {
+                $q->whereHas('tahapanSpmb', fn($t) => $t->where('tahap_saat_ini', $filter['tahap']));
+            })
+            ->when(!empty($filter['cari']), function ($q) use ($filter) {
+                $q->where(function ($query) use ($filter) {
+                    $query->where('nama', 'like', "%{$filter['cari']}%")
+                        ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
+                });
+            })
+            ->latest()
+            ->get();
+
+        $tahapLabel = !empty($filter['tahap']) ? '-tahap' . $filter['tahap'] : '';
+        $filename = 'data-peserta-spmb' . $tahapLabel . '-' . date('Y-m-d-His') . '.xlsx';
+
+        return app(PesertaExportService::class)->download($peserta, $filename);
     }
 
     /**

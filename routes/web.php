@@ -161,7 +161,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/alur-tahap', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'alurTahap'])->name('alur-tahap');
     Route::get('/verifikasi/peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'daftarPeserta'])->name('verifikasi.peserta');
     Route::get('/verifikasi/history/{peserta}', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'historyPeserta'])->name('verifikasi.history');
-    Route::get('/verifikasi/ekspor-peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'eksporPeserta'])->name('verifikasi.ekspor-peserta');
+    Route::get('/verifikasi/ekspor-peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'eksporPesertaXlsx'])->name('verifikasi.ekspor-peserta');
     
     // Verifikasi Pembayaran Formulir
     Route::get('/verifikasi/pembayaran-formulir', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'pembayaranFormulir'])->name('verifikasi.pembayaran-formulir');
@@ -271,7 +271,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/peserta/template', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadTemplate'])->name('peserta.template');
     Route::get('/peserta/template-rekap-seleksi', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadTemplateRekapSeleksi'])->name('peserta.template-rekap-seleksi');
     Route::get('/peserta/download-akun', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadAkun'])->name('peserta.download-akun');
-    Route::get('/peserta/download-biodata', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadBiodata'])->name('peserta.download-biodata');
+    Route::get('/peserta/download-biodata', [\App\Http\Controllers\Admin\PesertaController::class, 'downloadBiodataXlsx'])->name('peserta.download-biodata');
     Route::post('/peserta', [\App\Http\Controllers\Admin\PesertaController::class, 'store'])->name('peserta.store');
     Route::post('/peserta/impor', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImpor'])->name('peserta.impor.proses');
     Route::post('/peserta/impor-rekap-seleksi', [\App\Http\Controllers\Admin\PesertaController::class, 'prosesImporRekapSeleksi'])->name('peserta.impor-rekap-seleksi.proses');
