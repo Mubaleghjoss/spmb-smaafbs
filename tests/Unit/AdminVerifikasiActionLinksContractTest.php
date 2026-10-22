@@ -31,4 +31,10 @@ class AdminVerifikasiActionLinksContractTest extends TestCase
         self::assertStringNotContainsString('><i class="bi bi-credit-card me-1"></i>Belum Upload Bukti</span>', $view);
         self::assertStringNotContainsString('><i class="bi bi-journal-x me-1"></i>Belum Tes</span>', $view);
     }
+
+    public function test_action_buttons_are_aligned_to_the_left(): void
+    {
+        self::assertStringContainsString('class="d-flex gap-1 justify-content-start flex-wrap"', $this->viewSource());
+        self::assertStringNotContainsString('class="d-flex gap-1 justify-content-center flex-wrap"', $this->viewSource());
+    }
 }

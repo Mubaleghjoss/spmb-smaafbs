@@ -292,7 +292,7 @@
                                 </div>
                             </td>
                             <td>
-                                <div class="d-flex gap-1 justify-content-center flex-wrap">
+                                <div class="d-flex gap-1 justify-content-start flex-wrap">
                                     {{-- History/Detail Lengkap --}}
                                     <a href="{{ route('admin.verifikasi.history', $p) }}" 
                                        class="btn btn-sm btn-dark" title="Lihat semua data peserta">
