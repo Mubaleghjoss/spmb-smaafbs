@@ -22,6 +22,7 @@ class JadwalAlurPeriode extends Model
         'tanggal_tutup',
         'waktu_selesai',
         'lokasi',
+        'metode_pelaksanaan',
         'keterangan',
     ];
 

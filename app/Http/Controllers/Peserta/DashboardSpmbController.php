@@ -457,6 +457,7 @@ class DashboardSpmbController extends Controller
                 'alasan' => $statusInfo['alasan'],
                 'tanggal_buka' => $statusInfo['tanggal_buka'],
                 'jadwal_label' => $statusInfo['jadwal_label'] ?? null,
+                'metode_pelaksanaan' => $statusInfo['metode_pelaksanaan'] ?? null,
                 'keterangan' => $statusInfo['keterangan'] ?? null,
             ];
         }
@@ -469,7 +470,7 @@ class DashboardSpmbController extends Controller
      */
     private function cekTahapanDibukaDetail(array $pengaturan, int $tahap, $tahapanPeserta): array
     {
-        $result = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'keterangan' => null];
+        $result = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'metode_pelaksanaan' => null, 'keterangan' => null];
         
         // Tahap 1 selalu dibuka
         if ($tahap === 1) {

@@ -89,6 +89,7 @@ class JadwalAlurService
                 'tanggal_tutup' => optional($src?->tanggal_tutup)->format('Y-m-d') ?? ($leg['tanggal_tutup'] ?? ''),
                 'waktu_selesai' => $this->jamHm($src->waktu_selesai ?? ($leg['waktu_selesai'] ?? '')),
                 'lokasi' => $src->lokasi ?? ($leg['lokasi'] ?? ''),
+                'metode_pelaksanaan' => $src->metode_pelaksanaan ?? 'online',
                 'keterangan' => $src->keterangan ?? ($leg['keterangan'] ?? ''),
                 'sumber' => $sumber,
             ];
@@ -120,6 +121,7 @@ class JadwalAlurService
                     'tanggal_tutup' => $this->tanggalAtauNull($c['tanggal_tutup'] ?? null),
                     'waktu_selesai' => $this->jamAtauNull($c['waktu_selesai'] ?? null),
                     'lokasi' => ($c['lokasi'] ?? '') ?: null,
+                    'metode_pelaksanaan' => $c['metode_pelaksanaan'] ?? 'online',
                     'keterangan' => ($c['keterangan'] ?? '') ?: null,
                 ]
             );
@@ -131,7 +133,7 @@ class JadwalAlurService
      */
     public function statusTahap(int $tahunAjaranId, ?int $gelombangId, int $tahap): array
     {
-        $hasil = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'keterangan' => null];
+        $hasil = ['dibuka' => true, 'alasan' => null, 'tanggal_buka' => null, 'jadwal_label' => null, 'metode_pelaksanaan' => null, 'keterangan' => null];
 
         if (! in_array($tahap, self::TAHAP_BERJADWAL, true)) {
             return $hasil;
@@ -148,6 +150,7 @@ class JadwalAlurService
         $selesaiLabel = $selesai ? $this->formatLabel($selesai, ! empty($j['waktu_selesai'])) : null;
 
         $hasil['tanggal_buka'] = $mulaiLabel;
+        $hasil['metode_pelaksanaan'] = $j['metode_pelaksanaan'] ?? 'online';
         $hasil['keterangan'] = $j['keterangan'] ?: null;
         $hasil['jadwal_label'] = $this->labelJadwal($mulaiLabel, $selesaiLabel);
 

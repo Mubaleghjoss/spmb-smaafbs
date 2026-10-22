@@ -183,6 +183,14 @@
 
                             @if($tahap === 5)
                             <div class="mt-2">
+                                <label class="form-label sm">Metode Pelaksanaan</label>
+                                <select class="form-select form-select-sm" name="tahap[{{ $tahap }}][metode_pelaksanaan]" x-model="t{{ $tahap }}.metode_pelaksanaan">
+                                    <option value="online">Online</option>
+                                    <option value="offline">Offline / Tatap Muka</option>
+                                </select>
+                                <div class="form-text">Online: peserta tidak perlu membawa dokumen fisik. Offline: isi lokasi dan catatan dokumen.</div>
+                            </div>
+                            <div class="mt-2">
                                 <label class="form-label sm">Lokasi (opsional)</label>
                                 <input type="text" class="form-control form-control-sm"
                                        name="tahap[{{ $tahap }}][lokasi]" x-model="t{{ $tahap }}.lokasi"
@@ -244,6 +252,7 @@ function alurJadwal() {
             tanggal_tutup: @js($j['tanggal_tutup']),
             waktu_selesai: @js($j['waktu_selesai']),
             lokasi: @js($j['lokasi']),
+            metode_pelaksanaan: @js($j['metode_pelaksanaan'] ?? 'online'),
             keterangan: @js($j['keterangan']),
         },
         @endforeach

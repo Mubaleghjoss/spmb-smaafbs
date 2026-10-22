@@ -427,6 +427,19 @@
                                             <i class="bi bi-pin-angle me-1 text-success"></i>{{ $item['keterangan'] }}
                                         </div>
                                     @endif
+
+                                    @if($nomor == 5 && ($item['metode_pelaksanaan'] ?? null) === 'online')
+                                        <div class="alert alert-info border py-2 px-3 mb-2 small">
+                                            <i class="bi bi-camera-video me-1"></i>
+                                            Wawancara Tahap 5 dilaksanakan secara online. Peserta belum perlu membawa dokumen fisik atau hadir langsung.
+                                            Jika nanti diperlukan wawancara offline, jadwal, lokasi, dan dokumen yang harus dibawa akan diumumkan melalui catatan Tahap 5.
+                                        </div>
+                                    @elseif($nomor == 5 && ($item['metode_pelaksanaan'] ?? null) === 'offline')
+                                        <div class="alert alert-warning border py-2 px-3 mb-2 small">
+                                            <i class="bi bi-geo-alt me-1"></i>
+                                            Wawancara Tahap 5 dilaksanakan secara offline / tatap muka.
+                                        </div>
+                                    @endif
                                     
                                     @if($nomor == 3 && ($item['dibuka'] || $item['selesai']) && ($rincianBiaya['lengkap'] ?? false))
                                         <div class="alert alert-warning border mt-2 mb-0 py-2 px-3 small">
