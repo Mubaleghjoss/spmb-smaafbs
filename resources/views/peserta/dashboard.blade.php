@@ -500,14 +500,14 @@
                                         @php
                                             $w5 = $peserta->wawancara;
                                             $langkah5 = [
-                                                'Form Ortu' => !empty($w5?->jawaban_ortu),
-                                                'Form Siswa' => !empty($w5?->jawaban_siswa),
-                                                'Surat Siswa' => !empty($w5?->surat_pernyataan_siswa),
-                                                'Surat Ortu' => !empty($w5?->surat_pernyataan_ortu),
-                                                'Tes Pegon' => !empty($w5?->file_tes_pegon),
-                                                'Bacaan Quran' => !empty($w5?->file_voice_quran),
+                                                1 => ['label' => 'Form Ortu', 'selesai' => !empty($w5?->jawaban_ortu)],
+                                                2 => ['label' => 'Form Siswa', 'selesai' => !empty($w5?->jawaban_siswa)],
+                                                3 => ['label' => 'Surat Siswa', 'selesai' => !empty($w5?->surat_pernyataan_siswa)],
+                                                4 => ['label' => 'Surat Ortu', 'selesai' => !empty($w5?->surat_pernyataan_ortu)],
+                                                5 => ['label' => 'Tes Pegon', 'selesai' => !empty($w5?->file_tes_pegon)],
+                                                6 => ['label' => 'Bacaan Quran', 'selesai' => !empty($w5?->file_voice_quran)],
                                             ];
-                                            $sudah5 = count(array_filter($langkah5));
+                                            $sudah5 = count(array_filter($langkah5, fn($langkah) => $langkah['selesai']));
                                             $hasil5 = $w5?->hasil_wawancara ?? 'menunggu';
                                         @endphp
                                         <div class="alert {{ $sudah5 === 6 ? 'alert-success' : 'alert-info' }} mt-2 mb-0 py-2 px-3 small">
@@ -515,10 +515,13 @@
                                                 <i class="bi bi-list-check me-1"></i>Kelengkapan data: {{ $sudah5 }} dari 6 langkah
                                             </div>
                                             <div class="d-flex flex-wrap gap-1 mb-2">
-                                                @foreach($langkah5 as $namaLangkah => $ok)
-                                                    <span class="badge {{ $ok ? 'bg-success' : 'bg-secondary' }}">
-                                                        <i class="bi bi-{{ $ok ? 'check' : 'dash' }} me-1"></i>{{ $namaLangkah }}
-                                                    </span>
+                                                @foreach($langkah5 as $nomorLangkah => $langkah)
+                                                    @php $ok = $langkah['selesai']; @endphp
+                                                    <a href="{{ route('peserta.wawancara.info') . '#step' . $nomorLangkah }}"
+                                                       class="badge text-decoration-none {{ $ok ? 'bg-success' : 'bg-secondary' }}"
+                                                       aria-label="Buka {{ $langkah['label'] }}">
+                                                        <i class="bi bi-{{ $ok ? 'check' : 'dash' }} me-1"></i>{{ $langkah['label'] }}
+                                                    </a>
                                                 @endforeach
                                             </div>
                                             @if($sudah5 === 6)
