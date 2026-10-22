@@ -58,9 +58,17 @@
         @endphp
         <div class="card border-0 shadow-sm mb-4 border-start border-4 border-warning">
             <div class="card-header bg-warning bg-opacity-25">
-                <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya SPMB</strong>
+                <button class="btn btn-link text-dark text-decoration-none w-100 text-start p-0 d-flex align-items-center justify-content-between"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#informasi-biaya-spmb"
+                        aria-expanded="false"
+                        aria-controls="informasi-biaya-spmb">
+                    <strong><i class="bi bi-cash-stack me-2"></i>Informasi Biaya SPMB</strong>
+                    <i class="bi bi-chevron-down" aria-hidden="true"></i>
+                </button>
             </div>
-            <div class="card-body">
+            <div class="card-body collapse" id="informasi-biaya-spmb">
                 <div class="row align-items-center g-3">
                     <div class="col-md-5">
                         <div class="small text-muted">Biaya formulir (Tahap 3)</div>
@@ -87,12 +95,19 @@
     @endif
 
     {{-- Kartu Akun Saya: kredensial tidak pernah ditampilkan atau disalin. --}}
-    <div class="card border-0 shadow-sm mb-4" id="akun-saya">
+    <div class="card border-0 shadow-sm mb-4">
         <div class="card-header bg-white d-flex align-items-center gap-2">
-            <i class="bi bi-key-fill text-success"></i>
-            <strong>Akun Saya</strong>
+            <button class="btn btn-link text-dark text-decoration-none w-100 text-start p-0 d-flex align-items-center justify-content-between"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#akun-saya"
+                    aria-expanded="false"
+                    aria-controls="akun-saya">
+                <span><i class="bi bi-key-fill text-success me-2"></i><strong>Akun Saya</strong></span>
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
         </div>
-        <div class="card-body">
+        <div class="card-body collapse" id="akun-saya">
             @if($errors->any())
                 <div class="alert alert-danger" role="alert">
                     <ul class="mb-0 ps-3">@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
