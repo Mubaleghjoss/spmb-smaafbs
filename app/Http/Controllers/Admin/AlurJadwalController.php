@@ -78,6 +78,7 @@ class AlurJadwalController extends Controller
             'tahap.*.waktu_selesai' => 'nullable',
             'tahap.*.lokasi' => 'nullable|string|max:255',
             'tahap.*.metode_pelaksanaan' => 'nullable|in:online,offline',
+            'tahap.*.panduan_online' => 'nullable|string|max:2000',
             'tahap.*.keterangan' => 'nullable|string|max:2000',
         ]);
 

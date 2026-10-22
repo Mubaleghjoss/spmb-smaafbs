@@ -23,6 +23,7 @@ class JadwalAlurPeriode extends Model
         'waktu_selesai',
         'lokasi',
         'metode_pelaksanaan',
+        'panduan_online',
         'keterangan',
     ];
 

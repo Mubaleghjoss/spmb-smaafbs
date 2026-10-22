@@ -26,6 +26,11 @@ class Stage5MethodSettingContractTest extends TestCase
         $this->assertStringContainsString('name="tahap[{{ $tahap }}][metode_pelaksanaan]"', $view);
         $this->assertStringContainsString('Online', $view);
         $this->assertStringContainsString('Offline', $view);
+        $this->assertStringContainsString("\$table->text('panduan_online')->nullable()", $this->read('database/migrations/2026_10_22_000002_add_panduan_online_to_jadwal_alur_periode_table.php'));
+        $this->assertStringContainsString("'panduan_online'", $model);
+        $this->assertStringContainsString("'panduan_online' => \$src->panduan_online", $service);
+        $this->assertStringContainsString("'tahap.*.panduan_online' => 'nullable|string|max:2000'", $controller);
+        $this->assertStringContainsString('name="tahap[{{ $tahap }}][panduan_online]"', $view);
     }
 
     public function test_participant_dashboard_renders_method_specific_stage5_guidance(): void
@@ -38,5 +43,6 @@ class Stage5MethodSettingContractTest extends TestCase
         $this->assertStringContainsString('Wawancara Tahap 5 dilaksanakan secara online', $dashboard);
         $this->assertStringContainsString('belum perlu membawa dokumen fisik', $dashboard);
         $this->assertStringContainsString('wawancara offline', $dashboard);
+        $this->assertStringContainsString("\$item['panduan_online'] ?: ", $dashboard);
     }
 }

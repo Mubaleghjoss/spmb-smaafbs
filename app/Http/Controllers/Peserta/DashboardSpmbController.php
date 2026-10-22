@@ -458,6 +458,7 @@ class DashboardSpmbController extends Controller
                 'tanggal_buka' => $statusInfo['tanggal_buka'],
                 'jadwal_label' => $statusInfo['jadwal_label'] ?? null,
                 'metode_pelaksanaan' => $statusInfo['metode_pelaksanaan'] ?? null,
+                'panduan_online' => $statusInfo['panduan_online'] ?? null,
                 'keterangan' => $statusInfo['keterangan'] ?? null,
             ];
         }

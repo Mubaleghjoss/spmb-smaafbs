@@ -191,6 +191,13 @@
                                 <div class="form-text">Online: peserta tidak perlu membawa dokumen fisik. Offline: isi lokasi dan catatan dokumen.</div>
                             </div>
                             <div class="mt-2">
+                                <label class="form-label sm">Panduan Peserta Saat Online <span class="text-muted fw-normal">(opsional)</span></label>
+                                <textarea class="form-control form-control-sm" rows="3"
+                                          name="tahap[{{ $tahap }}][panduan_online]" x-model="t{{ $tahap }}.panduan_online"
+                                          placeholder="Teks ini tampil saat Tahap 5 dipilih Online."></textarea>
+                                <div class="form-text">Kosongkan untuk memakai teks bawaan sistem.</div>
+                            </div>
+                            <div class="mt-2">
                                 <label class="form-label sm">Lokasi (opsional)</label>
                                 <input type="text" class="form-control form-control-sm"
                                        name="tahap[{{ $tahap }}][lokasi]" x-model="t{{ $tahap }}.lokasi"
@@ -253,6 +260,7 @@ function alurJadwal() {
             waktu_selesai: @js($j['waktu_selesai']),
             lokasi: @js($j['lokasi']),
             metode_pelaksanaan: @js($j['metode_pelaksanaan'] ?? 'online'),
+            panduan_online: @js($j['panduan_online'] ?? ''),
             keterangan: @js($j['keterangan']),
         },
         @endforeach

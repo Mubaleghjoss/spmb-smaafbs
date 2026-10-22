@@ -429,10 +429,12 @@
                                     @endif
 
                                     @if($nomor == 5 && ($item['metode_pelaksanaan'] ?? null) === 'online')
+                                        @php
+                                            $panduanOnline = $item['panduan_online'] ?: 'Wawancara Tahap 5 dilaksanakan secara online. Peserta belum perlu membawa dokumen fisik atau hadir langsung. Jika nanti diperlukan wawancara offline, jadwal, lokasi, dan dokumen yang harus dibawa akan diumumkan melalui catatan Tahap 5.';
+                                        @endphp
                                         <div class="alert alert-info border py-2 px-3 mb-2 small">
                                             <i class="bi bi-camera-video me-1"></i>
-                                            Wawancara Tahap 5 dilaksanakan secara online. Peserta belum perlu membawa dokumen fisik atau hadir langsung.
-                                            Jika nanti diperlukan wawancara offline, jadwal, lokasi, dan dokumen yang harus dibawa akan diumumkan melalui catatan Tahap 5.
+                                            {!! nl2br(e($panduanOnline)) !!}
                                         </div>
                                     @elseif($nomor == 5 && ($item['metode_pelaksanaan'] ?? null) === 'offline')
                                         <div class="alert alert-warning border py-2 px-3 mb-2 small">

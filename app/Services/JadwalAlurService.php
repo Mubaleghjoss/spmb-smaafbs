@@ -90,6 +90,7 @@ class JadwalAlurService
                 'waktu_selesai' => $this->jamHm($src->waktu_selesai ?? ($leg['waktu_selesai'] ?? '')),
                 'lokasi' => $src->lokasi ?? ($leg['lokasi'] ?? ''),
                 'metode_pelaksanaan' => $src->metode_pelaksanaan ?? 'online',
+                'panduan_online' => $src->panduan_online ?? '',
                 'keterangan' => $src->keterangan ?? ($leg['keterangan'] ?? ''),
                 'sumber' => $sumber,
             ];
@@ -122,6 +123,7 @@ class JadwalAlurService
                     'waktu_selesai' => $this->jamAtauNull($c['waktu_selesai'] ?? null),
                     'lokasi' => ($c['lokasi'] ?? '') ?: null,
                     'metode_pelaksanaan' => $c['metode_pelaksanaan'] ?? 'online',
+                    'panduan_online' => ($c['panduan_online'] ?? '') ?: null,
                     'keterangan' => ($c['keterangan'] ?? '') ?: null,
                 ]
             );
@@ -151,6 +153,7 @@ class JadwalAlurService
 
         $hasil['tanggal_buka'] = $mulaiLabel;
         $hasil['metode_pelaksanaan'] = $j['metode_pelaksanaan'] ?? 'online';
+        $hasil['panduan_online'] = $j['panduan_online'] ?? '';
         $hasil['keterangan'] = $j['keterangan'] ?: null;
         $hasil['jadwal_label'] = $this->labelJadwal($mulaiLabel, $selesaiLabel);
 
