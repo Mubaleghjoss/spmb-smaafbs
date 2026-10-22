@@ -338,9 +338,10 @@
                                                     <i class="bi bi-file-earmark-check me-1"></i>Belum Isi Formulir
                                                 </a>
                                             @else
-                                                <span class="btn btn-sm btn-outline-secondary">
+                                                <a href="{{ route('admin.verifikasi.formulir') }}"
+                                                   class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-file-earmark-x me-1"></i>Belum Isi Formulir
-                                                </span>
+                                                </a>
                                             @endif
                                             @break
                                         
@@ -352,9 +353,10 @@
                                                     <i class="bi bi-credit-card me-1"></i>Verifikasi Pembayaran
                                                 </a>
                                             @else
-                                                <span class="btn btn-sm btn-outline-secondary">
+                                                <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}"
+                                                   class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-credit-card me-1"></i>Belum Upload Bukti
-                                                </span>
+                                                </a>
                                             @endif
                                             @break
                                         
@@ -366,9 +368,10 @@
                                                     <i class="bi bi-journal-check me-1"></i>{{ $sesiTes ? 'Verifikasi Tes' : 'Lihat Hasil Tes' }} ({{ number_format(($sesiTes ?? $sesiTesSelesai)->nilai, 0) }})
                                                 </a>
                                             @else
-                                                <span class="btn btn-sm btn-outline-secondary">
+                                                <a href="{{ route('admin.hasil.detail-peserta-rekap', $p->id) }}"
+                                                   class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-journal-x me-1"></i>Belum Tes
-                                                </span>
+                                                </a>
                                             @endif
                                             @break
                                         
@@ -376,17 +379,17 @@
                                             {{-- Tahap 5: Verifikasi Wawancara --}}
                                             @php $statusWawancara = $wawancara?->hasil_wawancara ?? 'belum'; @endphp
                                             @if($statusWawancara === 'lulus')
-                                                <span class="btn btn-sm btn-outline-success">
+                                                <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-success">
                                                     <i class="bi bi-check-circle me-1"></i>Lulus Wawancara
-                                                </span>
+                                                </a>
                                             @elseif($statusWawancara === 'tidak_lulus')
-                                                <span class="btn btn-sm btn-outline-danger">
+                                                <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-danger">
                                                     <i class="bi bi-x-circle me-1"></i>Tidak Lulus
-                                                </span>
+                                                </a>
                                             @else
-                                                <span class="btn btn-sm btn-outline-warning">
+                                                <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-warning">
                                                     <i class="bi bi-hourglass me-1"></i>{{ $statusWawancara === 'menunggu' ? 'Menunggu Review' : 'Belum Wawancara' }}
-                                                </span>
+                                                </a>
                                             @endif
                                             @if(!$kiKontakTersedia)
                                                 <span class="badge bg-secondary align-self-center">Belum Isi No. Ki Kelompok</span>
@@ -415,9 +418,10 @@
                                                     <i class="bi bi-cash-stack me-1"></i>Verifikasi Pelunasan
                                                 </a>
                                             @else
-                                                <span class="btn btn-sm btn-outline-secondary">
+                                                <a href="{{ route('admin.verifikasi.pelunasan') }}"
+                                                   class="btn btn-sm btn-outline-secondary">
                                                     <i class="bi bi-cash-stack me-1"></i>Belum Upload Bukti
-                                                </span>
+                                                </a>
                                             @endif
                                             @break
                                         
@@ -425,13 +429,13 @@
                                             {{-- Tahap 7: Kelulusan --}}
                                             @php $statusKelulusan = $p->tahapanSpmb?->status_kelulusan ?? 'menunggu'; @endphp
                                             @if($statusKelulusan === 'lulus')
-                                                <span class="btn btn-sm btn-success">
+                                                <a href="{{ route('admin.verifikasi.kelulusan') }}" class="btn btn-sm btn-success">
                                                     <i class="bi bi-trophy me-1"></i>LULUS
-                                                </span>
+                                                </a>
                                             @elseif($statusKelulusan === 'tidak_lulus')
-                                                <span class="btn btn-sm btn-danger">
+                                                <a href="{{ route('admin.verifikasi.kelulusan') }}" class="btn btn-sm btn-danger">
                                                     <i class="bi bi-x-circle me-1"></i>Tidak Lulus
-                                                </span>
+                                                </a>
                                             @else
                                                 <a href="{{ route('admin.verifikasi.kelulusan') }}" 
                                                    class="btn btn-sm btn-warning">
