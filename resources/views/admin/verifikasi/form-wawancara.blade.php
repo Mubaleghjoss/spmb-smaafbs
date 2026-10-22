@@ -89,7 +89,33 @@
                 </div>
             </div>
         </div>
-        
+
+        {{-- Draft WhatsApp untuk melengkapi atau mengoreksi langkah Tahap 5 --}}
+        <div class="card border-0 shadow-sm mb-4 border-success">
+            <div class="card-header bg-success text-white">
+                <h6 class="mb-0"><i class="bi bi-whatsapp me-2"></i>Hubungi Peserta / Orang Tua via WhatsApp</h6>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted mb-3">
+                    Sistem menyusun pesan berdasarkan langkah Tahap 5 yang belum lengkap. Admin dapat menambahkan koreksi khusus sebelum membuka WhatsApp.
+                    Pesan tidak terkirim otomatis; admin tetap meninjau dan menekan tombol kirim di WhatsApp.
+                </p>
+                <label for="catatan-wa-wawancara" class="form-label fw-semibold">Catatan khusus / koreksi (opsional)</label>
+                <textarea id="catatan-wa-wawancara" class="form-control mb-3" rows="3"
+                          placeholder="Contoh: Mohon perbaiki rekaman bacaan. Seharusnya membaca Surat Al-'Alaq, bukan Surat Al-'Adiyat."></textarea>
+                <div class="d-flex flex-wrap gap-2" id="wa-wawancara-actions">
+                    @forelse($whatsappDrafts as $index => $draft)
+                        <button type="button" class="btn btn-success btn-sm wa-wawancara-trigger" data-wa-index="{{ $index }}">
+                            <i class="bi bi-whatsapp me-1"></i>{{ $draft['label'] }}
+                        </button>
+                    @empty
+                        <span class="text-muted small">Nomor WhatsApp peserta/ayah/ibu yang valid belum tersedia.</span>
+                    @endforelse
+                </div>
+                <div class="form-text mt-2">Nomor kosong atau tidak valid tidak ditampilkan sebagai tombol.</div>
+            </div>
+        </div>
+
         {{-- Notifikasi jika peserta sudah mengisi --}}
         @if($peserta->wawancara?->diisi_peserta_pada)
         <div class="alert alert-info border-start border-4 border-primary mb-4">
@@ -623,4 +649,26 @@
         </div>
     </form>
 </div>
+
+@push('scripts')
+<script>
+    (() => {
+        const drafts = @json($whatsappDrafts);
+        const noteInput = document.getElementById('catatan-wa-wawancara');
+        document.querySelectorAll('.wa-wawancara-trigger').forEach((button) => {
+            button.addEventListener('click', () => {
+                const draft = drafts[Number(button.dataset.waIndex)];
+                if (!draft || !draft.number) return;
+
+                const note = noteInput?.value.trim() || '';
+                const message = note
+                    ? `${draft.message}\\n\\nCatatan tambahan dari Tim SPMB:\\n${note}`
+                    : draft.message;
+                const url = `https://wa.me/${draft.number}?text=${encodeURIComponent(message)}`;
+                window.open(url, '_blank', 'noopener');
+            });
+        });
+    })();
+</script>
+@endpush
 @endsection

@@ -1225,6 +1225,7 @@ class VerifikasiSpmbController extends Controller
         $spSiswaPoin = \App\Models\Wawancara::suratPernyataanSiswaPoin();
         $spOrtuPoin = \App\Models\Wawancara::suratPernyataanOrtuPoin();
         $daftarBerkas = \App\Models\Wawancara::daftarBerkas();
+        $whatsappDrafts = app(\App\Services\WhatsAppWawancaraService::class)->draftsFor($peserta);
 
         return view('admin.verifikasi.form-wawancara', compact(
             'peserta',
@@ -1232,7 +1233,8 @@ class VerifikasiSpmbController extends Controller
             'pertanyaanSiswa',
             'spSiswaPoin',
             'spOrtuPoin',
-            'daftarBerkas'
+            'daftarBerkas',
+            'whatsappDrafts'
         ));
     }
 
