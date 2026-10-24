@@ -74,6 +74,7 @@ class PesertaController extends Controller
 
         $peserta = $this->pesertaService->ambilDenganFilter($filter, $perHalaman);
         $rekapFormulir = $this->pesertaService->rekapFormulir($filter);
+        $rekapDomisili = $this->pesertaService->rekapDomisili($filter);
         $grup = $this->grupService->ambilSemua();
         $statistik = $this->pesertaService->ambilStatistik();
         $skGelombang = app(\App\Services\PengaturanService::class)->ambilSuratKelulusanGelombang(
@@ -90,7 +91,8 @@ class PesertaController extends Controller
             'skGelombang',
             'tahunAjaran',
             'gelombangPendaftaran',
-            'rekapFormulir'
+            'rekapFormulir',
+            'rekapDomisili'
         ));
     }
 

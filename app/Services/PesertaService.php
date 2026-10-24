@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Peserta;
+use App\Models\FormulirSpmb;
 use App\Models\Grup;
 use App\Models\TahapanSpmb;
 use App\Models\LogTahapanSpmb;
@@ -201,6 +202,61 @@ class PesertaService
         }
 
         return $rekap;
+    }
+
+    public static function labelDomisiliRekap(?string $domisili): string
+    {
+        return match ($domisili) {
+            FormulirSpmb::DOMISILI_DALAM_TANGERANG_KOTA => 'Tangerang Kota',
+            FormulirSpmb::DOMISILI_LUAR_TANGERANG_KOTA => 'Luar Tangerang Kota (Lainnya)',
+            default => 'Belum Diisi',
+        };
+    }
+
+    /**
+     * Ringkasan umum domisili biaya formulir mengikuti filter halaman aktif.
+     * Kategori "Lainnya" diperlakukan sebagai luar Tangerang Kota.
+     *
+     * @return array{tangerang_kota: array{label: string, jumlah: int}, luar_tangerang_kota: array{label: string, jumlah: int}, belum_diisi: array{label: string, jumlah: int}, total: int}
+     */
+    public function rekapDomisili(array $filter = []): array
+    {
+        $expression = "CASE
+            WHEN formulir_spmb.domisili_biaya = 'dalam_tangerang_kota' THEN 'dalam_tangerang_kota'
+            WHEN formulir_spmb.domisili_biaya = 'luar_tangerang_kota' THEN 'luar_tangerang_kota'
+            ELSE 'belum_diisi'
+        END";
+
+        $rows = DB::query()
+            ->fromSub(
+                $this->queryRekapFormulir($filter)
+                    ->selectRaw("{$expression} as kategori")
+                    ->selectRaw('peserta.id as peserta_id'),
+                'rekap_domisili'
+            )
+            ->select('kategori')
+            ->selectRaw('COUNT(peserta_id) as jumlah')
+            ->groupBy('kategori')
+            ->get()
+            ->keyBy('kategori');
+
+        $jumlah = static fn (string $kategori): int => (int) ($rows->get($kategori)?->jumlah ?? 0);
+
+        return [
+            'tangerang_kota' => [
+                'label' => static::labelDomisiliRekap(FormulirSpmb::DOMISILI_DALAM_TANGERANG_KOTA),
+                'jumlah' => $jumlah('dalam_tangerang_kota'),
+            ],
+            'luar_tangerang_kota' => [
+                'label' => static::labelDomisiliRekap(FormulirSpmb::DOMISILI_LUAR_TANGERANG_KOTA),
+                'jumlah' => $jumlah('luar_tangerang_kota'),
+            ],
+            'belum_diisi' => [
+                'label' => static::labelDomisiliRekap(null),
+                'jumlah' => $jumlah('belum_diisi'),
+            ],
+            'total' => $jumlah('dalam_tangerang_kota') + $jumlah('luar_tangerang_kota') + $jumlah('belum_diisi'),
+        ];
     }
 
     private function queryRekapFormulir(array $filter)

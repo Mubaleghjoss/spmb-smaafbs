@@ -166,6 +166,37 @@ class AdminRegistrationCategoryTest extends TestCase
             ->assertDontSee('PESERTA REKAP LAIN');
     }
 
+    public function test_admin_melihat_rekap_umum_tangerang_kota_dan_luar_kota(): void
+    {
+        $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();
+
+        foreach ([
+            ['nama' => 'PESERTA DOMISILI KOTA 1', 'domisili_biaya' => 'dalam_tangerang_kota'],
+            ['nama' => 'PESERTA DOMISILI KOTA 2', 'domisili_biaya' => 'dalam_tangerang_kota'],
+            ['nama' => 'PESERTA DOMISILI LUAR', 'domisili_biaya' => 'luar_tangerang_kota', 'nama_daerah_luar' => 'Serang'],
+        ] as $data) {
+            $peserta = Peserta::factory()->create([
+                'nama' => $data['nama'],
+                ...$kategori,
+            ]);
+
+            FormulirSpmb::query()->create([
+                'peserta_id' => $peserta->id,
+                'nama_lengkap' => $peserta->nama,
+                'domisili_biaya' => $data['domisili_biaya'],
+                'nama_daerah_luar' => $data['nama_daerah_luar'] ?? null,
+            ]);
+        }
+
+        $this->get('/admin/peserta')
+            ->assertOk()
+            ->assertSee('Tangerang Kota')
+            ->assertSee('Luar Tangerang Kota (Lainnya)')
+            ->assertSee('Total peserta pada filter aktif:')
+            ->assertSee('2', false)
+            ->assertSee('1', false);
+    }
+
     public function test_admin_dapat_mencari_peserta_berdasarkan_sekolah_kota_dan_status_verifikasi(): void
     {
         $kategori = app(PeriodePendaftaranService::class)->kategoriDefault();

@@ -236,10 +236,31 @@
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2 mb-3">
                 <div>
                     <h5 class="mb-1">Rekap Data Formulir</h5>
-                    <div class="text-muted small">Ringkasan berdasarkan Asal Sekolah SMP, Kelompok, Desa, dan Daerah dari formulir peserta.</div>
+                    <div class="text-muted small">Ringkasan umum domisili dan kategori data formulir peserta.</div>
                 </div>
                 <span class="badge bg-light text-dark border">Mengikuti filter aktif</span>
             </div>
+            <div class="row g-3 mb-3">
+                @foreach(['tangerang_kota' => 'success', 'luar_tangerang_kota' => 'primary', 'belum_diisi' => 'secondary'] as $domisili => $warna)
+                    <div class="col-12 col-md-4">
+                        <div class="card h-100 border-0 shadow-sm">
+                            <div class="card-body d-flex justify-content-between align-items-center">
+                                <div>
+                                    <div class="text-muted small">{{ $rekapDomisili[$domisili]['label'] }}</div>
+                                    <div class="fs-3 fw-bold text-{{ $warna }}">{{ number_format($rekapDomisili[$domisili]['jumlah']) }}</div>
+                                    <div class="small text-muted">peserta</div>
+                                </div>
+                                <i class="bi bi-geo-alt fs-2 text-{{ $warna }} opacity-50"></i>
+                            </div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="alert alert-light border small mb-3">
+                Total peserta pada filter aktif: <strong>{{ number_format($rekapDomisili['total']) }}</strong>.
+                Kategori <strong>Lainnya</strong> dihitung sebagai peserta <strong>luar Tangerang Kota</strong>.
+            </div>
+            <div class="text-muted small mb-2">Rincian kategori formulir:</div>
             <div class="row g-3">
                 @foreach($rekapFormulir as $section)
                     <div class="col-12 col-lg-6 col-xl-3">
