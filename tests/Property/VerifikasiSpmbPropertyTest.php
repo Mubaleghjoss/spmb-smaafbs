@@ -317,6 +317,29 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         ]);
         Wawancara::create([
             'peserta_id' => $pesertaWawancara->id,
+            'jawaban_ortu' => ['1' => 'Jawaban orang tua'],
+            'jawaban_siswa' => ['1' => 'Jawaban siswa'],
+            'surat_pernyataan_siswa' => ['tanggal_surat' => '2026-11-04'],
+            'surat_pernyataan_ortu' => ['nama_ki' => 'Ki Test', 'no_hp_ki' => '08123456789'],
+            'file_tes_pegon' => 'wawancara/pegon/test.pdf',
+            'file_voice_quran' => 'wawancara/voice/test.mp3',
+            'diisi_peserta_pada' => now(),
+            'hasil_wawancara' => 'menunggu',
+        ]);
+
+        $pesertaWawancaraBelumLengkap = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaWawancaraBelumLengkap->id,
+            'tahap_saat_ini' => 5,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+            'tahap_3_selesai' => true,
+            'tahap_4_selesai' => true,
+            'tahap_5_selesai' => false,
+        ]);
+        Wawancara::create([
+            'peserta_id' => $pesertaWawancaraBelumLengkap->id,
+            'jawaban_ortu' => ['1' => 'Baru sebagian'],
             'diisi_peserta_pada' => now(),
             'hasil_wawancara' => 'menunggu',
         ]);
@@ -355,7 +378,7 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(2, $statistik['formulir_menunggu']);
         $this->assertEquals(1, $statistik['wawancara_menunggu']);
         $this->assertEquals(1, $statistik['kelulusan_menunggu']);
-        $this->assertEquals(10, $statistik['total_peserta']);
+        $this->assertEquals(11, $statistik['total_peserta']);
         $this->assertEquals(5, $statistik['total_antrean_menunggu']);
     }
 }

@@ -108,7 +108,8 @@ class VerifikasiSpmbController extends Controller
             $q->where('tahap_4_selesai', true)
                 ->where('tahap_5_selesai', false);
         })->whereHas('wawancara', function ($q) {
-            $q->whereNotNull('diisi_peserta_pada')
+            $q->lengkapUntukReview()
+                ->whereNotNull('diisi_peserta_pada')
                 ->where('hasil_wawancara', 'menunggu');
         })->count();
 

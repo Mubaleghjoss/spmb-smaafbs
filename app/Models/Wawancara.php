@@ -58,6 +58,23 @@ class Wawancara extends Model
         'surat_pernyataan_ortu' => 'array',
     ];
 
+    public function scopeLengkapUntukReview($query)
+    {
+        return $query
+            ->whereNotNull('jawaban_ortu')
+            ->whereRaw("JSON_LENGTH(COALESCE(jawaban_ortu, JSON_OBJECT())) > 0")
+            ->whereNotNull('jawaban_siswa')
+            ->whereRaw("JSON_LENGTH(COALESCE(jawaban_siswa, JSON_OBJECT())) > 0")
+            ->whereNotNull('surat_pernyataan_siswa')
+            ->whereRaw("JSON_LENGTH(COALESCE(surat_pernyataan_siswa, JSON_OBJECT())) > 0")
+            ->whereNotNull('surat_pernyataan_ortu')
+            ->whereRaw("JSON_LENGTH(COALESCE(surat_pernyataan_ortu, JSON_OBJECT())) > 0")
+            ->whereNotNull('file_tes_pegon')
+            ->whereRaw("TRIM(file_tes_pegon) <> ''")
+            ->whereNotNull('file_voice_quran')
+            ->whereRaw("TRIM(file_voice_quran) <> ''");
+    }
+
     public function peserta(): BelongsTo
     {
         return $this->belongsTo(Peserta::class);
