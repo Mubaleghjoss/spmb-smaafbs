@@ -138,9 +138,17 @@
                 @if(!empty($filter['tahap']))
                     <input type="hidden" name="tahap" value="{{ $filter['tahap'] }}">
                 @endif
-                @if(!empty($filter['antrean']))
-                    <input type="hidden" name="antrean" value="1">
-                @endif
+                <div class="col-12">
+                    <input type="hidden" name="antrean" value="0">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox" id="filterAntrean" name="antrean" value="1"
+                               {{ !empty($filter['antrean']) ? 'checked' : '' }} onchange="this.form.submit()">
+                        <label class="form-check-label fw-semibold" for="filterAntrean">
+                            Hanya tampilkan peserta yang perlu diverifikasi
+                        </label>
+                        <div class="form-text">Matikan filter untuk menampilkan seluruh peserta SPMB.</div>
+                    </div>
+                </div>
                 <div class="col-md-6">
                     <input type="text" name="cari" class="form-control" placeholder="Cari nama atau nomor pendaftaran..." value="{{ $filter['cari'] ?? '' }}">
                 </div>

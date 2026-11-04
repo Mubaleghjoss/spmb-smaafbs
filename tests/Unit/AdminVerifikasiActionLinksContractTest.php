@@ -32,6 +32,18 @@ class AdminVerifikasiActionLinksContractTest extends TestCase
         self::assertStringNotContainsString('><i class="bi bi-journal-x me-1"></i>Belum Tes</span>', $view);
     }
 
+    public function test_antrean_verifikasi_default_aktif_dan_bisa_dimatikan(): void
+    {
+        $view = $this->viewSource();
+        $controller = file_get_contents(dirname(__DIR__, 2) . '/app/Http/Controllers/Admin/VerifikasiSpmbController.php');
+
+        self::assertStringContainsString('name="antrean"', $view);
+        self::assertStringContainsString('type="checkbox"', $view);
+        self::assertStringContainsString('$request->boolean(\'antrean\', true)', $controller);
+        self::assertStringContainsString('value="1"', $view);
+        self::assertStringContainsString('value="0"', $view);
+    }
+
     public function test_action_buttons_are_aligned_to_the_left(): void
     {
         self::assertStringContainsString('class="d-flex gap-1 justify-content-start flex-wrap"', $this->viewSource());

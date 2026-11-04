@@ -77,7 +77,8 @@ class VerifikasiSpmbController extends Controller
 
         // Ambil daftar peserta dengan filter
         $filter = $request->only(['tahap', 'status', 'cari', 'antrean']);
-        if (! empty($filter['antrean'])) {
+        $filter['antrean'] = $request->boolean('antrean', true);
+        if ($filter['antrean']) {
             $peserta = $this->verifikasiService
                 ->ambilDaftarAntreanMenunggu($this->perPage(request(), 15), $filter['cari'] ?? null)
                 ->withQueryString();
