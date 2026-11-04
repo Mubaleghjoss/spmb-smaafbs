@@ -7,6 +7,7 @@ use App\Models\Pengguna;
 use App\Models\Pembayaran;
 use App\Models\FormulirSpmb;
 use App\Models\TahapanSpmb;
+use App\Models\Wawancara;
 use App\Services\VerifikasiSpmbService;
 use App\Services\SpmbService;
 use App\Services\PembayaranService;
@@ -300,6 +301,11 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
             'tahap_3_selesai' => true,
             'tahap_4_selesai' => true,
             'tahap_5_selesai' => false,
+        ]);
+        Wawancara::create([
+            'peserta_id' => $pesertaWawancara->id,
+            'diisi_peserta_pada' => now(),
+            'hasil_wawancara' => 'menunggu',
         ]);
 
         $pesertaKelulusan = Peserta::factory()->create();
