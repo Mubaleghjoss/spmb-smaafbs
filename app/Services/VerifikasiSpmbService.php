@@ -154,28 +154,53 @@ class VerifikasiSpmbService
      */
     public function ambilStatistik(): array
     {
+        $pembayaranMenunggu = Pembayaran::where('status', 'menunggu')
+            ->where('jenis', 'formulir')
+            ->whereHas('peserta')
+            ->count();
+        $pelunasanMenunggu = Pembayaran::where('status', 'menunggu')
+            ->where('jenis', 'pertama')
+            ->whereHas('peserta')
+            ->count();
+        $formulirMenunggu = FormulirSpmb::where('status_verifikasi', 'menunggu')
+            ->whereHas('peserta')
+            ->count();
+        $hasilTesMenunggu = \App\Models\SesiTes::whereIn('status', ['selesai', 'timeout'])
+            ->whereHas('peserta')
+            ->where(function ($q) {
+                $q->where('status_verifikasi_tes', 'menunggu')
+                    ->orWhereNull('status_verifikasi_tes');
+            })
+            ->whereHas('tes', function ($q) {
+                $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
+            })
+            ->count();
+        $wawancaraMenunggu = Peserta::whereHas('tahapanSpmb', function ($q) {
+            $q->where('tahap_4_selesai', true)
+                ->where('tahap_5_selesai', false);
+        })->count();
+        $kelulusanMenunggu = Peserta::whereHas('tahapanSpmb', function ($q) {
+            $q->where('tahap_saat_ini', '>=', 6)
+                ->where(function ($status) {
+                    $status->whereNull('status_kelulusan')
+                        ->orWhere('status_kelulusan', 'menunggu');
+                });
+        })->count();
+        $totalAntreanMenunggu = $pembayaranMenunggu
+            + $formulirMenunggu
+            + $hasilTesMenunggu
+            + $pelunasanMenunggu
+            + $wawancaraMenunggu
+            + $kelulusanMenunggu;
+
         return [
-            'pembayaran_menunggu' => Pembayaran::where('status', 'menunggu')
-                ->where('jenis', 'formulir')
-                ->whereHas('peserta')
-                ->count(),
-            'pelunasan_menunggu' => Pembayaran::where('status', 'menunggu')
-                ->where('jenis', 'pertama')
-                ->whereHas('peserta')
-                ->count(),
-            'formulir_menunggu' => FormulirSpmb::where('status_verifikasi', 'menunggu')
-                ->whereHas('peserta')
-                ->count(),
-            'hasil_tes_menunggu' => \App\Models\SesiTes::whereIn('status', ['selesai', 'timeout'])
-                ->whereHas('peserta')
-                ->where(function ($q) {
-                    $q->where('status_verifikasi_tes', 'menunggu')
-                        ->orWhereNull('status_verifikasi_tes');
-                })
-                ->whereHas('tes', function ($q) {
-                    $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
-                })
-                ->count(),
+            'pembayaran_menunggu' => $pembayaranMenunggu,
+            'pelunasan_menunggu' => $pelunasanMenunggu,
+            'formulir_menunggu' => $formulirMenunggu,
+            'hasil_tes_menunggu' => $hasilTesMenunggu,
+            'wawancara_menunggu' => $wawancaraMenunggu,
+            'kelulusan_menunggu' => $kelulusanMenunggu,
+            'total_antrean_menunggu' => $totalAntreanMenunggu,
             'total_peserta' => Peserta::count(),
             'peserta_per_tahap' => $this->hitungPesertaPerTahap(),
         ];

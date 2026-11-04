@@ -275,11 +275,37 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
                 'status_verifikasi' => 'menunggu',
             ]);
         }
+
+        $pesertaWawancara = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaWawancara->id,
+            'tahap_saat_ini' => 5,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+            'tahap_3_selesai' => true,
+            'tahap_4_selesai' => true,
+            'tahap_5_selesai' => false,
+        ]);
+
+        $pesertaKelulusan = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaKelulusan->id,
+            'tahap_saat_ini' => 6,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+            'tahap_3_selesai' => true,
+            'tahap_4_selesai' => true,
+            'tahap_5_selesai' => true,
+            'status_kelulusan' => 'menunggu',
+        ]);
         
         $statistik = $this->verifikasiService->ambilStatistik();
         
         $this->assertEquals(3, $statistik['pembayaran_menunggu']);
         $this->assertEquals(2, $statistik['formulir_menunggu']);
-        $this->assertEquals(5, $statistik['total_peserta']);
+        $this->assertEquals(1, $statistik['wawancara_menunggu']);
+        $this->assertEquals(1, $statistik['kelulusan_menunggu']);
+        $this->assertEquals(7, $statistik['total_peserta']);
+        $this->assertEquals(7, $statistik['total_antrean_menunggu']);
     }
 }

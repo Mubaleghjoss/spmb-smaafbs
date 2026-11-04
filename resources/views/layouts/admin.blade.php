@@ -560,10 +560,7 @@
                 $navAntre = 0;
                 try {
                     $navStat = app(\App\Services\VerifikasiSpmbService::class)->ambilStatistik();
-                    $navAntre = ($navStat['pembayaran_menunggu'] ?? 0)
-                        + ($navStat['formulir_menunggu'] ?? 0)
-                        + ($navStat['hasil_tes_menunggu'] ?? 0)
-                        + ($navStat['pelunasan_menunggu'] ?? 0);
+                    $navAntre = $navStat['total_antrean_menunggu'] ?? 0;
                 } catch (\Throwable $e) { $navAntre = 0; }
             @endphp
             <div class="nav-section-label">Menu Utama</div>
@@ -595,7 +592,7 @@
             @if($pengguna->bisaAkses('verifikasi'))
             <a class="nav-link {{ request()->routeIs('admin.verifikasi.*') ? 'active' : '' }}" href="{{ route('admin.verifikasi.index') }}">
                 <i class="bi bi-clipboard-check-fill"></i>Verifikasi SPMB
-                @if($navAntre > 0)<span class="queue-badge">{{ $navAntre > 99 ? '99+' : $navAntre }}</span>@endif
+                @if($navAntre > 0)<span class="queue-badge" title="Jumlah antrean yang menunggu tindakan admin" aria-label="{{ $navAntre }} antrean menunggu tindakan admin">{{ $navAntre > 99 ? '99+' : $navAntre }}</span>@endif
             </a>
             @endif
 

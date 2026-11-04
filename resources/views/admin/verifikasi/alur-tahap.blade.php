@@ -43,7 +43,7 @@
         <div class="col-6 col-md-3">
             <div class="card border-0 shadow-sm bg-warning bg-opacity-10"><div class="card-body py-3">
                 <div class="text-muted small">Menunggu Verifikasi</div>
-                @php $totalAntre = ($statistik['pembayaran_menunggu']??0)+($statistik['formulir_menunggu']??0)+($statistik['hasil_tes_menunggu']??0)+($statistik['pelunasan_menunggu']??0); @endphp
+                @php $totalAntre = $statistik['total_antrean_menunggu'] ?? 0; @endphp
                 <div class="h4 mb-0 text-warning">{{ $totalAntre }}</div>
             </div></div>
         </div>
