@@ -189,10 +189,13 @@ class VerifikasiSpmbService
                         ->orWhere('status_kelulusan', 'menunggu');
                 });
         })->count();
-        // Badge menu mengikuti daftar tindakan review admin yang terlihat:
-        // review wawancara yang sudah dikirim + keputusan kelulusan.
-        // Statistik pembayaran/formulir/tes tetap ditampilkan pada kartu masing-masing.
-        $totalAntreanMenunggu = $wawancaraMenunggu + $kelulusanMenunggu;
+        // Badge menu mengikuti tindakan admin yang benar-benar bisa dikerjakan:
+        // pembayaran dengan bukti + review wawancara yang sudah dikirim
+        // + keputusan kelulusan. Formulir/hasil tes tetap di kartu statistik.
+        $totalAntreanMenunggu = $pembayaranMenunggu
+            + $pelunasanMenunggu
+            + $wawancaraMenunggu
+            + $kelulusanMenunggu;
 
         return [
             'pembayaran_menunggu' => $pembayaranMenunggu,
