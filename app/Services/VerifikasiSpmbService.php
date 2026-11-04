@@ -157,13 +157,13 @@ class VerifikasiSpmbService
         $pembayaranMenunggu = Pembayaran::where('status', 'menunggu')
             ->where('jenis', 'formulir')
             ->whereNotNull('bukti_file')
-            ->where('bukti_file', '!=', '')
+            ->whereRaw("TRIM(bukti_file) <> ''")
             ->whereHas('peserta')
             ->count();
         $pelunasanMenunggu = Pembayaran::where('status', 'menunggu')
             ->where('jenis', 'pertama')
             ->whereNotNull('bukti_file')
-            ->where('bukti_file', '!=', '')
+            ->whereRaw("TRIM(bukti_file) <> ''")
             ->whereHas('peserta')
             ->count();
         $formulirMenunggu = FormulirSpmb::where('status_verifikasi', 'menunggu')
@@ -233,7 +233,7 @@ class VerifikasiSpmbService
             ->where('jenis', $jenis)
             ->where('status', 'menunggu')
             ->whereNotNull('bukti_file')
-            ->where('bukti_file', '!=', '')
+            ->whereRaw("TRIM(bukti_file) <> ''")
             ->whereHas('peserta') // Hanya ambil yang punya peserta
             ->latest()
             ->paginate($perHalaman);

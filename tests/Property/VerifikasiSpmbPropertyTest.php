@@ -265,6 +265,19 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
             'bukti_file' => '',
             'status' => StatusPembayaran::MENUNGGU->value,
         ]);
+        $pesertaSpasiBukti = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaSpasiBukti->id,
+            'tahap_saat_ini' => 3,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+        ]);
+        Pembayaran::create([
+            'peserta_id' => $pesertaSpasiBukti->id,
+            'jenis' => 'formulir',
+            'bukti_file' => '   ',
+            'status' => StatusPembayaran::MENUNGGU->value,
+        ]);
         
         // Buat beberapa formulir menunggu
         for ($i = 0; $i < 2; $i++) {
@@ -326,7 +339,7 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(2, $statistik['formulir_menunggu']);
         $this->assertEquals(1, $statistik['wawancara_menunggu']);
         $this->assertEquals(1, $statistik['kelulusan_menunggu']);
-        $this->assertEquals(8, $statistik['total_peserta']);
+        $this->assertEquals(9, $statistik['total_peserta']);
         $this->assertEquals(5, $statistik['total_antrean_menunggu']);
     }
 }
