@@ -327,6 +327,6 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(1, $statistik['wawancara_menunggu']);
         $this->assertEquals(1, $statistik['kelulusan_menunggu']);
         $this->assertEquals(8, $statistik['total_peserta']);
-        $this->assertEquals(7, $statistik['total_antrean_menunggu']);
+        $this->assertEquals(2, $statistik['total_antrean_menunggu']);
     }
 }
