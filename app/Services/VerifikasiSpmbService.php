@@ -180,7 +180,8 @@ class VerifikasiSpmbService
             $q->where('tahap_4_selesai', true)
                 ->where('tahap_5_selesai', false);
         })->whereHas('wawancara', function ($q) {
-            $q->whereNotNull('diisi_peserta_pada');
+            $q->whereNotNull('diisi_peserta_pada')
+                ->where('hasil_wawancara', 'menunggu');
         })->count();
         $kelulusanMenunggu = Peserta::whereHas('tahapanSpmb', function ($q) {
             $q->where('tahap_saat_ini', '>=', 6)
