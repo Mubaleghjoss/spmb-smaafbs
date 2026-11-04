@@ -27,6 +27,30 @@ class PembayaranPropertyTest extends PropertyTestCase
         $this->pembayaranService = new PembayaranService(new SpmbService());
     }
 
+    public function test_upload_formulir_kedua_ditolak_setelah_upload_aktif(): void
+    {
+        $peserta = Peserta::factory()->create();
+
+        $this->pembayaranService->uploadBukti($peserta, 'formulir', UploadedFile::fake()->image('bukti-1.jpg'));
+
+        $this->expectException(\App\Exceptions\DuplicatePembayaranException::class);
+        $this->pembayaranService->uploadBukti($peserta, 'formulir', UploadedFile::fake()->image('bukti-2.jpg'));
+
+        $this->assertSame(1, Pembayaran::where('peserta_id', $peserta->id)->where('jenis', 'formulir')->count());
+    }
+
+    public function test_upload_pelunasan_kedua_ditolak_saat_masih_menunggu(): void
+    {
+        $peserta = Peserta::factory()->create();
+
+        $this->pembayaranService->uploadBukti($peserta, 'pertama', UploadedFile::fake()->image('bukti-1.jpg'));
+
+        $this->expectException(\App\Exceptions\DuplicatePembayaranException::class);
+        $this->pembayaranService->uploadBukti($peserta, 'pertama', UploadedFile::fake()->image('bukti-2.jpg'));
+
+        $this->assertSame(1, Pembayaran::where('peserta_id', $peserta->id)->where('jenis', 'pertama')->count());
+    }
+
     /**
      * Property 14: Verifikasi Pembayaran Mengubah Status
      * Untuk setiap pembayaran yang diverifikasi, status harus berubah 

@@ -14,6 +14,7 @@ use App\Services\VerifikasiSpmbService;
 use App\Services\PembayaranService;
 use App\Services\PesertaExportService;
 use App\Enums\StatusPembayaran;
+use App\Exceptions\DuplicatePembayaranException;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -466,16 +467,16 @@ class VerifikasiSpmbController extends Controller
      */
     private function uploadBuktiBantuan(Request $request, Peserta $peserta, array $config): RedirectResponse
     {
-        $path  = $request->file('bukti')->store($config['storage_folder'], 'public');
-
-        Pembayaran::create(array_filter([
-            'peserta_id'        => $peserta->id,
-            'jenis'             => $config['jenis'],
-            'bukti_file'        => $path,
-            'nominal'           => $config['nominal'] ?? null,
-            'status'            => StatusPembayaran::MENUNGGU->value,
-            'catatan'           => 'Diupload oleh Tim SPMB; menunggu verifikasi.',
-        ], fn($v) => !is_null($v)));
+        try {
+            $this->pembayaranService->uploadBukti(
+                $peserta,
+                $config['jenis'],
+                $request->file('bukti'),
+                $config['nominal'] ?? null,
+            );
+        } catch (DuplicatePembayaranException $e) {
+            return redirect()->route($config['redirect_route'])->with('error', $e->getMessage());
+        }
 
         return redirect()->route($config['redirect_route'])->with('success', $config['pesan_sukses']);
     }

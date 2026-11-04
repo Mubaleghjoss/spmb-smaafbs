@@ -3,6 +3,8 @@
 namespace App\Services;
 
 use App\Enums\StatusPembayaran;
+use App\Exceptions\DuplicatePembayaranException;
+use App\Models\LogAktivitas;
 use App\Models\Pembayaran;
 use App\Models\Pengguna;
 use App\Models\Peserta;
@@ -30,14 +32,62 @@ class PembayaranService
 
     public function uploadBukti(Peserta $peserta, string $jenis, UploadedFile $file, ?float $nominal = null): Pembayaran
     {
-        $path = $this->kompresGambar->simpan($file, "pembayaran/{$jenis}");
-        $pembayaran = Pembayaran::create([
-            'peserta_id' => $peserta->id,
-            'jenis' => $jenis,
-            'bukti_file' => $path,
-            'nominal' => $nominal,
-            'status' => StatusPembayaran::MENUNGGU->value,
-        ]);
+        $pembayaran = DB::transaction(function () use ($peserta, $jenis, $file, $nominal): Pembayaran {
+            $pesertaTerkunci = Peserta::query()
+                ->whereKey($peserta->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $existing = Pembayaran::where('peserta_id', $pesertaTerkunci->id)
+                ->where('jenis', $jenis)
+                ->whereIn('status', [
+                    StatusPembayaran::MENUNGGU->value,
+                    ...($jenis === 'formulir' ? [StatusPembayaran::TERVERIFIKASI->value] : []),
+                ])
+                ->latest('id')
+                ->first();
+
+            if ($existing) {
+                app(LogAktivitasService::class)->catat(
+                    'pembayaran.upload_ditolak_duplikat',
+                    LogAktivitas::KAT_PEMBAYARAN,
+                    "Menolak upload bukti pembayaran {$jenis} karena masih ada pembayaran aktif.",
+                    $pesertaTerkunci,
+                    [
+                        'jenis' => $jenis,
+                        'pembayaran_aktif_id' => $existing->id,
+                        'pembayaran_aktif_status' => $existing->status,
+                    ],
+                    $pesertaTerkunci->tahun_ajaran_id,
+                );
+
+                throw new DuplicatePembayaranException(
+                    $jenis === 'formulir'
+                        ? 'Bukti pembayaran formulir sudah pernah diupload dan tidak dapat diupload ulang.'
+                        : 'Masih ada bukti pelunasan yang menunggu verifikasi.'
+                );
+            }
+
+            $path = $this->kompresGambar->simpan($file, "pembayaran/{$jenis}");
+            $pembayaranBaru = Pembayaran::create([
+                'peserta_id' => $pesertaTerkunci->id,
+                'jenis' => $jenis,
+                'bukti_file' => $path,
+                'nominal' => $nominal,
+                'status' => StatusPembayaran::MENUNGGU->value,
+            ]);
+
+            app(LogAktivitasService::class)->catat(
+                'pembayaran.upload_bukti',
+                LogAktivitas::KAT_PEMBAYARAN,
+                "Upload bukti pembayaran {$jenis} berhasil dibuat.",
+                $pesertaTerkunci,
+                ['jenis' => $jenis, 'pembayaran_id' => $pembayaranBaru->id, 'status' => $pembayaranBaru->status],
+                $pesertaTerkunci->tahun_ajaran_id,
+            );
+
+            return $pembayaranBaru;
+        });
 
         // Bukti formulir aktif langsung mengamankan posisi berdasarkan waktu
         // upload. Akses tes tetap menunggu verifikasi panitia (Tahap 3).

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Peserta;
 
 use App\Enums\StatusPembayaran;
+use App\Exceptions\DuplicatePembayaranException;
 use App\Http\Controllers\Controller;
 use App\Models\Peserta;
 use App\Services\PembayaranService;
@@ -64,12 +65,16 @@ class PembayaranController extends Controller
                 ->with('error', 'Pilih nama daerah pada formulir sebelum upload bukti pembayaran.');
         }
 
-        $pembayaran = $this->pembayaranService->uploadBukti(
-            $peserta,
-            'formulir',
-            $request->file('bukti'),
-            $rincianBiaya['formulir'],
-        );
+        try {
+            $pembayaran = $this->pembayaranService->uploadBukti(
+                $peserta,
+                'formulir',
+                $request->file('bukti'),
+                $rincianBiaya['formulir'],
+            );
+        } catch (DuplicatePembayaranException $e) {
+            return redirect()->route('peserta.pembayaran.status-formulir')->with('error', $e->getMessage());
+        }
         $peserta->refresh();
 
         $pesanKuota = $peserta->status_kuota === Peserta::STATUS_KUOTA_DALAM
@@ -171,7 +176,11 @@ class PembayaranController extends Controller
             return back()->withInput()->withErrors(['nominal' => 'Nominal cicilan tidak boleh melebihi sisa tagihan Rp '.number_format($ringkasan['sisa'], 0, ',', '.').'.']);
         }
 
-        $this->pembayaranService->uploadBukti($peserta, 'pertama', $request->file('bukti'), $nominal);
+        try {
+            $this->pembayaranService->uploadBukti($peserta, 'pertama', $request->file('bukti'), $nominal);
+        } catch (DuplicatePembayaranException $e) {
+            return redirect()->route('peserta.pembayaran.status-pelunasan')->with('error', $e->getMessage());
+        }
 
         return redirect()->route('peserta.pembayaran.status-pelunasan')
             ->with('success', 'Bukti pembayaran berhasil diupload. Tunggu verifikasi dari admin.');
