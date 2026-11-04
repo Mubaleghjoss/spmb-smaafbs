@@ -171,10 +171,7 @@ class VerifikasiSpmbService
             ->count();
         $hasilTesMenunggu = \App\Models\SesiTes::whereIn('status', ['selesai', 'timeout'])
             ->whereHas('peserta')
-            ->where(function ($q) {
-                $q->where('status_verifikasi_tes', 'menunggu')
-                    ->orWhereNull('status_verifikasi_tes');
-            })
+            ->where('status_verifikasi_tes', 'menunggu')
             ->whereHas('tes', function ($q) {
                 $q->whereColumn('sesi_tes.nilai', '<', 'tes.nilai_lulus');
             })
