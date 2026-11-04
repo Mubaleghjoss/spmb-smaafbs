@@ -381,4 +381,32 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(11, $statistik['total_peserta']);
         $this->assertEquals(5, $statistik['total_antrean_menunggu']);
     }
+
+    public function test_daftar_antrean_hanya_menampilkan_peserta_yang_memerlukan_verifikasi(): void
+    {
+        $pesertaPembayaran = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaPembayaran->id,
+            'tahap_saat_ini' => 3,
+        ]);
+        Pembayaran::create([
+            'peserta_id' => $pesertaPembayaran->id,
+            'jenis' => 'formulir',
+            'bukti_file' => 'pembayaran/bukti.jpg',
+            'status' => StatusPembayaran::MENUNGGU->value,
+        ]);
+
+        $pesertaBelumUpload = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $pesertaBelumUpload->id,
+            'tahap_saat_ini' => 3,
+        ]);
+
+        $peserta = $this->verifikasiService
+            ->ambilDaftarAntreanMenunggu(15)
+            ->getCollection();
+
+        $this->assertCount(1, $peserta);
+        $this->assertSame($pesertaPembayaran->id, $peserta->first()->id);
+    }
 }

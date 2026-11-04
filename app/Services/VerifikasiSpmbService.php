@@ -227,6 +227,49 @@ class VerifikasiSpmbService
     }
 
     /**
+     * Ambil daftar peserta yang benar-benar membutuhkan tindakan verifikasi admin.
+     */
+    public function ambilDaftarAntreanMenunggu(int $perHalaman = 15, ?string $cari = null): LengthAwarePaginator
+    {
+        $query = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes.tes', 'wawancara'])
+            ->where(function ($q) {
+                $q->whereHas('pembayaran', function ($pembayaran) {
+                    $pembayaran
+                        ->whereIn('jenis', ['formulir', 'pertama'])
+                        ->where('status', 'menunggu')
+                        ->whereNotNull('bukti_file')
+                        ->whereRaw("TRIM(bukti_file) <> ''");
+                })->orWhere(function ($wawancara) {
+                    $wawancara
+                        ->whereHas('tahapanSpmb', function ($tahap) {
+                            $tahap->where('tahap_4_selesai', true)
+                                ->where('tahap_5_selesai', false);
+                        })
+                        ->whereHas('wawancara', function ($q) {
+                            $q->lengkapUntukReview()
+                                ->whereNotNull('diisi_peserta_pada')
+                                ->where('hasil_wawancara', 'menunggu');
+                        });
+                })->orWhereHas('tahapanSpmb', function ($tahap) {
+                    $tahap->where('tahap_saat_ini', '>=', 6)
+                        ->where(function ($status) {
+                            $status->whereNull('status_kelulusan')
+                                ->orWhere('status_kelulusan', 'menunggu');
+                        });
+                });
+            });
+
+        if ($cari !== null && trim($cari) !== '') {
+            $query->where(function ($q) use ($cari) {
+                $q->where('nama', 'like', "%{$cari}%")
+                    ->orWhere('nomor_pendaftaran', 'like', "%{$cari}%");
+            });
+        }
+
+        return $query->latest()->paginate($perHalaman);
+    }
+
+    /**
      * Ambil pembayaran yang menunggu verifikasi
      */
     public function ambilPembayaranMenunggu(string $jenis, int $perHalaman = 15): LengthAwarePaginator

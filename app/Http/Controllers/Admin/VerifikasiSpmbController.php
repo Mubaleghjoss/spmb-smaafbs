@@ -76,20 +76,26 @@ class VerifikasiSpmbController extends Controller
         $statistik = $this->verifikasiService->ambilStatistik();
 
         // Ambil daftar peserta dengan filter
-        $filter = $request->only(['tahap', 'status', 'cari']);
-        $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes.tes', 'wawancara'])
-            ->when(!empty($filter['tahap']), function ($q) use ($filter) {
-                $q->whereHas('tahapanSpmb', fn($t) => $t->where('tahap_saat_ini', $filter['tahap']));
-            })
-            ->when(!empty($filter['cari']), function ($q) use ($filter) {
-                $q->where(function ($query) use ($filter) {
-                    $query->where('nama', 'like', "%{$filter['cari']}%")
-                          ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
-                });
-            })
-            ->latest()
-            ->paginate($this->perPage(request(), 15))
-            ->withQueryString();
+        $filter = $request->only(['tahap', 'status', 'cari', 'antrean']);
+        if (! empty($filter['antrean'])) {
+            $peserta = $this->verifikasiService
+                ->ambilDaftarAntreanMenunggu($this->perPage(request(), 15), $filter['cari'] ?? null)
+                ->withQueryString();
+        } else {
+            $peserta = Peserta::with(['tahapanSpmb', 'formulirSpmb', 'pembayaran', 'sesiTes.tes', 'wawancara'])
+                ->when(!empty($filter['tahap']), function ($q) use ($filter) {
+                    $q->whereHas('tahapanSpmb', fn($t) => $t->where('tahap_saat_ini', $filter['tahap']));
+                })
+                ->when(!empty($filter['cari']), function ($q) use ($filter) {
+                    $q->where(function ($query) use ($filter) {
+                        $query->where('nama', 'like', "%{$filter['cari']}%")
+                              ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
+                    });
+                })
+                ->latest()
+                ->paginate($this->perPage(request(), 15))
+                ->withQueryString();
+        }
 
         return view('admin.verifikasi.index', compact('statistik', 'peserta', 'filter'));
     }

@@ -138,6 +138,9 @@
                 @if(!empty($filter['tahap']))
                     <input type="hidden" name="tahap" value="{{ $filter['tahap'] }}">
                 @endif
+                @if(!empty($filter['antrean']))
+                    <input type="hidden" name="antrean" value="1">
+                @endif
                 <div class="col-md-6">
                     <input type="text" name="cari" class="form-control" placeholder="Cari nama atau nomor pendaftaran..." value="{{ $filter['cari'] ?? '' }}">
                 </div>
@@ -158,7 +161,7 @@
     {{-- Daftar Peserta --}}
     <div class="card border-0 shadow-sm">
         <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="bi bi-people me-2"></i>Daftar Peserta</h5>
+            <h5 class="mb-0"><i class="bi bi-people me-2"></i>{{ !empty($filter['antrean']) ? 'Daftar Antrean Verifikasi' : 'Daftar Peserta' }}</h5>
             <span class="badge bg-secondary">{{ $peserta->total() }} peserta</span>
         </div>
         <div class="card-body p-0">

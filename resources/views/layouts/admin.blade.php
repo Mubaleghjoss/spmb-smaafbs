@@ -590,9 +590,9 @@
             @endif
 
             @if($pengguna->bisaAkses('verifikasi'))
-            <a class="nav-link {{ request()->routeIs('admin.verifikasi.*') ? 'active' : '' }}" href="{{ route('admin.verifikasi.index') }}">
+            <a class="nav-link {{ request()->routeIs('admin.verifikasi.*') ? 'active' : '' }}" href="{{ route('admin.verifikasi.index', ['antrean' => 1]) }}">
                 <i class="bi bi-clipboard-check-fill"></i>Verifikasi SPMB
-                @if($navAntre > 0)<span class="queue-badge" title="Jumlah antrean yang menunggu tindakan admin" aria-label="{{ $navAntre }} antrean menunggu tindakan admin">{{ $navAntre > 99 ? '99+' : $navAntre }}</span>@endif
+                @if($navAntre > 0)<span class="queue-badge" title="Buka daftar peserta yang menunggu tindakan admin" aria-label="{{ $navAntre }} antrean menunggu tindakan admin">{{ $navAntre > 99 ? '99+' : $navAntre }}</span>@endif
             </a>
             @endif
 
