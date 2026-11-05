@@ -383,6 +383,24 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(5, $statistik['total_antrean_menunggu']);
     }
 
+    public function test_kelulusan_dengan_status_menunggu_masuk_antrean_verifikasi(): void
+    {
+        $peserta = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $peserta->id,
+            'tahap_saat_ini' => 7,
+            'tahap_6_selesai' => true,
+            'status_kelulusan' => 'menunggu',
+        ]);
+
+        $antrean = $this->verifikasiService
+            ->ambilDaftarAntreanMenunggu(15)
+            ->getCollection();
+
+        $this->assertTrue($antrean->contains('id', $peserta->id));
+        $this->assertSame(1, $this->verifikasiService->ambilStatistik()['kelulusan_menunggu']);
+    }
+
     public function test_tahap_enam_tanpa_bukti_pelunasan_tidak_masuk_antrean_kelulusan(): void
     {
         $peserta = Peserta::factory()->create();

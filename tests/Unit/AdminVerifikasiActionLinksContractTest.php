@@ -49,4 +49,13 @@ class AdminVerifikasiActionLinksContractTest extends TestCase
         self::assertStringContainsString('class="d-flex gap-1 justify-content-start flex-wrap"', $this->viewSource());
         self::assertStringNotContainsString('class="d-flex gap-1 justify-content-center flex-wrap"', $this->viewSource());
     }
+
+    public function test_review_button_uses_same_interview_completion_contract_as_badge(): void
+    {
+        $view = $this->viewSource();
+
+        self::assertStringContainsString('$wawancara?->isLengkapUntukReview()', $view);
+        self::assertSame(2, substr_count($view, '$wawancara?->isLengkapUntukReview()'));
+    }
+
 }

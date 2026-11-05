@@ -75,6 +75,20 @@ class Wawancara extends Model
             ->whereRaw("TRIM(file_voice_quran) <> ''");
     }
 
+    /**
+     * Menentukan apakah data wawancara pada record ini sudah lengkap untuk direview.
+     * Definisi ini harus sama dengan scopeLengkapUntukReview().
+     */
+    public function isLengkapUntukReview(): bool
+    {
+        return is_array($this->jawaban_ortu) && count($this->jawaban_ortu) > 0
+            && is_array($this->jawaban_siswa) && count($this->jawaban_siswa) > 0
+            && is_array($this->surat_pernyataan_siswa) && count($this->surat_pernyataan_siswa) > 0
+            && is_array($this->surat_pernyataan_ortu) && count($this->surat_pernyataan_ortu) > 0
+            && is_string($this->file_tes_pegon) && trim($this->file_tes_pegon) !== ''
+            && is_string($this->file_voice_quran) && trim($this->file_voice_quran) !== '';
+    }
+
     public function peserta(): BelongsTo
     {
         return $this->belongsTo(Peserta::class);

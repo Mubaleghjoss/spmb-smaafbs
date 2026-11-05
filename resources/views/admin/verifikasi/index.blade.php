@@ -406,8 +406,8 @@
                                                 <span class="badge bg-secondary align-self-center">Belum Isi No. Ki Kelompok</span>
                                             @endif
                                             <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" 
-                                               class="btn btn-sm {{ $statusWawancara === 'menunggu' && $wawancara?->diisi_peserta_pada ? 'btn-warning' : 'btn-primary' }}">
-                                                @if($statusWawancara === 'menunggu' && $wawancara?->diisi_peserta_pada)
+                                               class="btn btn-sm {{ $statusWawancara === 'menunggu' && $wawancara?->diisi_peserta_pada && $wawancara?->isLengkapUntukReview() ? 'btn-warning' : 'btn-primary' }}">
+                                                @if($statusWawancara === 'menunggu' && $wawancara?->diisi_peserta_pada && $wawancara?->isLengkapUntukReview())
                                                     <i class="bi bi-clipboard-check me-1"></i>Review / Verifikasi
                                                 @else
                                                     <i class="bi bi-pencil-square me-1"></i>Input Manual
