@@ -58,4 +58,15 @@ class AdminVerifikasiActionLinksContractTest extends TestCase
         self::assertSame(2, substr_count($view, '$wawancara?->isLengkapUntukReview()'));
     }
 
+    public function test_interview_action_exposes_missing_components_instead_of_false_review_status(): void
+    {
+        $view = $this->viewSource();
+
+        self::assertStringContainsString('kekuranganUntukReview()', $view);
+        self::assertStringContainsString('Belum: {{ implode(\', \'', $view);
+        self::assertStringContainsString('Belum Isi Wawancara', $view);
+        self::assertStringContainsString('Tes Pegon', $view);
+        self::assertStringContainsString('Rekaman Bacaan Quran', $view);
+    }
+
 }

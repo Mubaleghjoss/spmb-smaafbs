@@ -89,6 +89,35 @@ class Wawancara extends Model
             && is_string($this->file_voice_quran) && trim($this->file_voice_quran) !== '';
     }
 
+    /**
+     * Daftar komponen wawancara yang masih belum dilengkapi peserta.
+     */
+    public function kekuranganUntukReview(): array
+    {
+        $kekurangan = [];
+
+        if (!is_array($this->jawaban_ortu) || count($this->jawaban_ortu) === 0) {
+            $kekurangan[] = 'Jawaban Orang Tua';
+        }
+        if (!is_array($this->jawaban_siswa) || count($this->jawaban_siswa) === 0) {
+            $kekurangan[] = 'Jawaban Siswa';
+        }
+        if (!is_array($this->surat_pernyataan_siswa) || count($this->surat_pernyataan_siswa) === 0) {
+            $kekurangan[] = 'Surat Pernyataan Siswa';
+        }
+        if (!is_array($this->surat_pernyataan_ortu) || count($this->surat_pernyataan_ortu) === 0) {
+            $kekurangan[] = 'Surat Pernyataan Orang Tua';
+        }
+        if (!is_string($this->file_tes_pegon) || trim($this->file_tes_pegon) === '') {
+            $kekurangan[] = 'Tes Pegon';
+        }
+        if (!is_string($this->file_voice_quran) || trim($this->file_voice_quran) === '') {
+            $kekurangan[] = 'Rekaman Bacaan Quran';
+        }
+
+        return $kekurangan;
+    }
+
     public function peserta(): BelongsTo
     {
         return $this->belongsTo(Peserta::class);

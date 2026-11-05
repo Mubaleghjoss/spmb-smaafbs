@@ -337,7 +337,23 @@
                                             })
                                             ->sortByDesc(fn ($s) => $s->waktu_selesai ?? $s->updated_at)
                                             ->first();
+                                        $sesiTesBelumSelesai = $p->sesiTes
+                                            ->first(fn ($s) => !in_array($s->status, ['selesai', 'timeout'], true));
                                         $wawancara = $p->wawancara ?? null;
+                                        $kekuranganWawancara = $wawancara?->kekuranganUntukReview() ?? [
+                                            'Jawaban Orang Tua',
+                                            'Jawaban Siswa',
+                                            'Surat Pernyataan Siswa',
+                                            'Surat Pernyataan Orang Tua',
+                                            'Tes Pegon',
+                                            'Rekaman Bacaan Quran',
+                                        ];
+                                        $buktiFormulirValid = $bayarFormulir
+                                            && is_string($bayarFormulir->bukti_file)
+                                            && trim($bayarFormulir->bukti_file) !== '';
+                                        $buktiPelunasanValid = $pelunasan
+                                            && is_string($pelunasan->bukti_file)
+                                            && trim($pelunasan->bukti_file) !== '';
                                     @endphp
                                     
                                     @switch($tahapSaatIni)
@@ -358,10 +374,10 @@
                                         
                                         @case(3)
                                             {{-- Tahap 3: Verifikasi Pembayaran Formulir --}}
-                                            @if($bayarFormulir)
+                                            @if($buktiFormulirValid)
                                                 <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}" 
                                                    class="btn btn-sm btn-{{ $bayarFormulir->status === 'menunggu' ? 'warning' : 'outline-success' }}">
-                                                    <i class="bi bi-credit-card me-1"></i>Verifikasi Pembayaran
+                                                    <i class="bi bi-credit-card me-1"></i>{{ $bayarFormulir->status === 'menunggu' ? 'Verifikasi Pembayaran' : 'Lihat Bukti Pembayaran' }}
                                                 </a>
                                             @else
                                                 <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}"
@@ -373,10 +389,10 @@
                                         
                                         @case(4)
                                             {{-- Tahap 4: Hasil Tes Peserta --}}
-                                            @if($sesiTes || $sesiTesSelesai)
+                                            @if($sesiTes || $sesiTesSelesai || $sesiTesBelumSelesai)
                                                 <a href="{{ route('admin.hasil.detail-peserta-rekap', $p->id) }}"
-                                                   class="btn btn-sm btn-{{ $sesiTes ? 'warning' : 'outline-success' }}">
-                                                    <i class="bi bi-journal-check me-1"></i>{{ $sesiTes ? 'Verifikasi Tes' : 'Lihat Hasil Tes' }} ({{ number_format(($sesiTes ?? $sesiTesSelesai)->nilai, 0) }})
+                                                   class="btn btn-sm btn-{{ $sesiTes ? 'warning' : ($sesiTesBelumSelesai ? 'secondary' : 'outline-success') }}">
+                                                    <i class="bi bi-journal-check me-1"></i>{{ $sesiTes ? 'Verifikasi Tes' : ($sesiTesBelumSelesai ? 'Belum Selesai Tes' : 'Lihat Hasil Tes') }}@if($sesiTes || $sesiTesSelesai) ({{ number_format(($sesiTes ?? $sesiTesSelesai)->nilai, 0) }}) @endif
                                                 </a>
                                             @else
                                                 <a href="{{ route('admin.hasil.detail-peserta-rekap', $p->id) }}"
@@ -397,9 +413,17 @@
                                                 <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-danger">
                                                     <i class="bi bi-x-circle me-1"></i>Tidak Lulus
                                                 </a>
-                                            @else
+                                            @elseif($wawancara && $wawancara->isLengkapUntukReview() && $wawancara->diisi_peserta_pada)
                                                 <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-warning">
-                                                    <i class="bi bi-hourglass me-1"></i>{{ $statusWawancara === 'menunggu' ? 'Menunggu Review' : 'Belum Wawancara' }}
+                                                    <i class="bi bi-hourglass me-1"></i>Menunggu Review
+                                                </a>
+                                            @elseif($wawancara)
+                                                <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-secondary" title="Lengkapi komponen wawancara yang masih kosong">
+                                                    <i class="bi bi-exclamation-circle me-1"></i>Belum: {{ implode(', ', $kekuranganWawancara) }}
+                                                </a>
+                                            @else
+                                                <a href="{{ route('admin.verifikasi.wawancara.form', $p) }}" class="btn btn-sm btn-outline-secondary">
+                                                    <i class="bi bi-pencil-square me-1"></i>Belum Isi Wawancara
                                                 </a>
                                             @endif
                                             @if(!$kiKontakTersedia)
@@ -423,10 +447,10 @@
                                         
                                         @case(6)
                                             {{-- Tahap 6: Verifikasi Pelunasan --}}
-                                            @if($pelunasan)
+                                            @if($buktiPelunasanValid)
                                                 <a href="{{ route('admin.verifikasi.pelunasan') }}" 
                                                    class="btn btn-sm btn-{{ $pelunasan->status === 'menunggu' ? 'warning' : 'outline-success' }}">
-                                                    <i class="bi bi-cash-stack me-1"></i>Verifikasi Pelunasan
+                                                    <i class="bi bi-cash-stack me-1"></i>{{ $pelunasan->status === 'menunggu' ? 'Verifikasi Pelunasan' : 'Lihat Bukti Pelunasan' }}
                                                 </a>
                                             @else
                                                 <a href="{{ route('admin.verifikasi.pelunasan') }}"
