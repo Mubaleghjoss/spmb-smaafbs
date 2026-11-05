@@ -122,7 +122,7 @@ class VerifikasiSpmbController extends Controller
 
         // Kelulusan menunggu keputusan (tahap 7): di tahap 7 tapi status masih menunggu
         $kelulusanMenunggu = \App\Models\Peserta::whereHas('tahapanSpmb', function ($q) {
-            $q->where('tahap_saat_ini', '>=', 6)
+            $q->where('tahap_saat_ini', 7)
               ->where(function ($s) {
                   $s->whereNull('status_kelulusan')->orWhere('status_kelulusan', 'menunggu');
               });

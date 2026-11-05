@@ -363,7 +363,8 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $pesertaKelulusan = Peserta::factory()->create();
         TahapanSpmb::create([
             'peserta_id' => $pesertaKelulusan->id,
-            'tahap_saat_ini' => 6,
+            'tahap_saat_ini' => 7,
+            'tahap_6_selesai' => true,
             'tahap_1_selesai' => true,
             'tahap_2_selesai' => true,
             'tahap_3_selesai' => true,
@@ -380,6 +381,23 @@ class VerifikasiSpmbPropertyTest extends PropertyTestCase
         $this->assertEquals(1, $statistik['kelulusan_menunggu']);
         $this->assertEquals(11, $statistik['total_peserta']);
         $this->assertEquals(5, $statistik['total_antrean_menunggu']);
+    }
+
+    public function test_tahap_enam_tanpa_bukti_pelunasan_tidak_masuk_antrean_kelulusan(): void
+    {
+        $peserta = Peserta::factory()->create();
+        TahapanSpmb::create([
+            'peserta_id' => $peserta->id,
+            'tahap_saat_ini' => 6,
+            'tahap_6_selesai' => false,
+            'status_kelulusan' => 'menunggu',
+        ]);
+
+        $antrean = $this->verifikasiService
+            ->ambilDaftarAntreanMenunggu(15)
+            ->getCollection();
+
+        $this->assertFalse($antrean->contains('id', $peserta->id));
     }
 
     public function test_daftar_antrean_hanya_menampilkan_peserta_yang_memerlukan_verifikasi(): void

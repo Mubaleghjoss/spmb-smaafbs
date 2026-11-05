@@ -185,7 +185,7 @@ class VerifikasiSpmbService
                 ->where('hasil_wawancara', 'menunggu');
         })->count();
         $kelulusanMenunggu = Peserta::whereHas('tahapanSpmb', function ($q) {
-            $q->where('tahap_saat_ini', '>=', 6)
+            $q->where('tahap_saat_ini', 7)
                 ->where(function ($status) {
                     $status->whereNull('status_kelulusan')
                         ->orWhere('status_kelulusan', 'menunggu');
@@ -251,7 +251,7 @@ class VerifikasiSpmbService
                                 ->where('hasil_wawancara', 'menunggu');
                         });
                 })->orWhereHas('tahapanSpmb', function ($tahap) {
-                    $tahap->where('tahap_saat_ini', '>=', 6)
+                    $tahap->where('tahap_saat_ini', 7)
                         ->where(function ($status) {
                             $status->whereNull('status_kelulusan')
                                 ->orWhere('status_kelulusan', 'menunggu');
