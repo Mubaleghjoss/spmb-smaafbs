@@ -404,11 +404,11 @@
                 <div class="komitmen-hero">
                     <div>
                         <div class="eyebrow small text-uppercase fw-bold">SEBELUM MEMULAI PENDAFTARAN</div>
-                        <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">Komitmen Calon Peserta Didik</h2>
+                        <h2 class="h3 mb-0 mt-1" id="modalKomitmenLabel">{{ $spmb['popup_persetujuan_judul'] ?? 'Komitmen Calon Peserta Didik' }}</h2>
                     </div>
                 </div>
                 <div class="p-4 p-md-5 text-center">
-                    <p class="komitmen-copy mb-4">SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.</p>
+                    <p class="komitmen-copy mb-4">{!! nl2br(e($spmb['popup_persetujuan_teks'] ?? 'SMA AFBS yang dikelola oleh Lembaga Dakwah Islam Indonesia (LDII) melalui Yayasan Dar Al Furqon Al Hakim. Bersedia tinggal dan berkegiatan di Asrama.')) !!}</p>
                     <div class="komitmen-logos" aria-label="Logo lembaga terkait">
                         <figure class="komitmen-logo mb-0">
                             <img src="{{ asset('images/logo-commitment-sma-afbs.png') }}" alt="Logo SMA Al-Furqon Boarding School (SMA AFBS)" loading="eager">
