@@ -84,4 +84,28 @@ class PesertaDashboardStatusPendaftaranTest extends TestCase
             ->assertSee(route('peserta.pembayaran.status-formulir'), false)
             ->assertDontSee('>Upload Bukti Bayar</h6>', false);
     }
+
+    public function test_halaman_upload_mengarahkan_pembayaran_terkirim_ke_status(): void
+    {
+        $peserta = Peserta::factory()->create();
+
+        TahapanSpmb::create([
+            'peserta_id' => $peserta->id,
+            'tahap_saat_ini' => 3,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+        ]);
+
+        Pembayaran::create([
+            'peserta_id' => $peserta->id,
+            'jenis' => 'formulir',
+            'bukti_file' => 'pembayaran/formulir/bukti.jpg',
+            'nominal' => 150000,
+            'status' => 'menunggu',
+        ]);
+
+        $this->withSession(['peserta_id' => $peserta->id])
+            ->get(route('peserta.pembayaran.formulir'))
+            ->assertRedirect(route('peserta.pembayaran.status-formulir'));
+    }
 }

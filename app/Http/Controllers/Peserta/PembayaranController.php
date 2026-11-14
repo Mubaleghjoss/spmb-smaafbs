@@ -29,6 +29,12 @@ class PembayaranController extends Controller
         }
 
         $pembayaran = $this->pembayaranService->ambilPembayaranPeserta($peserta, 'formulir');
+        if ($pembayaran
+            && filled($pembayaran->bukti_file)
+            && $pembayaran->status !== \App\Enums\StatusPembayaran::DITOLAK->value) {
+            return redirect()->route('peserta.pembayaran.status-formulir');
+        }
+
         $spmb = $this->pengaturanService->ambilSpmb();
         $rincianBiaya = $this->biayaSpmbService->untukFormulir($spmb, $peserta->formulirSpmb);
         if (! $rincianBiaya['lengkap']) {
