@@ -510,6 +510,15 @@
     {{-- Quick Links --}}
     <div class="row g-3 mt-4">
         <div class="col-md-4">
+            <a href="{{ route('admin.verifikasi.grup-wa') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                <div class="card-body text-center py-4">
+                    <i class="bi bi-whatsapp text-success fs-1 mb-2"></i>
+                    <h6>Penanda Grup WhatsApp Tahap 4</h6>
+                    <span class="badge bg-success">Konfirmasi manual admin</span>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
             <a href="{{ route('admin.verifikasi.pembayaran-formulir') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body text-center py-4">
                     <i class="bi bi-credit-card text-warning fs-1 mb-2"></i>

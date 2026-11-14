@@ -41,6 +41,10 @@ class TahapanSpmb extends Model
         'tahap_5_selesai',
         'tahap_6_selesai',
         'tahap_7_selesai',
+        'grup_wa_status',
+        'grup_wa_ditandai_pada',
+        'grup_wa_ditandai_oleh',
+        'grup_wa_catatan',
         'status_kelulusan',
         'sk_gelombang_kelulusan',
     ];
@@ -55,6 +59,7 @@ class TahapanSpmb extends Model
             'tahap_5_selesai' => 'boolean',
             'tahap_6_selesai' => 'boolean',
             'tahap_7_selesai' => 'boolean',
+            'grup_wa_ditandai_pada' => 'datetime',
         ];
     }
 
@@ -64,6 +69,11 @@ class TahapanSpmb extends Model
     public function peserta(): BelongsTo
     {
         return $this->belongsTo(Peserta::class);
+    }
+
+    public function grupWaPenanda(): BelongsTo
+    {
+        return $this->belongsTo(Pengguna::class, 'grup_wa_ditandai_oleh');
     }
 
     /**

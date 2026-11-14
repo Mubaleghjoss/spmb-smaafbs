@@ -101,6 +101,68 @@ class VerifikasiSpmbController extends Controller
         return view('admin.verifikasi.index', compact('statistik', 'peserta', 'filter'));
     }
 
+    public function grupWa(Request $request): View
+    {
+        $filter = $request->only(['status', 'cari']);
+        $status = $filter['status'] ?? 'semua';
+        $allowedStatuses = ['semua', 'belum', 'sudah', 'dikecualikan'];
+        if (! in_array($status, $allowedStatuses, true)) {
+            $status = 'semua';
+        }
+
+        $peserta = Peserta::with(['tahapanSpmb.grupWaPenanda', 'formulirSpmb'])
+            ->whereHas('tahapanSpmb', function ($query) use ($status, $filter): void {
+                $query->where('tahap_4_selesai', true)
+                    ->when($status !== 'semua', fn ($q) => $q->where('grup_wa_status', $status));
+            })
+            ->when(! empty($filter['cari']), function ($query) use ($filter): void {
+                $query->where(function ($q) use ($filter): void {
+                    $q->where('nama', 'like', "%{$filter['cari']}%")
+                        ->orWhere('nomor_pendaftaran', 'like', "%{$filter['cari']}%");
+                });
+            })
+            ->latest()
+            ->paginate($this->perPage($request, 15))
+            ->withQueryString();
+
+        $filter['status'] = $status;
+
+        return view('admin.verifikasi.grup-wa', compact('peserta', 'filter'));
+    }
+
+    public function tandaiGrupWa(Request $request, Peserta $peserta): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:belum,sudah,dikecualikan'],
+            'catatan' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $tahapan = $peserta->tahapanSpmb;
+        abort_unless($tahapan && $tahapan->tahap_4_selesai, 404, 'Peserta belum menyelesaikan Tahap 4.');
+
+        $ditandaiSudah = $data['status'] === 'sudah';
+        $tahapan->forceFill([
+            'grup_wa_status' => $data['status'],
+            'grup_wa_ditandai_pada' => now(),
+            'grup_wa_ditandai_oleh' => auth('pengguna')->id(),
+            'grup_wa_catatan' => $data['catatan'] ?? null,
+        ])->save();
+
+        $this->catatLog(
+            'grup_wa.tandai_peserta',
+            LogAktivitas::KAT_PENGATURAN,
+            "Menandai status grup WhatsApp {$peserta->nama}: {$data['status']}",
+            $peserta,
+            ['status' => $data['status'], 'catatan' => $data['catatan'] ?? null],
+            $peserta->tahun_ajaran_id,
+        );
+
+        return redirect()->route('admin.verifikasi.grup-wa', $request->only(['status', 'cari', 'page']))
+            ->with('success', $ditandaiSudah
+                ? "{$peserta->nama} ditandai sudah masuk grup WhatsApp."
+                : "Status grup WhatsApp {$peserta->nama} diperbarui.");
+    }
+
     /**
      * Halaman peta "Alur & Tahap SPMB" — panduan terpusat 7 tahap.
      * Menampilkan yang dikerjakan peserta, yang diverifikasi admin,
