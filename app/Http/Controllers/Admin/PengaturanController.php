@@ -354,6 +354,9 @@ class PengaturanController extends Controller
             'keterangan_kuota_publik' => 'nullable|string|max:1000',
             'template_wa_pengingat_formulir' => 'nullable|string|max:2000',
             'template_wa_pengingat_pelunasan' => 'nullable|string|max:2000',
+            'grup_wa_peserta_aktif' => 'nullable|boolean',
+            'grup_wa_peserta_link' => ['nullable', 'url', 'max:500', 'regex:/^https:\/\/chat\.whatsapp\.com\//i'],
+            'grup_wa_peserta_pesan' => 'nullable|string|max:2000',
             'popup_persetujuan_aktif' => 'nullable|boolean',
             'popup_persetujuan_judul' => 'nullable|string|max:120',
             'popup_persetujuan_teks' => 'nullable|string|max:1000',
@@ -417,6 +420,7 @@ class PengaturanController extends Controller
         ]);
         $data['pendaftaran_buka'] = $request->boolean('pendaftaran_buka');
         $data['popup_persetujuan_aktif'] = $request->boolean('popup_persetujuan_aktif');
+        $data['grup_wa_peserta_aktif'] = $request->boolean('grup_wa_peserta_aktif');
 
         foreach (['dalam_kota', 'luar_kota'] as $wilayah) {
             $field = "gambar_rincian_biaya_{$wilayah}";

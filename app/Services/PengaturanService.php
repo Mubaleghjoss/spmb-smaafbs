@@ -258,6 +258,9 @@ class PengaturanService
             'whatsapp_bendahara_spmb' => $this->ambil('whatsapp_bendahara_spmb', '082299507730'),
             'template_wa_pengingat_formulir' => $this->ambil('template_wa_pengingat_formulir', "Assalamu'alaikum, saya {nama} dengan nomor pendaftaran {nomor_pendaftaran} sudah transfer senilai {nominal} untuk {jenis_pembayaran}. Mohon segera diverifikasi. Terima kasih."),
             'template_wa_pengingat_pelunasan' => $this->ambil('template_wa_pengingat_pelunasan', "Assalamu'alaikum, saya {nama} dengan nomor pendaftaran {nomor_pendaftaran} sudah transfer senilai {nominal} untuk {jenis_pembayaran}. Mohon segera diverifikasi. Terima kasih."),
+            'grup_wa_peserta_aktif' => (bool) $this->ambil('grup_wa_peserta_aktif', false),
+            'grup_wa_peserta_link' => $this->ambil('grup_wa_peserta_link', ''),
+            'grup_wa_peserta_pesan' => $this->ambil('grup_wa_peserta_pesan', "Assalamu'alaikum Ayah/Bunda.\n\nPembayaran formulir {nama} sudah terverifikasi. Mohon bergabung ke grup WhatsApp resmi SPMB melalui link berikut:\n{link_grup}\n\nTerima kasih."),
             'keterangan_kuota_publik' => $this->ambil(
                 'keterangan_kuota_publik',
                 'Lengkapi formulir dan unggah bukti pembayaran formulir untuk memperoleh urutan kuota. Masuk kuota bukan keputusan diterima; keputusan resmi disampaikan melalui SK Kelulusan.'
@@ -329,7 +332,8 @@ class PengaturanService
             'gambar_rincian_biaya_dalam_kota', 'gambar_rincian_biaya_luar_kota',
             'rekening_bank', 'nomor_rekening', 'nama_rekening',
             'whatsapp_spmb', 'kontak_tim_spmb', 'nama_bendahara_spmb', 'whatsapp_bendahara_spmb',
-            'template_wa_pengingat_formulir', 'template_wa_pengingat_pelunasan', 'keterangan_kuota_publik',
+            'template_wa_pengingat_formulir', 'template_wa_pengingat_pelunasan', 'grup_wa_peserta_aktif',
+            'grup_wa_peserta_link', 'grup_wa_peserta_pesan', 'keterangan_kuota_publik',
             'popup_persetujuan_aktif', 'popup_persetujuan_judul',
             'popup_persetujuan_teks', 'popup_persetujuan_gambar'
         ];

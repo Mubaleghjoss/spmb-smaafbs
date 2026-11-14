@@ -697,6 +697,22 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="card border-primary mb-4">
+                                    <div class="card-header bg-primary text-white"><i class="bi bi-people-fill me-2"></i>Undangan Grup WhatsApp Peserta</div>
+                                    <div class="card-body">
+                                        <div class="form-check form-switch mb-3">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="grupWaPesertaAktif" name="grup_wa_peserta_aktif" value="1" @checked(old('grup_wa_peserta_aktif', $spmb['grup_wa_peserta_aktif'] ?? false))>
+                                            <label class="form-check-label fw-semibold" for="grupWaPesertaAktif">Tampilkan undangan setelah pembayaran formulir terverifikasi</label>
+                                        </div>
+                                        <label class="form-label small" for="grupWaPesertaLink">Link grup WhatsApp</label>
+                                        <input type="url" id="grupWaPesertaLink" name="grup_wa_peserta_link" class="form-control mb-2" value="{{ old('grup_wa_peserta_link', $spmb['grup_wa_peserta_link'] ?? '') }}" placeholder="https://chat.whatsapp.com/...">
+                                        <label class="form-label small" for="grupWaPesan">Pesan untuk orang tua</label>
+                                        <textarea id="grupWaPesan" name="grup_wa_peserta_pesan" class="form-control" rows="5" maxlength="2000">{{ old('grup_wa_peserta_pesan', $spmb['grup_wa_peserta_pesan'] ?? '') }}</textarea>
+                                        <div class="form-text">Placeholder yang tersedia: <code>{nama}</code>, <code>{nomor_pendaftaran}</code>, <code>{link_grup}</code>. Pesan hanya disalin/dibuka, tidak dikirim otomatis.</div>
+                                    </div>
+                                </div>
+
                                 <p class="text-muted small mb-3">Daftar kontak Tim SPMB yang dapat dihubungi peserta untuk bantuan teknis aplikasi.</p>
                                 
                                 <div id="kontakContainer">

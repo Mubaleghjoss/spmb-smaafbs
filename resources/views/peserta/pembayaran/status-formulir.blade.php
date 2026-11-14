@@ -97,6 +97,43 @@
                             </div>
                         </div>
                         @endif
+
+                        @if($pembayaran->status === 'terverifikasi' && !empty($spmb['grup_wa_peserta_aktif']) && !empty($spmb['grup_wa_peserta_link']))
+                            @php
+                                $pesanGrupWa = strtr($spmb['grup_wa_peserta_pesan'] ?? '', [
+                                    '{nama}' => $peserta->nama,
+                                    '{nomor_pendaftaran}' => $peserta->nomor_pendaftaran,
+                                    '{link_grup}' => $spmb['grup_wa_peserta_link'],
+                                ]);
+                            @endphp
+                            <div class="alert alert-primary text-start mb-3" id="undanganGrupWa">
+                                <div class="fw-semibold mb-1"><i class="bi bi-people-fill me-1"></i>Undangan Grup WhatsApp SPMB</div>
+                                <p class="small mb-3">Pembayaran formulir sudah terverifikasi. Orang tua/wali dipersilakan bergabung ke grup WhatsApp resmi SPMB.</p>
+                                <div class="d-flex flex-wrap gap-2">
+                                    <a href="{{ $spmb['grup_wa_peserta_link'] }}" target="_blank" rel="noopener" class="btn btn-success btn-sm">
+                                        <i class="bi bi-whatsapp me-1"></i>Gabung Grup WhatsApp
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="salinPesanGrupWa()">
+                                        <i class="bi bi-copy me-1"></i>Salin Pesan WhatsApp
+                                    </button>
+                                </div>
+                                <textarea id="pesanGrupWa" class="visually-hidden" aria-hidden="true">{{ $pesanGrupWa }}</textarea>
+                                <div id="statusSalinGrupWa" class="small mt-2" role="status"></div>
+                            </div>
+                            @push('scripts')
+                            <script>
+                                function salinPesanGrupWa() {
+                                    const pesan = document.getElementById('pesanGrupWa')?.value || '';
+                                    const status = document.getElementById('statusSalinGrupWa');
+                                    navigator.clipboard.writeText(pesan).then(() => {
+                                        if (status) status.textContent = 'Pesan berhasil disalin. Silakan buka WhatsApp.';
+                                    }).catch(() => {
+                                        if (status) status.textContent = 'Pesan belum dapat disalin otomatis. Silakan salin manual dari perangkat Anda.';
+                                    });
+                                }
+                            </script>
+                            @endpush
+                        @endif
                         
                         <p class="small text-muted mb-1">Bukti yang diupload:</p>
                         <img src="{{ Storage::url($pembayaran->bukti_file) }}" class="img-fluid rounded border" alt="Bukti Pembayaran">
