@@ -160,6 +160,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth:pengguna', 'cek.akses.
     Route::get('/verifikasi', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'index'])->name('verifikasi.index');
     Route::get('/verifikasi/grup-wa', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'grupWa'])->name('verifikasi.grup-wa');
     Route::post('/verifikasi/grup-wa/{peserta}', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'tandaiGrupWa'])->name('verifikasi.grup-wa.tandai');
+    Route::post('/verifikasi/grup-wa/bulk', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'bulkTandaiGrupWa'])->name('verifikasi.grup-wa.bulk');
     Route::get('/alur-tahap', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'alurTahap'])->name('alur-tahap');
     Route::get('/verifikasi/peserta', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'daftarPeserta'])->name('verifikasi.peserta');
     Route::get('/verifikasi/history/{peserta}', [\App\Http\Controllers\Admin\VerifikasiSpmbController::class, 'historyPeserta'])->name('verifikasi.history');

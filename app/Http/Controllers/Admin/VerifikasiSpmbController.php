@@ -20,6 +20,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class VerifikasiSpmbController extends Controller
 {
@@ -163,8 +164,47 @@ class VerifikasiSpmbController extends Controller
                 : "Status grup WhatsApp {$peserta->nama} diperbarui.");
     }
 
-    /**
-     * Halaman peta "Alur & Tahap SPMB" — panduan terpusat 7 tahap.
+    public function bulkTandaiGrupWa(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'status' => ['required', 'in:belum,sudah,dikecualikan'],
+            'peserta_ids' => ['required', 'array', 'min:1'],
+            'peserta_ids.*' => ['integer', 'distinct', 'exists:peserta,id'],
+            'catatan' => ['nullable', 'string', 'max:500'],
+        ]);
+
+        $pesertaTerpilih = Peserta::with('tahapanSpmb')
+            ->whereIn('id', $data['peserta_ids'])
+            ->whereHas('tahapanSpmb', fn ($query) => $query->where('tahap_4_selesai', true))
+            ->get();
+
+        abort_if($pesertaTerpilih->isEmpty(), 422, 'Tidak ada peserta Tahap 4 yang valid untuk diproses.');
+
+        DB::transaction(function () use ($data, $pesertaTerpilih): void {
+            foreach ($pesertaTerpilih as $peserta) {
+                $peserta->tahapanSpmb->forceFill([
+                    'grup_wa_status' => $data['status'],
+                    'grup_wa_ditandai_pada' => now(),
+                    'grup_wa_ditandai_oleh' => auth('pengguna')->id(),
+                    'grup_wa_catatan' => $data['catatan'] ?? null,
+                ])->save();
+
+                $this->catatLog(
+                    'grup_wa.bulk_tandai_peserta',
+                    LogAktivitas::KAT_PENGATURAN,
+                    "Bulk menandai status grup WhatsApp {$peserta->nama}: {$data['status']}",
+                    $peserta,
+                    ['status' => $data['status'], 'catatan' => $data['catatan'] ?? null],
+                    $peserta->tahun_ajaran_id,
+                );
+            }
+        });
+
+        return redirect()->route('admin.verifikasi.grup-wa', $request->only(['status', 'cari', 'page']))
+            ->with('success', $pesertaTerpilih->count().' peserta berhasil diperbarui ke status '.str_replace('_', ' ', $data['status']).'.');
+    }
+
+/**
      * Menampilkan yang dikerjakan peserta, yang diverifikasi admin,
      * jumlah antrean, dan pintasan ke halaman verifikasi + pengaturan tiap tahap.
      */

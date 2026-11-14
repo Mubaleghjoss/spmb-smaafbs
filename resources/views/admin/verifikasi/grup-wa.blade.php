@@ -48,17 +48,42 @@
     </div>
 
     <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Peserta Tahap 4</h5>
-            <span class="badge bg-secondary">{{ $peserta->total() }} peserta</span>
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Peserta Tahap 4</h5>
+                <span class="badge bg-secondary">{{ $peserta->total() }} peserta</span>
+            </div>
+            <form method="POST" action="{{ route('admin.verifikasi.grup-wa.bulk') }}" id="bulk-status" class="row g-2 align-items-end mt-3">
+                @csrf
+                <div class="col-auto">
+                    <label class="form-label small mb-1" for="bulk-status-select">Aksi massal</label>
+                    <select class="form-select form-select-sm" id="bulk-status-select" name="status" required>
+                        <option value="sudah">Tandai Sudah Masuk</option>
+                        <option value="belum">Kembalikan Belum Masuk</option>
+                        <option value="dikecualikan">Tandai Dikecualikan</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small mb-1" for="bulk-catatan">Keterangan untuk pilihan</label>
+                    <input type="text" class="form-control form-control-sm" id="bulk-catatan" name="catatan" maxlength="500" placeholder="Opsional">
+                </div>
+                <div class="col-auto">
+                    <button type="submit" class="btn btn-sm btn-primary" onclick="return confirm('Terapkan aksi ke semua peserta yang dipilih?')">
+                        <i class="bi bi-check2-square me-1"></i>Terapkan ke Pilihan
+                    </button>
+                </div>
+                <div class="col-12 small text-muted">Centang peserta pada kolom pertama, lalu pilih aksi massal.</div>
+            </form>
         </div>
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
                     <tr>
+                        <th style="width: 42px;"><input type="checkbox" class="form-check-input" id="select-all-status" title="Pilih semua"></th>
                         <th>No. Pendaftaran</th>
                         <th>Nama</th>
                         <th>Status Grup WA</th>
+                        <th>Keterangan Status</th>
                         <th>Penanda</th>
                         <th class="text-end">Aksi</th>
                     </tr>
@@ -68,6 +93,7 @@
                         @php($tahapan = $p->tahapanSpmb)
                         @php($statusGrup = $tahapan?->grup_wa_status ?: 'belum')
                         <tr>
+                            <td><input type="checkbox" class="form-check-input peserta-status-checkbox" name="peserta_ids[]" value="{{ $p->id }}" form="bulk-status"></td>
                             <td><code>{{ $p->nomor_pendaftaran }}</code></td>
                             <td>{{ $p->nama }}</td>
                             <td>
@@ -80,6 +106,15 @@
                                 @endif
                                 @if($tahapan?->grup_wa_catatan)
                                     <div class="small text-muted mt-1">Catatan: {{ $tahapan->grup_wa_catatan }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                @if($statusGrup === 'sudah')
+                                    <span class="small text-success">Sudah dikonfirmasi masuk grup oleh admin.</span>
+                                @elseif($statusGrup === 'dikecualikan')
+                                    <span class="small text-secondary">Tidak perlu dimasukkan ke grup WhatsApp.</span>
+                                @else
+                                    <span class="small text-warning-emphasis">Belum ada konfirmasi manual bahwa siswa sudah masuk grup.</span>
                                 @endif
                             </td>
                             <td>
@@ -116,7 +151,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="text-center py-4 text-muted">Tidak ada peserta sesuai filter.</td></tr>
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Tidak ada peserta sesuai filter.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -126,4 +161,23 @@
         @endif
     </div>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const selectAll = document.getElementById('select-all-status');
+    const checkboxes = Array.from(document.querySelectorAll('.peserta-status-checkbox'));
+    if (!selectAll) return;
+    selectAll.addEventListener('change', function () {
+        checkboxes.forEach((checkbox) => { checkbox.checked = selectAll.checked; });
+    });
+    checkboxes.forEach((checkbox) => checkbox.addEventListener('change', function () {
+        selectAll.checked = checkboxes.length > 0 && checkboxes.every((item) => item.checked);
+    }));
+    document.getElementById('bulk-status')?.addEventListener('submit', function (event) {
+        if (!checkboxes.some((checkbox) => checkbox.checked)) {
+            event.preventDefault();
+            alert('Pilih minimal satu peserta terlebih dahulu.');
+        }
+    });
+});
+</script>
 @endsection

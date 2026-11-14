@@ -25,6 +25,8 @@ class GrupWaPenandaTahap4ContractTest extends TestCase
         self::assertStringContainsString("grup_wa_status", $model);
         self::assertStringContainsString("grup_wa_ditandai_oleh", $model);
         self::assertStringContainsString("verifikasi.grup-wa.tandai", $routes);
+        self::assertStringContainsString("verifikasi.grup-wa.bulk", $routes);
+        self::assertStringContainsString("bulkTandaiGrupWa", $controller);
         self::assertStringContainsString("verifikasi.grup-wa", $routes);
         self::assertStringContainsString('grup_wa_status', $controller);
         self::assertStringContainsString('Sudah Masuk Grup WA', $view);
@@ -35,5 +37,8 @@ class GrupWaPenandaTahap4ContractTest extends TestCase
         self::assertStringContainsString('Sudah masuk Grup WA', $indexView);
         self::assertStringContainsString('@if($tahapSaatIni >= 4)', $indexView);
         self::assertStringNotContainsString('@if($p->tahapanSpmb?->tahap_4_selesai)', $indexView);
+        self::assertStringContainsString('bulk-status', $view);
+        self::assertStringContainsString('Pilih semua', $view);
+        self::assertStringContainsString('Keterangan Status', $view);
     }
 }
