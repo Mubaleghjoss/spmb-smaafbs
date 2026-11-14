@@ -85,6 +85,35 @@ class PesertaDashboardStatusPendaftaranTest extends TestCase
             ->assertDontSee('>Upload Bukti Bayar</h6>', false);
     }
 
+    public function test_kwitansi_pembayaran_formulir_tidak_menunggu_pelunasan_tahap_enam(): void
+    {
+        $peserta = Peserta::factory()->create();
+
+        TahapanSpmb::create([
+            'peserta_id' => $peserta->id,
+            'tahap_saat_ini' => 3,
+            'tahap_1_selesai' => true,
+            'tahap_2_selesai' => true,
+            'tahap_3_selesai' => true,
+            'tahap_6_selesai' => false,
+        ]);
+
+        $pembayaran = Pembayaran::create([
+            'peserta_id' => $peserta->id,
+            'jenis' => 'formulir',
+            'bukti_file' => 'pembayaran/formulir/bukti.jpg',
+            'nominal' => 150000,
+            'status' => 'terverifikasi',
+            'nomor_kwitansi' => 'KWT/2026/11/0046',
+            'diverifikasi_pada' => now(),
+        ]);
+
+        $this->withSession(['peserta_id' => $peserta->id])
+            ->get(route('peserta.pembayaran.kwitansi', $pembayaran))
+            ->assertOk()
+            ->assertSee('KWT/2026/11/0046', false);
+    }
+
     public function test_halaman_upload_mengarahkan_pembayaran_terkirim_ke_status(): void
     {
         $peserta = Peserta::factory()->create();

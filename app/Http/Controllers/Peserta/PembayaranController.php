@@ -234,15 +234,25 @@ class PembayaranController extends Controller
             abort(403, 'Akses ditolak');
         }
 
-        // Hanya bisa cetak jika sudah terverifikasi
-        $ringkasan = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
-        if ($pembayaran->status !== 'terverifikasi' || ! $ringkasan['lunas']) {
+        // Kwitansi mengikuti jenis/tahap pembayaran:
+        // tahap 3 cukup terverifikasi, tahap 6 wajib lunas total.
+        if ($pembayaran->status !== 'terverifikasi') {
+            abort(404, 'Kwitansi tidak tersedia');
+        }
+
+        $ringkasan = null;
+        if ($pembayaran->jenis === 'pertama') {
+            $ringkasan = app(\App\Services\TahapEnamPembayaranService::class)->ringkasan($peserta);
+            if (! $ringkasan['lunas']) {
+                abort(404, 'Kwitansi tidak tersedia');
+            }
+        } elseif ($pembayaran->jenis !== 'formulir') {
             abort(404, 'Kwitansi tidak tersedia');
         }
 
         $kwitansiService = app(\App\Services\KwitansiService::class);
         $kwitansi = $kwitansiService->ambilKwitansi($pembayaran);
-        if ($kwitansi) {
+        if ($kwitansi && $pembayaran->jenis === 'pertama') {
             $kwitansi['nominal'] = $ringkasan['tagihan'];
         }
 
