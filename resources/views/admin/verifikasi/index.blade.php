@@ -304,6 +304,18 @@
                             </td>
                             <td>
                                 <div class="d-flex gap-1 justify-content-start flex-wrap">
+                                    @if($p->tahapanSpmb?->tahap_4_selesai)
+                                        <form method="POST" action="{{ route('admin.verifikasi.grup-wa.tandai', $p) }}" class="d-inline-flex align-items-center me-1">
+                                            @csrf
+                                            <input type="hidden" name="status" value="{{ $p->tahapanSpmb?->grup_wa_status === 'sudah' ? 'sudah' : 'belum' }}">
+                                            <input type="hidden" name="catatan" value="{{ $p->tahapanSpmb?->grup_wa_catatan }}">
+                                            <div class="form-check form-switch mb-0" title="Konfirmasi manual admin bahwa peserta sudah masuk grup WhatsApp">
+                                                <input class="form-check-input" type="checkbox" id="grupWa{{ $p->id }}" {{ $p->tahapanSpmb?->grup_wa_status === 'sudah' ? 'checked' : '' }} onchange="this.form.status.value = this.checked ? 'sudah' : 'belum'; this.form.submit();">
+                                                <label class="form-check-label small" for="grupWa{{ $p->id }}">Sudah masuk Grup WA</label>
+                                            </div>
+                                        </form>
+                                    @endif
+
                                     {{-- History/Detail Lengkap --}}
                                     <a href="{{ route('admin.verifikasi.history', $p) }}" 
                                        class="btn btn-sm btn-dark" title="Lihat semua data peserta">

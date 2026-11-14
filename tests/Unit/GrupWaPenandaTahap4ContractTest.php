@@ -30,5 +30,7 @@ class GrupWaPenandaTahap4ContractTest extends TestCase
         self::assertStringContainsString('Sudah Masuk Grup WA', $view);
         self::assertStringContainsString('Belum Masuk Grup WA', $view);
         self::assertStringContainsString('Tandai Sudah Masuk', $view);
+        self::assertStringContainsString('checkbox', file_get_contents($root . '/resources/views/admin/verifikasi/index.blade.php'));
+        self::assertStringContainsString('Sudah masuk Grup WA', file_get_contents($root . '/resources/views/admin/verifikasi/index.blade.php'));
     }
 }
