@@ -191,6 +191,11 @@
     @php
         $sk = $peserta->status_kuota;
         $jalurPindahan = $peserta->jenis_pendaftaran === \App\Models\Peserta::JENIS_PINDAHAN;
+        $pembayaranFormulir = $peserta->pembayaran->firstWhere('jenis', 'formulir');
+        $buktiFormulirTerkirim = $pembayaranFormulir
+            && filled($pembayaranFormulir->bukti_file)
+            && $pembayaranFormulir->status !== 'ditolak';
+        $statusPembayaranFormulir = $pembayaranFormulir?->status;
         [$alasanBelumLengkap, $saranStatus, $aksiStatusUrl, $aksiStatusLabel] = match (true) {
             !($tahapan->tahap_1_selesai ?? false) => [
                 'Tahap 1 belum selesai',
@@ -206,9 +211,15 @@
             ],
             default => [
                 'Tahap 3 belum selesai',
-                'Transfer biaya formulir sesuai tagihan lalu unggah bukti pembayaran formulir. Setelah bukti diterima sistem, status kelengkapan akan diperbarui.',
-                route('peserta.pembayaran.formulir'),
-                'Upload Bukti Pembayaran',
+                $buktiFormulirTerkirim
+                    ? 'Bukti pembayaran formulir sudah diterima sistem dan sedang menunggu verifikasi panitia.'
+                    : 'Transfer biaya formulir sesuai tagihan lalu unggah bukti pembayaran formulir.',
+                $buktiFormulirTerkirim
+                    ? route('peserta.pembayaran.status-formulir')
+                    : route('peserta.pembayaran.formulir'),
+                $buktiFormulirTerkirim && $statusPembayaranFormulir === 'menunggu'
+                    ? 'Menunggu Verifikasi'
+                    : ($buktiFormulirTerkirim ? 'Lihat Status Pembayaran' : 'Upload Bukti Pembayaran'),
             ],
         };
     @endphp
@@ -688,11 +699,11 @@
         
         @if(!($statusTahapan[3]['selesai'] ?? false) && ($statusTahapan[3]['dibuka'] ?? false))
         <div class="col-md-4 mb-3">
-            <a href="{{ route('peserta.pembayaran.formulir') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+            <a href="{{ $buktiFormulirTerkirim ? route('peserta.pembayaran.status-formulir') : route('peserta.pembayaran.formulir') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                 <div class="card-body text-center py-4">
                     <i class="bi bi-credit-card text-success fs-1 mb-2"></i>
-                    <h6 class="mb-0">Upload Bukti Bayar</h6>
-                    <small class="text-muted">Upload bukti pembayaran formulir</small>
+                    <h6 class="mb-0">{{ $buktiFormulirTerkirim && $statusPembayaranFormulir === 'menunggu' ? 'Menunggu Verifikasi' : ($buktiFormulirTerkirim ? 'Lihat Status Pembayaran' : 'Upload Bukti Bayar') }}</h6>
+                    <small class="text-muted">{{ $buktiFormulirTerkirim ? 'Bukti pembayaran sedang diperiksa panitia' : 'Upload bukti pembayaran formulir' }}</small>
                     @if(!empty($statusTahapan[3]['jadwal_label']))
                         <small class="text-info d-block mt-2">
                             <i class="bi bi-calendar-event me-1"></i>{{ $statusTahapan[3]['jadwal_label'] }}

@@ -445,14 +445,30 @@ class DashboardSpmbController extends Controller
             }
             
             $selesai = $num === 1 ? ($tahapan?->$kolomSelesai ?? true) : ($tahapan?->$kolomSelesai ?? false);
+
+            $route = $selesai ? ($config['route_selesai'] ?? $config['route']) : $config['route'];
+            $aksi = $config['aksi'];
+            if ($num === 3 && ! $selesai) {
+                $pembayaranFormulir = $peserta->pembayaran->firstWhere('jenis', 'formulir');
+                $buktiTerkirim = $pembayaranFormulir
+                    && filled($pembayaranFormulir->bukti_file)
+                    && $pembayaranFormulir->status !== 'ditolak';
+
+                if ($buktiTerkirim) {
+                    $route = $config['route_selesai'];
+                    $aksi = $pembayaranFormulir->status === 'menunggu'
+                        ? 'Menunggu Verifikasi'
+                        : 'Lihat Status Pembayaran';
+                }
+            }
             
             $result[$num] = [
                 'selesai' => $selesai,
                 'label' => $config['enum']->label(),
                 'deskripsi' => $config['enum']->deskripsi(),
                 'icon' => $config['icon'],
-                'route' => $selesai ? ($config['route_selesai'] ?? $config['route']) : $config['route'],
-                'aksi' => $config['aksi'],
+                'route' => $route,
+                'aksi' => $aksi,
                 'dibuka' => $statusInfo['dibuka'],
                 'alasan' => $statusInfo['alasan'],
                 'tanggal_buka' => $statusInfo['tanggal_buka'],
