@@ -304,7 +304,7 @@
                             </td>
                             <td>
                                 <div class="d-flex gap-1 justify-content-start flex-wrap">
-                                    @if($p->tahapanSpmb?->tahap_4_selesai)
+                                    @if($tahapSaatIni >= 4)
                                         <form method="POST" action="{{ route('admin.verifikasi.grup-wa.tandai', $p) }}" class="d-inline-flex align-items-center me-1">
                                             @csrf
                                             <input type="hidden" name="status" value="{{ $p->tahapanSpmb?->grup_wa_status === 'sudah' ? 'sudah' : 'belum' }}">
